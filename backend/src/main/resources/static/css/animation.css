@@ -1,6 +1,5 @@
 /* 抽卡动画样式 */
 
-/* 抽卡动画遮罩 */
 .pull-animation {
     position: fixed;
     top: 0;
@@ -21,7 +20,6 @@
     overflow: hidden;
 }
 
-/* 光效动画 */
 .light-effect {
     position: absolute;
     top: 50%;
@@ -29,7 +27,7 @@
     transform: translate(-50%, -50%);
     width: 0;
     height: 0;
-    background: radial-gradient(circle, rgba(79, 195, 247, 0.8) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(74, 158, 255, 0.8) 0%, transparent 70%);
     border-radius: 50%;
     animation: lightExpand 1.5s ease-out forwards;
 }
@@ -47,7 +45,6 @@
     }
 }
 
-/* 星星特效 */
 .star-effect {
     position: absolute;
     top: 50%;
@@ -64,12 +61,12 @@
 }
 
 .star-effect::before {
-    color: var(--gold-color);
+    color: var(--accent-gold);
     animation: starAppear 1s ease-out 0.5s forwards;
 }
 
 .star-effect::after {
-    color: var(--accent-color);
+    color: var(--accent-blue);
     font-size: 60px;
     animation: starAppear 1s ease-out 0.8s forwards;
     top: -30px;
@@ -91,7 +88,6 @@
     }
 }
 
-/* 结果卡片入场动画 */
 .result-card {
     opacity: 0;
     transform: translateY(30px) scale(0.9);
@@ -120,7 +116,6 @@
     }
 }
 
-/* 五星卡片特殊效果 */
 .result-card.rarity-5 {
     animation: cardAppearGold 0.8s ease-out forwards;
 }
@@ -140,12 +135,11 @@
     }
 }
 
-/* 流星效果 */
 .meteor {
     position: absolute;
     width: 100px;
     height: 2px;
-    background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+    background: linear-gradient(90deg, transparent, var(--accent-blue), transparent);
     animation: meteor 1s linear forwards;
 }
 
@@ -160,7 +154,6 @@
     }
 }
 
-/* 按钮点击波纹效果 */
 .pull-btn .ripple {
     position: absolute;
     border-radius: 50%;
@@ -177,12 +170,11 @@
     }
 }
 
-/* 加载动画 */
 .loading-spinner {
     width: 50px;
     height: 50px;
-    border: 3px solid rgba(79, 195, 247, 0.3);
-    border-top-color: var(--accent-color);
+    border: 3px solid rgba(74, 158, 255, 0.3);
+    border-top-color: var(--accent-blue);
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -193,7 +185,6 @@
     }
 }
 
-/* 闪光效果 */
 .shimmer {
     position: relative;
     overflow: hidden;
@@ -206,12 +197,7 @@
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.2),
-        transparent
-    );
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     animation: shimmer 2s infinite;
 }
 

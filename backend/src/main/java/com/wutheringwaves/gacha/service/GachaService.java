@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
@@ -114,8 +115,7 @@ public class GachaService {
     }
 
     private int determineRarity(Long userId, String poolType, int currentPity, boolean guaranteed) {
-        Random random = new Random();
-        double rand = random.nextDouble() * 100;
+        double rand = ThreadLocalRandom.current().nextDouble() * 100;
 
         int maxPity = poolType.equals("weapon") ? WEAPON_MAX_PITY : CHARACTER_MAX_PITY;
 
@@ -157,10 +157,13 @@ public class GachaService {
                 .toList();
 
         if (candidates.isEmpty()) {
-            // 如果没有对应稀有度的物品，返回三星
             candidates = items.stream()
                     .filter(item -> item.getRarity() == 3)
                     .toList();
+        }
+
+        if (candidates.isEmpty()) {
+            throw new IllegalStateException("物品池为空，poolType=" + poolType + ", rarity=" + rarity);
         }
 
         // 如果是大保底且是五星，优先出限定
@@ -169,11 +172,11 @@ public class GachaService {
                     .filter(GachaItem::getIsLimited)
                     .toList();
             if (!limited.isEmpty()) {
-                return limited.get(new Random().nextInt(limited.size()));
+                return limited.get(ThreadLocalRandom.current().nextInt(limited.size()));
             }
         }
 
-        return candidates.get(new Random().nextInt(candidates.size()));
+        return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
     }
 
     private List<GachaItem> getItemsByPool(String poolType) {
@@ -192,15 +195,15 @@ public class GachaService {
         return switch (poolType) {
             case "character" -> {
                 CharacterPity pity = characterPityMapper.selectById(userId);
-                yield pity != null ? pity.getFiveStarCount() : 0;
+                yield pity != null && pity.getFiveStarCount() != null ? pity.getFiveStarCount() : 0;
             }
             case "weapon" -> {
                 WeaponPity pity = weaponPityMapper.selectById(userId);
-                yield pity != null ? pity.getFiveStarCount() : 0;
+                yield pity != null && pity.getFiveStarCount() != null ? pity.getFiveStarCount() : 0;
             }
             case "limited" -> {
                 LimitedPity pity = limitedPityMapper.selectById(userId);
-                yield pity != null ? pity.getFiveStarCount() : 0;
+                yield pity != null && pity.getFiveStarCount() != null ? pity.getFiveStarCount() : 0;
             }
             default -> 0;
         };
@@ -210,15 +213,15 @@ public class GachaService {
         return switch (poolType) {
             case "character" -> {
                 CharacterPity pity = characterPityMapper.selectById(userId);
-                yield pity != null ? pity.getFourStarCount() : 0;
+                yield pity != null && pity.getFourStarCount() != null ? pity.getFourStarCount() : 0;
             }
             case "weapon" -> {
                 WeaponPity pity = weaponPityMapper.selectById(userId);
-                yield pity != null ? pity.getFourStarCount() : 0;
+                yield pity != null && pity.getFourStarCount() != null ? pity.getFourStarCount() : 0;
             }
             case "limited" -> {
                 LimitedPity pity = limitedPityMapper.selectById(userId);
-                yield pity != null ? pity.getFourStarCount() : 0;
+                yield pity != null && pity.getFourStarCount() != null ? pity.getFourStarCount() : 0;
             }
             default -> 0;
         };
@@ -228,15 +231,15 @@ public class GachaService {
         return switch (poolType) {
             case "character" -> {
                 CharacterPity pity = characterPityMapper.selectById(userId);
-                yield pity != null && pity.getGuaranteedFive();
+                yield pity != null && Boolean.TRUE.equals(pity.getGuaranteedFive());
             }
             case "weapon" -> {
                 WeaponPity pity = weaponPityMapper.selectById(userId);
-                yield pity != null && pity.getGuaranteedFive();
+                yield pity != null && Boolean.TRUE.equals(pity.getGuaranteedFive());
             }
             case "limited" -> {
                 LimitedPity pity = limitedPityMapper.selectById(userId);
-                yield pity != null && pity.getGuaranteedFive();
+                yield pity != null && Boolean.TRUE.equals(pity.getGuaranteedFive());
             }
             default -> false;
         };
@@ -251,10 +254,12 @@ public class GachaService {
                     if (pity == null) {
                         pity = new CharacterPity();
                         pity.setUserId(userId);
+                        pity.setFiveStarCount(0);
+                        pity.setFourStarCount(0);
                     }
                     pity.setFiveStarCount(0);
                     pity.setFourStarCount(pity.getFourStarCount() + 1);
-                    pity.setGuaranteedFive(!isLimited);  // 如果不是限定，下次大保底
+                    pity.setGuaranteedFive(!isLimited);
                     characterPityMapper.insertOrUpdate(pity);
                 }
                 case "weapon" -> {
@@ -262,6 +267,8 @@ public class GachaService {
                     if (pity == null) {
                         pity = new WeaponPity();
                         pity.setUserId(userId);
+                        pity.setFiveStarCount(0);
+                        pity.setFourStarCount(0);
                     }
                     pity.setFiveStarCount(0);
                     pity.setFourStarCount(pity.getFourStarCount() + 1);
@@ -273,6 +280,8 @@ public class GachaService {
                     if (pity == null) {
                         pity = new LimitedPity();
                         pity.setUserId(userId);
+                        pity.setFiveStarCount(0);
+                        pity.setFourStarCount(0);
                     }
                     pity.setFiveStarCount(0);
                     pity.setFourStarCount(pity.getFourStarCount() + 1);
@@ -288,6 +297,8 @@ public class GachaService {
                     if (pity == null) {
                         pity = new CharacterPity();
                         pity.setUserId(userId);
+                        pity.setFiveStarCount(0);
+                        pity.setFourStarCount(0);
                     }
                     pity.setFiveStarCount(pity.getFiveStarCount() + 1);
                     pity.setFourStarCount(0);
@@ -298,6 +309,8 @@ public class GachaService {
                     if (pity == null) {
                         pity = new WeaponPity();
                         pity.setUserId(userId);
+                        pity.setFiveStarCount(0);
+                        pity.setFourStarCount(0);
                     }
                     pity.setFiveStarCount(pity.getFiveStarCount() + 1);
                     pity.setFourStarCount(0);
@@ -308,6 +321,8 @@ public class GachaService {
                     if (pity == null) {
                         pity = new LimitedPity();
                         pity.setUserId(userId);
+                        pity.setFiveStarCount(0);
+                        pity.setFourStarCount(0);
                     }
                     pity.setFiveStarCount(pity.getFiveStarCount() + 1);
                     pity.setFourStarCount(0);
@@ -322,6 +337,8 @@ public class GachaService {
                     if (pity == null) {
                         pity = new CharacterPity();
                         pity.setUserId(userId);
+                        pity.setFiveStarCount(0);
+                        pity.setFourStarCount(0);
                     }
                     pity.setFiveStarCount(pity.getFiveStarCount() + 1);
                     pity.setFourStarCount(pity.getFourStarCount() + 1);
@@ -332,6 +349,8 @@ public class GachaService {
                     if (pity == null) {
                         pity = new WeaponPity();
                         pity.setUserId(userId);
+                        pity.setFiveStarCount(0);
+                        pity.setFourStarCount(0);
                     }
                     pity.setFiveStarCount(pity.getFiveStarCount() + 1);
                     pity.setFourStarCount(pity.getFourStarCount() + 1);
@@ -342,6 +361,8 @@ public class GachaService {
                     if (pity == null) {
                         pity = new LimitedPity();
                         pity.setUserId(userId);
+                        pity.setFiveStarCount(0);
+                        pity.setFourStarCount(0);
                     }
                     pity.setFiveStarCount(pity.getFiveStarCount() + 1);
                     pity.setFourStarCount(pity.getFourStarCount() + 1);
@@ -352,14 +373,15 @@ public class GachaService {
     }
 
     public List<GachaRecord> getHistory(Long userId, String poolType, int page, int size) {
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<GachaRecord> pageParam =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
         LambdaQueryWrapper<GachaRecord> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(GachaRecord::getUserId, userId);
         if (poolType != null && !poolType.isEmpty()) {
             wrapper.eq(GachaRecord::getPoolType, poolType);
         }
         wrapper.orderByDesc(GachaRecord::getCreatedAt);
-        wrapper.last("LIMIT " + size + " OFFSET " + (page - 1) * size);
-        return gachaRecordMapper.selectList(wrapper);
+        return gachaRecordMapper.selectPage(pageParam, wrapper).getRecords();
     }
 
     public Map<String, Object> getStats(Long userId, String poolType) {
@@ -388,9 +410,11 @@ public class GachaService {
             stats.put("fourStarRate", String.format("%.2f%%", fourStarCount * 100.0 / totalPulls));
         }
 
-        // 获取当前保底计数
-        int currentPity = getCurrentPity(userId, poolType != null ? poolType : "character");
-        stats.put("currentPity", currentPity);
+        // 获取当前保底计数（仅在指定池子时返回）
+        if (poolType != null && !poolType.isEmpty()) {
+            int currentPity = getCurrentPity(userId, poolType);
+            stats.put("currentPity", currentPity);
+        }
 
         return stats;
     }

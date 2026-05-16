@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    starlight INT DEFAULT 1600 COMMENT '星声（抽卡货币）',
+    starlight INT DEFAULT 100000 COMMENT '星声（抽卡货币）',
     starshards INT DEFAULT 0 COMMENT '星辉（兑换货币）',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -28,12 +28,14 @@ CREATE TABLE IF NOT EXISTS gacha_records (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_user_id (user_id),
     INDEX idx_pool_type (pool_type),
-    INDEX idx_created_at (created_at)
+    INDEX idx_created_at (created_at),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- 角色池保底计数表
 CREATE TABLE IF NOT EXISTS character_pity (
     user_id BIGINT PRIMARY KEY,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     five_star_count INT DEFAULT 0 COMMENT '距离五星保底剩余抽数',
     four_star_count INT DEFAULT 0 COMMENT '距离四星保底剩余抽数',
     guaranteed_five BOOLEAN DEFAULT FALSE COMMENT '是否大保底（下次必出UP）',
@@ -43,6 +45,7 @@ CREATE TABLE IF NOT EXISTS character_pity (
 -- 武器池保底计数表
 CREATE TABLE IF NOT EXISTS weapon_pity (
     user_id BIGINT PRIMARY KEY,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     five_star_count INT DEFAULT 0 COMMENT '距离五星保底剩余抽数',
     four_star_count INT DEFAULT 0 COMMENT '距离四星保底剩余抽数',
     guaranteed_five BOOLEAN DEFAULT FALSE COMMENT '是否大保底（下次必出UP）',
@@ -52,6 +55,7 @@ CREATE TABLE IF NOT EXISTS weapon_pity (
 -- 限定池保底计数表
 CREATE TABLE IF NOT EXISTS limited_pity (
     user_id BIGINT PRIMARY KEY,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     five_star_count INT DEFAULT 0 COMMENT '距离五星保底剩余抽数',
     four_star_count INT DEFAULT 0 COMMENT '距离四星保底剩余抽数',
     guaranteed_five BOOLEAN DEFAULT FALSE COMMENT '是否大保底（下次必出UP）',
@@ -72,6 +76,20 @@ CREATE TABLE IF NOT EXISTS gacha_items (
 
 -- 插入默认抽卡物品数据
 INSERT INTO gacha_items (name, rarity, item_type, pool_type, is_limited) VALUES
+-- 三星武器（角色池填充物）
+('训练佩刀', 3, 'weapon', 'character', FALSE),
+('训练长刃', 3, 'weapon', 'character', FALSE),
+('训练拳套', 3, 'weapon', 'character', FALSE),
+('训练佩枪', 3, 'weapon', 'character', FALSE),
+('训练音感仪', 3, 'weapon', 'character', FALSE),
+
+-- 三星武器（限定池填充物）
+('训练佩刀', 3, 'weapon', 'limited', FALSE),
+('训练长刃', 3, 'weapon', 'limited', FALSE),
+('训练拳套', 3, 'weapon', 'limited', FALSE),
+('训练佩枪', 3, 'weapon', 'limited', FALSE),
+('训练音感仪', 3, 'weapon', 'limited', FALSE),
+
 -- 五星角色（常驻池）
 ('漂泊者', 5, 'character', 'character', FALSE),
 ('安可', 5, 'character', 'character', FALSE),

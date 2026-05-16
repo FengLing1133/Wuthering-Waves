@@ -3,144 +3,268 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>鸣潮 - 抽卡系统</title>
+    <title>鸣潮 - 唤取</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/animation.css">
 </head>
 <body class="gacha-page">
-    <!-- 顶部导航 -->
-    <header class="header">
-        <div class="logo">鸣潮</div>
-        <nav class="nav">
-            <button class="nav-btn active" data-pool="character">角色活动唤取</button>
-            <button class="nav-btn" data-pool="weapon">武器活动唤取</button>
-            <button class="nav-btn" data-pool="limited">限定角色唤取</button>
-            <button class="nav-btn" data-page="history">抽卡记录</button>
-        </nav>
-        <div class="user-info">
-            <span class="currency starlight">
-                <span class="icon">✦</span>
-                <span id="starlightCount">0</span>
-            </span>
-            <span class="currency starshards">
-                <span class="icon">◆</span>
-                <span id="starshardsCount">0</span>
-            </span>
-            <span class="username" id="usernameDisplay"></span>
-            <button class="logout-btn" id="logoutBtn">退出</button>
+    <!-- 顶部栏 -->
+    <header class="top-bar">
+        <div class="top-bar-left">
+            <span class="top-bar-title">唤取</span>
+        </div>
+        <div class="top-bar-center">
+            <div class="currency-display">
+                <div class="currency-item">
+                    <div class="currency-icon currency-astralite"></div>
+                    <span class="currency-value" id="astraliteCount">1600</span>
+                    <button class="currency-add-btn">+</button>
+                </div>
+                <div class="currency-item">
+                    <div class="currency-icon currency-lustrum"></div>
+                    <span class="currency-value" id="lustrumCount">0</span>
+                    <button class="currency-add-btn">+</button>
+                </div>
+                <div class="currency-item">
+                    <div class="currency-icon currency-corals"></div>
+                    <span class="currency-value" id="coralsCount">0</span>
+                    <button class="currency-add-btn">+</button>
+                </div>
+            </div>
+        </div>
+        <div class="top-bar-right">
+            <button class="top-icon-btn" title="背包">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z"/>
+                    <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+                </svg>
+            </button>
+            <button class="top-icon-btn" title="设置">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
+                </svg>
+            </button>
+            <button class="top-icon-btn close-app-btn" title="关闭" id="logoutBtn">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
         </div>
     </header>
 
-    <!-- 主内容区 -->
-    <main class="main-content">
-        <!-- 抽卡界面 -->
-        <div id="gachaView" class="gacha-view">
-            <!-- 背景效果 -->
-            <div class="gacha-bg">
-                <div class="particle"></div>
-                <div class="particle"></div>
-                <div class="particle"></div>
-                <div class="particle"></div>
-                <div class="particle"></div>
-            </div>
+    <!-- 雪花粒子背景 -->
+    <div class="snow-particles" id="snowParticles"></div>
 
-            <!-- 池子信息 -->
-            <div class="pool-info">
-                <h2 id="poolTitle">角色活动唤取</h2>
-                <p id="poolDescription" class="pool-desc">限定五星角色概率提升</p>
-                <div class="pity-info">
-                    <span>距离保底：<span id="pityCount">0</span>/90</span>
+    <!-- 左侧卡池列表 -->
+    <aside class="banner-sidebar" id="bannerSidebar">
+        <!-- 限定角色池 1 -->
+        <div class="banner-slot active" data-pool="character-1" data-banner="0">
+            <div class="banner-thumb">
+                <div class="banner-thumb-img" style="background-image: url('/images/banners/juese-feixue-v3.png'); background-size: cover; background-position: center;"></div>
+            </div>
+            <span class="banner-tag">活动</span>
+        </div>
+        <!-- 限定角色池 2 -->
+        <div class="banner-slot" data-pool="character-2" data-banner="1">
+            <div class="banner-thumb">
+                <div class="banner-thumb-img" style="background-image: url('/images/banners/juese-younuo-v3.png'); background-size: cover; background-position: center;"></div>
+            </div>
+            <span class="banner-tag">活动</span>
+        </div>
+        <!-- 限定角色池 3 -->
+        <div class="banner-slot" data-pool="character-3" data-banner="2">
+            <div class="banner-thumb">
+                <div class="banner-thumb-img" style="background-image: url('/images/banners/juese-moning-v3.png'); background-size: cover; background-position: center;"></div>
+            </div>
+            <span class="banner-tag">活动</span>
+        </div>
+        <!-- 限定武器池 1 -->
+        <div class="banner-slot" data-pool="weapon-1" data-banner="3">
+            <div class="banner-thumb">
+                <div class="banner-thumb-img" style="background-image: url('/images/banners/zhuanwu-feixue-v3.png'); background-size: cover; background-position: center;"></div>
+            </div>
+            <span class="banner-tag">活动</span>
+        </div>
+        <!-- 限定武器池 2 -->
+        <div class="banner-slot" data-pool="weapon-2" data-banner="4">
+            <div class="banner-thumb">
+                <div class="banner-thumb-img" style="background-image: url('/images/banners/zhuanwu-younuo-v3.png'); background-size: cover; background-position: center;"></div>
+            </div>
+            <span class="banner-tag">活动</span>
+        </div>
+        <!-- 限定武器池 3 -->
+        <div class="banner-slot" data-pool="weapon-3" data-banner="5">
+            <div class="banner-thumb">
+                <div class="banner-thumb-img" style="background-image: url('/images/banners/zhuanwu-moning-v3.png'); background-size: cover; background-position: center;"></div>
+            </div>
+            <span class="banner-tag">活动</span>
+        </div>
+        <!-- 常驻角色池 -->
+        <div class="banner-slot" data-pool="standard-character" data-banner="6">
+            <div class="banner-thumb">
+                <div class="banner-thumb-img" style="background-image: url('/images/banners/juese-changzhu-v3.png'); background-size: cover; background-position: center;"></div>
+            </div>
+            <span class="banner-tag">常驻</span>
+        </div>
+        <!-- 常驻武器池 -->
+        <div class="banner-slot" data-pool="standard-weapon" data-banner="7">
+            <div class="banner-thumb">
+                <div class="banner-thumb-img" style="background-image: url('/images/banners/zhuanwu-changzhu-v3.png'); background-size: cover; background-position: center;"></div>
+            </div>
+            <span class="banner-tag">常驻</span>
+        </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-area" id="mainArea">
+        <!-- 卡池背景图（全屏铺满） -->
+        <div class="banner-bg" id="bannerBg"></div>
+        <!-- 左侧渐变遮罩 -->
+        <div class="banner-gradient"></div>
+
+        <!-- 卡池详情 -->
+        <div class="banner-detail" id="bannerDetail">
+            <div class="banner-info">
+                <p class="banner-subtitle" id="bannerSubtitle">角色活动唤取</p>
+                <h1 class="banner-title" id="bannerTitle">雪色所映千般未来</h1>
+                <div class="banner-timer">
+                    <span class="timer-icon">⏱</span>
+                    <span>剩余时间：<span id="bannerTimer">--</span></span>
+                </div>
+                <div class="banner-rules">
+                    <p>每<span class="highlight">10</span>次唤取必得<span class="highlight">4</span>星或以上内容</p>
+                    <p>至多<span class="highlight" id="maxPityDisplay">80</span>次唤取必得<span class="highlight">5</span>星角色</p>
                 </div>
             </div>
 
-            <!-- 抽卡按钮区域 -->
-            <div class="pull-buttons">
+            <!-- UP角色信息 -->
+            <div class="up-character-info" id="upCharacter">
+                <div class="up-character-element" id="upElement">
+                    <div class="element-icon">❄</div>
+                </div>
+                <div class="up-character-details">
+                    <span class="up-label">UP!</span>
+                    <h2 class="up-character-name" id="upCharacterName">绯雪</h2>
+                    <div class="up-character-stars" id="upStars">★★★★★</div>
+                </div>
+            </div>
+            <button class="try-btn" id="tryBtn">前往试用</button>
+        </div>
+
+        <!-- 4星概率提升角色 -->
+        <div class="rate-up-section" id="rateUpSection">
+            <p class="rate-up-title">以下4星角色出现概率提升</p>
+            <div class="rate-up-list" id="rateUpList">
+                <div class="rate-up-item">
+                    <div class="rate-up-avatar" style="background-image: url('/images/avators/touxiang-baizhi.png'); background-size: cover; background-position: center top;"></div>
+                </div>
+                <div class="rate-up-item">
+                    <div class="rate-up-avatar" style="background-image: url('/images/avators/touxiang-qiushui.png'); background-size: cover; background-position: center top;"></div>
+                </div>
+                <div class="rate-up-item">
+                    <div class="rate-up-avatar" style="background-image: url('/images/avators/touxiang-yuanwu.png'); background-size: cover; background-position: center top;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部按钮栏 -->
+        <div class="bottom-bar">
+            <div class="bottom-left-btns">
+                <button class="bottom-icon-btn" id="shopBtn" title="商店">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
+                </button>
+                <button class="bottom-icon-btn" id="historyBtn" title="记录">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                </button>
+                <button class="bottom-icon-btn" id="infoBtn" title="详情">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                    </svg>
+                </button>
+                <button class="bottom-icon-btn" id="pityInfoBtn" title="保底详情">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="bottom-right-btns">
                 <button class="pull-btn single-pull" id="singlePullBtn">
-                    <span class="btn-text">唤取1次</span>
-                    <span class="btn-cost">
-                        <span class="icon">✦</span> 160
-                    </span>
+                    <div class="pull-btn-icon"></div>
+                    <span class="pull-btn-text">× 1</span>
+                    <span class="pull-btn-label">唤取1次</span>
                 </button>
                 <button class="pull-btn ten-pull" id="tenPullBtn">
-                    <span class="btn-text">唤取10次</span>
-                    <span class="btn-cost">
-                        <span class="icon">✦</span> 1500
-                    </span>
+                    <div class="pull-btn-icon"></div>
+                    <span class="pull-btn-text">× 10</span>
+                    <span class="pull-btn-label">唤取10次</span>
                 </button>
-            </div>
-
-            <!-- 概率信息 -->
-            <div class="rate-info">
-                <div class="rate-item">
-                    <span class="star five-star">★★★★★</span>
-                    <span class="rate-value">0.800%</span>
-                </div>
-                <div class="rate-item">
-                    <span class="star four-star">★★★★</span>
-                    <span class="rate-value">6.000%</span>
-                </div>
-                <div class="rate-item">
-                    <span class="star three-star">★★★</span>
-                    <span class="rate-value">93.200%</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- 抽卡结果展示 -->
-        <div id="resultView" class="result-view hidden">
-            <div class="result-overlay"></div>
-            <div class="result-container">
-                <div class="result-header">
-                    <h3>唤取结果</h3>
-                    <button class="close-btn" id="closeResultBtn">×</button>
-                </div>
-                <div class="result-cards" id="resultCards">
-                    <!-- 动态生成结果卡片 -->
-                </div>
-                <button class="confirm-btn" id="confirmResultBtn">确认</button>
-            </div>
-        </div>
-
-        <!-- 抽卡记录页面 -->
-        <div id="historyView" class="history-view hidden">
-            <div class="history-header">
-                <h2>抽卡记录</h2>
-                <div class="history-filters">
-                    <select id="historyPoolFilter">
-                        <option value="character">角色池</option>
-                        <option value="weapon">武器池</option>
-                        <option value="limited">限定池</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="history-stats" id="historyStats">
-                <!-- 动态生成统计数据 -->
-            </div>
-
-            <div class="history-table-container">
-                <table class="history-table">
-                    <thead>
-                        <tr>
-                            <th>时间</th>
-                            <th>池子</th>
-                            <th>名称</th>
-                            <th>稀有度</th>
-                            <th>类型</th>
-                            <th>保底计数</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyTableBody">
-                        <!-- 动态生成记录 -->
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="history-pagination" id="historyPagination">
-                <!-- 动态生成分页 -->
             </div>
         </div>
     </main>
+
+    <!-- 抽卡结果展示 -->
+    <div id="resultView" class="result-view hidden">
+        <div class="result-overlay"></div>
+        <div class="result-container">
+            <div class="result-header">
+                <h3>唤取结果</h3>
+                <button class="close-btn" id="closeResultBtn">×</button>
+            </div>
+            <div class="result-cards" id="resultCards"></div>
+            <button class="confirm-btn" id="confirmResultBtn">确认</button>
+        </div>
+    </div>
+
+    <!-- 抽卡记录页面 -->
+    <div id="historyView" class="history-view hidden">
+        <div class="history-header">
+            <h2>抽卡记录</h2>
+            <div class="history-filters">
+                <select id="historyPoolFilter">
+                    <option value="character-1">角色池1</option>
+                    <option value="character-2">角色池2</option>
+                    <option value="character-3">角色池3</option>
+                    <option value="weapon-1">武器池1</option>
+                    <option value="weapon-2">武器池2</option>
+                    <option value="weapon-3">武器池3</option>
+                    <option value="standard-character">常驻角色</option>
+                    <option value="standard-weapon">常驻武器</option>
+                </select>
+            </div>
+        </div>
+        <div class="history-stats" id="historyStats"></div>
+        <div class="history-table-container">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>池子</th>
+                        <th>名称</th>
+                        <th>稀有度</th>
+                        <th>类型</th>
+                        <th>保底计数</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody"></tbody>
+            </table>
+        </div>
+        <div class="history-pagination" id="historyPagination"></div>
+    </div>
 
     <!-- 抽卡动画遮罩 -->
     <div id="pullAnimation" class="pull-animation hidden">

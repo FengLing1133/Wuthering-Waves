@@ -1,6 +1,6 @@
 // API 封装模块
 const API = {
-    baseURL: 'http://localhost:8080/api',
+    baseURL: '/api',
 
     // 获取存储的 token
     getToken() {
@@ -47,15 +47,17 @@ const API = {
                 headers
             });
 
-            const data = await response.json();
-
             if (response.status === 401) {
                 this.clearToken();
                 window.location.href = '/login.html';
-                return data;
+                throw new Error('Unauthorized');
             }
 
-            return data;
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            return await response.json();
         } catch (error) {
             console.error('API Error:', error);
             throw error;
