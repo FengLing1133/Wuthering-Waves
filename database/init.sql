@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    starlight INT DEFAULT 1600 COMMENT '星声（抽卡货币）',
+    starlight INT DEFAULT 100000 COMMENT '星声（抽卡货币）',
     starshards INT DEFAULT 0 COMMENT '星辉（兑换货币）',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -76,6 +76,20 @@ CREATE TABLE IF NOT EXISTS gacha_items (
 
 -- 插入默认抽卡物品数据
 INSERT INTO gacha_items (name, rarity, item_type, pool_type, is_limited) VALUES
+-- 三星武器（角色池填充物）
+('训练佩刀', 3, 'weapon', 'character', FALSE),
+('训练长刃', 3, 'weapon', 'character', FALSE),
+('训练拳套', 3, 'weapon', 'character', FALSE),
+('训练佩枪', 3, 'weapon', 'character', FALSE),
+('训练音感仪', 3, 'weapon', 'character', FALSE),
+
+-- 三星武器（限定池填充物）
+('训练佩刀', 3, 'weapon', 'limited', FALSE),
+('训练长刃', 3, 'weapon', 'limited', FALSE),
+('训练拳套', 3, 'weapon', 'limited', FALSE),
+('训练佩枪', 3, 'weapon', 'limited', FALSE),
+('训练音感仪', 3, 'weapon', 'limited', FALSE),
+
 -- 五星角色（常驻池）
 ('漂泊者', 5, 'character', 'character', FALSE),
 ('安可', 5, 'character', 'character', FALSE),

@@ -195,15 +195,15 @@ public class GachaService {
         return switch (poolType) {
             case "character" -> {
                 CharacterPity pity = characterPityMapper.selectById(userId);
-                yield pity != null ? pity.getFiveStarCount() : 0;
+                yield pity != null && pity.getFiveStarCount() != null ? pity.getFiveStarCount() : 0;
             }
             case "weapon" -> {
                 WeaponPity pity = weaponPityMapper.selectById(userId);
-                yield pity != null ? pity.getFiveStarCount() : 0;
+                yield pity != null && pity.getFiveStarCount() != null ? pity.getFiveStarCount() : 0;
             }
             case "limited" -> {
                 LimitedPity pity = limitedPityMapper.selectById(userId);
-                yield pity != null ? pity.getFiveStarCount() : 0;
+                yield pity != null && pity.getFiveStarCount() != null ? pity.getFiveStarCount() : 0;
             }
             default -> 0;
         };
@@ -213,15 +213,15 @@ public class GachaService {
         return switch (poolType) {
             case "character" -> {
                 CharacterPity pity = characterPityMapper.selectById(userId);
-                yield pity != null ? pity.getFourStarCount() : 0;
+                yield pity != null && pity.getFourStarCount() != null ? pity.getFourStarCount() : 0;
             }
             case "weapon" -> {
                 WeaponPity pity = weaponPityMapper.selectById(userId);
-                yield pity != null ? pity.getFourStarCount() : 0;
+                yield pity != null && pity.getFourStarCount() != null ? pity.getFourStarCount() : 0;
             }
             case "limited" -> {
                 LimitedPity pity = limitedPityMapper.selectById(userId);
-                yield pity != null ? pity.getFourStarCount() : 0;
+                yield pity != null && pity.getFourStarCount() != null ? pity.getFourStarCount() : 0;
             }
             default -> 0;
         };
@@ -231,15 +231,15 @@ public class GachaService {
         return switch (poolType) {
             case "character" -> {
                 CharacterPity pity = characterPityMapper.selectById(userId);
-                yield pity != null && pity.getGuaranteedFive();
+                yield pity != null && Boolean.TRUE.equals(pity.getGuaranteedFive());
             }
             case "weapon" -> {
                 WeaponPity pity = weaponPityMapper.selectById(userId);
-                yield pity != null && pity.getGuaranteedFive();
+                yield pity != null && Boolean.TRUE.equals(pity.getGuaranteedFive());
             }
             case "limited" -> {
                 LimitedPity pity = limitedPityMapper.selectById(userId);
-                yield pity != null && pity.getGuaranteedFive();
+                yield pity != null && Boolean.TRUE.equals(pity.getGuaranteedFive());
             }
             default -> false;
         };
@@ -254,10 +254,12 @@ public class GachaService {
                     if (pity == null) {
                         pity = new CharacterPity();
                         pity.setUserId(userId);
+                        pity.setFiveStarCount(0);
+                        pity.setFourStarCount(0);
                     }
                     pity.setFiveStarCount(0);
                     pity.setFourStarCount(pity.getFourStarCount() + 1);
-                    pity.setGuaranteedFive(!isLimited);  // 如果不是限定，下次大保底
+                    pity.setGuaranteedFive(!isLimited);
                     characterPityMapper.insertOrUpdate(pity);
                 }
                 case "weapon" -> {
@@ -265,6 +267,8 @@ public class GachaService {
                     if (pity == null) {
                         pity = new WeaponPity();
                         pity.setUserId(userId);
+                        pity.setFiveStarCount(0);
+                        pity.setFourStarCount(0);
                     }
                     pity.setFiveStarCount(0);
                     pity.setFourStarCount(pity.getFourStarCount() + 1);
@@ -276,6 +280,8 @@ public class GachaService {
                     if (pity == null) {
                         pity = new LimitedPity();
                         pity.setUserId(userId);
+                        pity.setFiveStarCount(0);
+                        pity.setFourStarCount(0);
                     }
                     pity.setFiveStarCount(0);
                     pity.setFourStarCount(pity.getFourStarCount() + 1);
@@ -291,6 +297,8 @@ public class GachaService {
                     if (pity == null) {
                         pity = new CharacterPity();
                         pity.setUserId(userId);
+                        pity.setFiveStarCount(0);
+                        pity.setFourStarCount(0);
                     }
                     pity.setFiveStarCount(pity.getFiveStarCount() + 1);
                     pity.setFourStarCount(0);
@@ -301,6 +309,8 @@ public class GachaService {
                     if (pity == null) {
                         pity = new WeaponPity();
                         pity.setUserId(userId);
+                        pity.setFiveStarCount(0);
+                        pity.setFourStarCount(0);
                     }
                     pity.setFiveStarCount(pity.getFiveStarCount() + 1);
                     pity.setFourStarCount(0);
@@ -311,6 +321,8 @@ public class GachaService {
                     if (pity == null) {
                         pity = new LimitedPity();
                         pity.setUserId(userId);
+                        pity.setFiveStarCount(0);
+                        pity.setFourStarCount(0);
                     }
                     pity.setFiveStarCount(pity.getFiveStarCount() + 1);
                     pity.setFourStarCount(0);
@@ -325,6 +337,8 @@ public class GachaService {
                     if (pity == null) {
                         pity = new CharacterPity();
                         pity.setUserId(userId);
+                        pity.setFiveStarCount(0);
+                        pity.setFourStarCount(0);
                     }
                     pity.setFiveStarCount(pity.getFiveStarCount() + 1);
                     pity.setFourStarCount(pity.getFourStarCount() + 1);
@@ -335,6 +349,8 @@ public class GachaService {
                     if (pity == null) {
                         pity = new WeaponPity();
                         pity.setUserId(userId);
+                        pity.setFiveStarCount(0);
+                        pity.setFourStarCount(0);
                     }
                     pity.setFiveStarCount(pity.getFiveStarCount() + 1);
                     pity.setFourStarCount(pity.getFourStarCount() + 1);
@@ -345,6 +361,8 @@ public class GachaService {
                     if (pity == null) {
                         pity = new LimitedPity();
                         pity.setUserId(userId);
+                        pity.setFiveStarCount(0);
+                        pity.setFourStarCount(0);
                     }
                     pity.setFiveStarCount(pity.getFiveStarCount() + 1);
                     pity.setFourStarCount(pity.getFourStarCount() + 1);

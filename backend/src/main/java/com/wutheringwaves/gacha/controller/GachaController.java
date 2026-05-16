@@ -17,6 +17,14 @@ public class GachaController {
     private final GachaService gachaService;
     private final JwtUtil jwtUtil;
 
+    private String normalizePoolType(String poolType) {
+        if (poolType == null) return null;
+        if (poolType.contains("character")) return "character";
+        if (poolType.contains("weapon")) return "weapon";
+        if (poolType.equals("limited")) return "limited";
+        return poolType;
+    }
+
     @PostMapping("/pull")
     public ResponseEntity<Map<String, Object>> pull(
             Authentication authentication,
@@ -29,6 +37,8 @@ public class GachaController {
         if (poolType == null || count == null) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "参数错误"));
         }
+
+        poolType = normalizePoolType(poolType);
 
         if (!poolType.equals("character") && !poolType.equals("weapon") && !poolType.equals("limited")) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "无效的池子类型"));
@@ -48,6 +58,8 @@ public class GachaController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
 
+        poolType = normalizePoolType(poolType);
+
         if (!poolType.equals("character") && !poolType.equals("weapon") && !poolType.equals("limited")) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "无效的池子类型"));
         }
@@ -64,6 +76,8 @@ public class GachaController {
     public ResponseEntity<Map<String, Object>> getStats(
             Authentication authentication,
             @RequestParam(defaultValue = "character") String poolType) {
+
+        poolType = normalizePoolType(poolType);
 
         if (!poolType.equals("character") && !poolType.equals("weapon") && !poolType.equals("limited")) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "无效的池子类型"));

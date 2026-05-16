@@ -6,29 +6,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // 初始化应用
     await initApp();
 });
 
-// 初始化应用
 async function initApp() {
-    // 获取用户信息
     await loadUserInfo();
-
-    // 初始化抽卡模块
     Gacha.init();
-
-    // 初始化历史记录
     initHistory();
-
-    // 绑定导航事件
     bindNavigation();
-
-    // 绑定退出按钮
     document.getElementById('logoutBtn').addEventListener('click', logout);
 }
 
-// 加载用户信息
 async function loadUserInfo() {
     try {
         const result = await API.getUserInfo();
@@ -36,49 +24,32 @@ async function loadUserInfo() {
             const user = result.user;
             API.setUser(user);
 
-            document.getElementById('usernameDisplay').textContent = user.username;
-            document.getElementById('starlightCount').textContent = user.starlight;
-            document.getElementById('starshardsCount').textContent = user.starshards;
+            document.getElementById('astraliteCount').textContent = user.starlight || 0;
+            document.getElementById('lustrumCount').textContent = user.starshards || 0;
+            document.getElementById('coralsCount').textContent = user.corals || 0;
         }
     } catch (error) {
         console.error('获取用户信息失败:', error);
-        document.getElementById('usernameDisplay').textContent = '加载失败';
     }
 }
 
-// 绑定导航事件
 function bindNavigation() {
-    // 历史记录按钮
-    document.querySelector('.nav-btn[data-page="history"]').addEventListener('click', () => {
+    document.getElementById('historyBtn').addEventListener('click', () => {
         showHistory();
     });
 }
 
-// 显示历史记录
 function showHistory() {
-    // 切换视图
-    document.getElementById('gachaView').classList.add('hidden');
     document.getElementById('historyView').classList.remove('hidden');
-
-    // 更新导航状态
-    document.querySelectorAll('.nav-btn[data-pool]').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelector('.nav-btn[data-page="history"]').classList.add('active');
-
-    // 加载历史数据
     loadHistory();
 }
 
-// 初始化历史记录
 function initHistory() {
-    // 池子筛选
     document.getElementById('historyPoolFilter').addEventListener('change', () => {
         loadHistory();
     });
 }
 
-// 加载历史记录
 async function loadHistory(page = 1) {
     const poolType = document.getElementById('historyPoolFilter').value;
 
@@ -102,7 +73,6 @@ async function loadHistory(page = 1) {
     }
 }
 
-// 渲染历史记录表格
 function renderHistoryTable(records) {
     const tbody = document.getElementById('historyTableBody');
     tbody.innerHTML = '';
@@ -119,11 +89,19 @@ function renderHistoryTable(records) {
         return;
     }
 
-    const poolNames = { 'character': '角色池', 'weapon': '武器池', 'limited': '限定池' };
+    const poolNames = {
+        'character-1': '角色池1',
+        'character-2': '角色池2',
+        'character-3': '角色池3',
+        'weapon-1': '武器池1',
+        'weapon-2': '武器池2',
+        'weapon-3': '武器池3',
+        'standard-character': '常驻角色',
+        'standard-weapon': '常驻武器'
+    };
 
     records.forEach(record => {
         const tr = document.createElement('tr');
-
         const date = new Date(record.createdAt);
         const timeStr = date.toLocaleString('zh-CN');
         const poolName = poolNames[record.poolType] || record.poolType;
@@ -148,7 +126,6 @@ function renderHistoryTable(records) {
     });
 }
 
-// 渲染统计数据
 function renderHistoryStats(stats) {
     const statsContainer = document.getElementById('historyStats');
     statsContainer.innerHTML = '';
@@ -178,7 +155,6 @@ function renderHistoryStats(stats) {
     });
 }
 
-// 退出登录
 function logout() {
     API.clearToken();
     window.location.href = '/login.html';

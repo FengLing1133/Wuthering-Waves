@@ -1,48 +1,137 @@
 // 抽卡模块
 const Gacha = {
-    currentPool: 'character',
+    currentPool: 'character-1',
     isPulling: false,
 
-    // 池子配置
+    // 卡池配置
     poolConfig: {
-        character: {
-            title: '角色活动唤取',
+        'character-1': {
+            title: '雪色所映千般未来',
+            subtitle: '角色活动唤取',
             description: '限定五星角色概率提升',
             maxPity: 90,
             fiveStarRate: '0.800%',
             fourStarRate: '6.000%',
-            threeStarRate: '93.200%'
+            threeStarRate: '93.200%',
+            upCharacter: '绯雪',
+            upElement: '❄',
+            upElementName: '冰',
+            timer: '4天13小时',
+            background: '/images/background/characters/beijing-feixue.png'
         },
-        weapon: {
-            title: '武器活动唤取',
+        'character-2': {
+            title: '暮光之誓',
+            subtitle: '角色活动唤取',
+            description: '限定五星角色概率提升',
+            maxPity: 90,
+            fiveStarRate: '0.800%',
+            fourStarRate: '6.000%',
+            threeStarRate: '93.200%',
+            upCharacter: '柚诺',
+            upElement: '🔥',
+            upElementName: '火',
+            timer: '6天8小时',
+            background: '/images/background/characters/beijing-younuo.png'
+        },
+        'character-3': {
+            title: '深渊之歌',
+            subtitle: '角色活动唤取',
+            description: '限定五星角色概率提升',
+            maxPity: 90,
+            fiveStarRate: '0.800%',
+            fourStarRate: '6.000%',
+            threeStarRate: '93.200%',
+            upCharacter: '莫凝',
+            upElement: '⚡',
+            upElementName: '雷',
+            timer: '2天20小时',
+            background: '/images/background/characters/beijing-moning.png'
+        },
+        'weapon-1': {
+            title: '霜锋映月',
+            subtitle: '武器活动唤取',
             description: '限定五星武器概率提升',
             maxPity: 80,
             fiveStarRate: '0.700%',
             fourStarRate: '6.000%',
-            threeStarRate: '93.300%'
+            threeStarRate: '93.300%',
+            upCharacter: '绯雪专武',
+            upElement: '⚔',
+            upElementName: '武器',
+            timer: '4天13小时',
+            background: '/images/background/weapons/wuqi-feixue.png'
         },
-        limited: {
-            title: '限定角色唤取',
-            description: '当期限定五星角色概率大幅提升',
-            maxPity: 90,
-            fiveStarRate: '1.600%',
+        'weapon-2': {
+            title: '星陨之刃',
+            subtitle: '武器活动唤取',
+            description: '限定五星武器概率提升',
+            maxPity: 80,
+            fiveStarRate: '0.700%',
             fourStarRate: '6.000%',
-            threeStarRate: '92.400%'
+            threeStarRate: '93.300%',
+            upCharacter: '柚诺专武',
+            upElement: '⚔',
+            upElementName: '武器',
+            timer: '6天8小时',
+            background: '/images/background/weapons/wuqi-younuo.png'
+        },
+        'weapon-3': {
+            title: '破晓之弓',
+            subtitle: '武器活动唤取',
+            description: '限定五星武器概率提升',
+            maxPity: 80,
+            fiveStarRate: '0.700%',
+            fourStarRate: '6.000%',
+            threeStarRate: '93.300%',
+            upCharacter: '莫凝专武',
+            upElement: '⚔',
+            upElementName: '武器',
+            timer: '2天20小时',
+            background: '/images/background/weapons/wuqi-moning.png'
+        },
+        'standard-character': {
+            title: '寂都之忆',
+            subtitle: '常驻角色唤取',
+            description: '常驻五星角色概率提升',
+            maxPity: 90,
+            fiveStarRate: '0.800%',
+            fourStarRate: '6.000%',
+            threeStarRate: '93.200%',
+            upCharacter: '常驻角色',
+            upElement: '✦',
+            upElementName: '常驻',
+            timer: '永久开放',
+            background: '/images/background/characters/beijing-changzhu.png'
+        },
+        'standard-weapon': {
+            title: '铸城之锋',
+            subtitle: '常驻武器唤取',
+            description: '常驻五星武器概率提升',
+            maxPity: 80,
+            fiveStarRate: '0.700%',
+            fourStarRate: '6.000%',
+            threeStarRate: '93.300%',
+            upCharacter: '常驻武器',
+            upElement: '⚔',
+            upElementName: '武器',
+            timer: '永久开放',
+            background: '/images/background/weapons/wuqi-changzhu.png'
         }
     },
 
     // 初始化
     init() {
         this.bindEvents();
-        this.updatePoolInfo();
+        this.updatePoolInfo(this.currentPool);
+        this.createSnowflakes();
     },
 
     // 绑定事件
     bindEvents() {
-        // 池子切换
-        document.querySelectorAll('.nav-btn[data-pool]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                this.switchPool(btn.dataset.pool);
+        // 卡池切换
+        document.querySelectorAll('.banner-slot').forEach(slot => {
+            slot.addEventListener('click', () => {
+                this.switchPool(slot.dataset.pool);
             });
         });
 
@@ -64,40 +153,45 @@ const Gacha = {
         document.getElementById('confirmResultBtn').addEventListener('click', () => {
             this.closeResult();
         });
+
+        // 历史记录按钮
+        document.getElementById('historyBtn').addEventListener('click', () => {
+            this.showHistory();
+        });
     },
 
-    // 切换池子
+    // 切换卡池
     switchPool(pool) {
         this.currentPool = pool;
 
-        // 更新按钮状态
-        document.querySelectorAll('.nav-btn[data-pool]').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.pool === pool);
+        // 更新侧边栏选中状态
+        document.querySelectorAll('.banner-slot').forEach(slot => {
+            slot.classList.toggle('active', slot.dataset.pool === pool);
         });
 
-        // 更新页面显示
-        document.getElementById('gachaView').classList.remove('hidden');
+        // 隐藏历史记录，显示主界面
         document.getElementById('historyView').classList.add('hidden');
-        document.querySelectorAll('.nav-btn[data-page]').forEach(btn => {
-            btn.classList.remove('active');
-        });
 
-        this.updatePoolInfo();
+        this.updatePoolInfo(pool);
         this.updatePityCount();
     },
 
-    // 更新池子信息
-    updatePoolInfo() {
-        const config = this.poolConfig[this.currentPool];
-        document.getElementById('poolTitle').textContent = config.title;
-        document.getElementById('poolDescription').textContent = config.description;
+    // 更新卡池信息
+    updatePoolInfo(pool) {
+        const config = this.poolConfig[pool];
+        if (!config) return;
 
-        // 更新概率显示
-        const rateItems = document.querySelectorAll('.rate-value');
-        if (rateItems.length >= 3) {
-            rateItems[0].textContent = config.fiveStarRate;
-            rateItems[1].textContent = config.fourStarRate;
-            rateItems[2].textContent = config.threeStarRate;
+        document.getElementById('bannerSubtitle').textContent = config.subtitle;
+        document.getElementById('bannerTitle').textContent = config.title;
+        document.getElementById('bannerTimer').textContent = config.timer;
+        document.getElementById('upCharacterName').textContent = config.upCharacter;
+        document.getElementById('upElement').querySelector('.element-icon').textContent = config.upElement;
+        document.getElementById('maxPityDisplay').textContent = config.maxPity;
+
+        // 更新背景图
+        const bgEl = document.getElementById('bannerBg');
+        if (bgEl && config.background) {
+            bgEl.style.backgroundImage = `url('${config.background}')`;
         }
     },
 
@@ -105,12 +199,29 @@ const Gacha = {
     async updatePityCount() {
         try {
             const result = await API.getStats(this.currentPool);
-            if (result.success) {
-                document.getElementById('pityCount').textContent = result.stats.currentPity || 0;
-                document.getElementById('maxPity').textContent = this.poolConfig[this.currentPool].maxPity;
-            }
+            // 保底信息可用于更新界面（如果需要）
         } catch (error) {
             console.error('获取保底信息失败:', error);
+        }
+    },
+
+    // 创建雪花效果
+    createSnowflakes() {
+        const container = document.getElementById('snowParticles');
+        if (!container) return;
+
+        const count = 30;
+        for (let i = 0; i < count; i++) {
+            const flake = document.createElement('div');
+            flake.className = 'snowflake';
+            const size = Math.random() * 3 + 1;
+            flake.style.width = size + 'px';
+            flake.style.height = size + 'px';
+            flake.style.left = Math.random() * 100 + '%';
+            flake.style.animationDuration = (Math.random() * 8 + 6) + 's';
+            flake.style.animationDelay = (Math.random() * 10) + 's';
+            flake.style.opacity = Math.random() * 0.5 + 0.2;
+            container.appendChild(flake);
         }
     },
 
@@ -156,8 +267,6 @@ const Gacha = {
     showPullAnimation() {
         const animation = document.getElementById('pullAnimation');
         animation.classList.remove('hidden');
-
-        // 添加流星效果
         this.createMeteors();
     },
 
@@ -177,11 +286,7 @@ const Gacha = {
             meteor.style.left = `${Math.random() * 100}%`;
             meteor.style.animationDelay = `${Math.random() * 0.5}s`;
             content.appendChild(meteor);
-
-            // 动画结束后移除
-            setTimeout(() => {
-                meteor.remove();
-            }, 1500);
+            setTimeout(() => meteor.remove(), 1500);
         }
     },
 
@@ -204,28 +309,12 @@ const Gacha = {
             const typeText = item.type === 'character' ? '角色' : '武器';
             const rarityClass = item.rarity === 5 ? 'five-star' : item.rarity === 4 ? 'four-star' : 'three-star';
 
-            const nameDiv = document.createElement('div');
-            nameDiv.className = 'item-name';
-            nameDiv.textContent = item.name;
-
-            const rarityDiv = document.createElement('div');
-            rarityDiv.className = `item-rarity ${rarityClass}`;
-            rarityDiv.textContent = rarityStars;
-
-            const typeDiv = document.createElement('div');
-            typeDiv.className = 'item-type';
-            typeDiv.textContent = typeText;
-
-            card.appendChild(nameDiv);
-            card.appendChild(rarityDiv);
-            card.appendChild(typeDiv);
-
-            if (item.isLimited) {
-                const badge = document.createElement('span');
-                badge.className = 'limited-badge';
-                badge.textContent = '限定';
-                card.appendChild(badge);
-            }
+            card.innerHTML = `
+                <div class="item-name">${item.name}</div>
+                <div class="item-rarity ${rarityClass}">${rarityStars}</div>
+                <div class="item-type">${typeText}</div>
+                ${item.isLimited ? '<span class="limited-badge">限定</span>' : ''}
+            `;
 
             resultCards.appendChild(card);
         });
@@ -238,10 +327,15 @@ const Gacha = {
         document.getElementById('resultView').classList.add('hidden');
     },
 
+    // 显示历史记录
+    showHistory() {
+        document.getElementById('historyView').classList.remove('hidden');
+    },
+
     // 更新货币显示
     updateCurrency(starlight, starshards) {
-        document.getElementById('starlightCount').textContent = starlight;
-        document.getElementById('starshardsCount').textContent = starshards;
+        document.getElementById('astraliteCount').textContent = starlight;
+        document.getElementById('lustrumCount').textContent = starshards;
     },
 
     // 工具函数：延时
