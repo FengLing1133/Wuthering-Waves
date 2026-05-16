@@ -28,12 +28,14 @@ CREATE TABLE IF NOT EXISTS gacha_records (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_user_id (user_id),
     INDEX idx_pool_type (pool_type),
-    INDEX idx_created_at (created_at)
+    INDEX idx_created_at (created_at),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- 角色池保底计数表
 CREATE TABLE IF NOT EXISTS character_pity (
     user_id BIGINT PRIMARY KEY,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     five_star_count INT DEFAULT 0 COMMENT '距离五星保底剩余抽数',
     four_star_count INT DEFAULT 0 COMMENT '距离四星保底剩余抽数',
     guaranteed_five BOOLEAN DEFAULT FALSE COMMENT '是否大保底（下次必出UP）',
@@ -43,6 +45,7 @@ CREATE TABLE IF NOT EXISTS character_pity (
 -- 武器池保底计数表
 CREATE TABLE IF NOT EXISTS weapon_pity (
     user_id BIGINT PRIMARY KEY,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     five_star_count INT DEFAULT 0 COMMENT '距离五星保底剩余抽数',
     four_star_count INT DEFAULT 0 COMMENT '距离四星保底剩余抽数',
     guaranteed_five BOOLEAN DEFAULT FALSE COMMENT '是否大保底（下次必出UP）',
@@ -52,6 +55,7 @@ CREATE TABLE IF NOT EXISTS weapon_pity (
 -- 限定池保底计数表
 CREATE TABLE IF NOT EXISTS limited_pity (
     user_id BIGINT PRIMARY KEY,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     five_star_count INT DEFAULT 0 COMMENT '距离五星保底剩余抽数',
     four_star_count INT DEFAULT 0 COMMENT '距离四星保底剩余抽数',
     guaranteed_five BOOLEAN DEFAULT FALSE COMMENT '是否大保底（下次必出UP）',

@@ -90,18 +90,10 @@ public class UserService {
     }
 
     public void updateStarlight(Long userId, int delta) {
-        User user = userMapper.selectById(userId);
-        if (user != null) {
-            user.setStarlight(user.getStarlight() + delta);
-            userMapper.updateById(user);
-        }
+        userMapper.updateStarlight(userId, delta);
     }
 
     public void addStarshards(Long userId, int amount) {
-        User user = userMapper.selectById(userId);
-        if (user != null) {
-            user.setStarshards(user.getStarshards() + amount);
-            userMapper.updateById(user);
-        }
+        userMapper.addStarshards(userId, amount);
     }
 }

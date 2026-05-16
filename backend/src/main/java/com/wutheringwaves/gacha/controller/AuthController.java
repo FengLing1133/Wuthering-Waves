@@ -50,9 +50,18 @@ public class AuthController {
 
     @GetMapping("/user")
     public ResponseEntity<Map<String, Object>> getUserInfo(@RequestHeader("Authorization") String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).body(Map.of("success", false, "message", "缺少认证信息"));
+        }
+
+        String token = authHeader.substring(7);
+
+        if (!jwtUtil.validateToken(token)) {
+            return ResponseEntity.status(401).body(Map.of("success", false, "message", "Token无效或已过期"));
+        }
+
         try {
-            String token = authHeader.replace("Bearer ", "");
-            Long userId = getUserIdFromToken(token);
+            Long userId = jwtUtil.getUserIdFromToken(token);
             var user = userService.getUserById(userId);
 
             if (user == null) {
@@ -69,11 +78,7 @@ public class AuthController {
                     )
             ));
         } catch (Exception e) {
-            return ResponseEntity.status(401).body(Map.of("success", false, "message", "认证失败"));
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", "服务器内部错误"));
         }
-    }
-
-    private Long getUserIdFromToken(String token) {
-        return jwtUtil.getUserIdFromToken(token);
     }
 }

@@ -107,6 +107,7 @@ const Gacha = {
             const result = await API.getStats(this.currentPool);
             if (result.success) {
                 document.getElementById('pityCount').textContent = result.stats.currentPity || 0;
+                document.getElementById('maxPity').textContent = this.poolConfig[this.currentPool].maxPity;
             }
         } catch (error) {
             console.error('获取保底信息失败:', error);
@@ -189,10 +190,8 @@ const Gacha = {
         const resultView = document.getElementById('resultView');
         const resultCards = document.getElementById('resultCards');
 
-        // 清空之前的结果
         resultCards.innerHTML = '';
 
-        // 生成结果卡片
         results.forEach(item => {
             const card = document.createElement('div');
             card.className = `result-card rarity-${item.rarity}`;
@@ -203,13 +202,30 @@ const Gacha = {
             }
 
             const typeText = item.type === 'character' ? '角色' : '武器';
+            const rarityClass = item.rarity === 5 ? 'five-star' : item.rarity === 4 ? 'four-star' : 'three-star';
 
-            card.innerHTML = `
-                <div class="item-name">${item.name}</div>
-                <div class="item-rarity ${item.rarity === 5 ? 'five-star' : item.rarity === 4 ? 'four-star' : 'three-star'}">${rarityStars}</div>
-                <div class="item-type">${typeText}</div>
-                ${item.isLimited ? '<span class="limited-badge">限定</span>' : ''}
-            `;
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'item-name';
+            nameDiv.textContent = item.name;
+
+            const rarityDiv = document.createElement('div');
+            rarityDiv.className = `item-rarity ${rarityClass}`;
+            rarityDiv.textContent = rarityStars;
+
+            const typeDiv = document.createElement('div');
+            typeDiv.className = 'item-type';
+            typeDiv.textContent = typeText;
+
+            card.appendChild(nameDiv);
+            card.appendChild(rarityDiv);
+            card.appendChild(typeDiv);
+
+            if (item.isLimited) {
+                const badge = document.createElement('span');
+                badge.className = 'limited-badge';
+                badge.textContent = '限定';
+                card.appendChild(badge);
+            }
 
             resultCards.appendChild(card);
         });

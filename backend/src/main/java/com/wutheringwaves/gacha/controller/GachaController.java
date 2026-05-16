@@ -48,6 +48,10 @@ public class GachaController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
 
+        if (!poolType.equals("character") && !poolType.equals("weapon") && !poolType.equals("limited")) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "无效的池子类型"));
+        }
+
         Long userId = (Long) authentication.getPrincipal();
 
         return ResponseEntity.ok(Map.of(
@@ -60,6 +64,10 @@ public class GachaController {
     public ResponseEntity<Map<String, Object>> getStats(
             Authentication authentication,
             @RequestParam(defaultValue = "character") String poolType) {
+
+        if (!poolType.equals("character") && !poolType.equals("weapon") && !poolType.equals("limited")) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "无效的池子类型"));
+        }
 
         Long userId = (Long) authentication.getPrincipal();
 
