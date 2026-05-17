@@ -222,7 +222,30 @@
             <label><span>硬保底抽数</span><input type="number" id="poolMaxPity" value="90"></label>
             <label><span>软保底起始抽数</span><input type="number" id="poolSoftPity" value="75"></label>
             <label><span>软保底每抽递增 (%)</span><input type="number" id="poolSoftInc" step="0.01" value="6.0"></label>
-            <label><span>UP物品（JSON数组）</span><input type="text" id="poolUpItems" placeholder='["物品1","物品2"]'></label>
+
+            <!-- 卡池物品配置（分类选择 + UP指定） -->
+            <label>
+                <span>卡池物品配置</span>
+                <div style="margin-top:8px;">
+                    <div style="margin-bottom:12px;">
+                        <div style="font-size:13px;color:var(--accent-purple);margin-bottom:6px;">物品分类（勾选包含的分类）</div>
+                        <div id="categoryGrid" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px;background:var(--bg-primary);border-radius:6px;border:1px solid var(--border-subtle);">
+                            <div style="color:var(--text-dim);font-size:13px;">加载中...</div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <div style="font-size:13px;color:var(--accent-gold);margin-bottom:6px;">五星UP（单选）</div>
+                        <select id="fivestarUpSelect" style="width:100%;padding:8px;border-radius:6px;background:var(--bg-primary);border:1px solid var(--border-subtle);color:var(--text-primary);">
+                            <option value="">无</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <div style="font-size:13px;color:var(--accent-gold);margin-bottom:6px;">四星UP（可多选，按住Ctrl多选）</div>
+                        <select id="fourstarUpSelect" multiple style="width:100%;padding:8px;border-radius:6px;background:var(--bg-primary);border:1px solid var(--border-subtle);color:var(--text-primary);min-height:80px;">
+                        </select>
+                    </div>
+                </div>
+            </label>
 
             <!-- 时间设置 -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -455,7 +478,7 @@
                             <td>${{'limited-character':'限定角色池','limited-weapon':'限定武器池','standard-character':'常驻角色池','standard-weapon':'常驻武器池'}[p.poolType]||p.poolType}</td>
                             <td>${p.fiveStarRate}%</td>
                             <td>${p.maxPity}</td>
-                            <td>${p.upItems || '-'}</td>
+                            <td>${p.upItems && p.upItems.length > 0 ? p.upItems.map(i => i.name).join(', ') : '-'}</td>
                             <td>${p.sidebarVisible ? '<span class="badge badge-active">显示</span>' : '<span class="badge badge-inactive">隐藏</span>'}</td>
                             <td><span class="badge ${p.status==='active'?'badge-active':'badge-inactive'}">${p.status==='active'?'上架中':'已下架'}</span></td>
                             <td class="btn-group">
@@ -687,6 +710,99 @@
             } catch (e) { alert('操作失败'); console.error(e); }
         }
 
+        // ========== 卡池物品管理（分类模式） ==========
+        let allItems = [];
+        let allCategories = [];
+        let selectedCategoryIds = [];
+
+        async function loadAllItems() {
+            try {
+                const res = await API.request('/admin/items');
+                if (res.success) allItems = res.items;
+            } catch (e) { console.error('加载物品失败:', e); }
+        }
+
+        async function loadCategories() {
+            try {
+                const res = await API.request('/admin/categories');
+                if (res.success) allCategories = res.categories;
+            } catch (e) { console.error('加载分类失败:', e); }
+        }
+
+        function renderCategoryGrid() {
+            const container = document.getElementById('categoryGrid');
+            if (allCategories.length === 0) {
+                container.innerHTML = '<div style="color:var(--text-dim);font-size:13px;">无分类数据</div>';
+                return;
+            }
+            container.innerHTML = allCategories.map(cat => {
+                const selected = selectedCategoryIds.includes(cat.id);
+                return `<label style="display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:6px;border:1px solid ${selected ? 'var(--accent-blue)' : 'var(--border-subtle)'};background:${selected ? 'rgba(74,158,255,0.08)' : 'transparent'};cursor:pointer;transition:all 0.2s;font-size:13px;">
+                    <input type="checkbox" ${selected ? 'checked' : ''} onchange="toggleCategory(${cat.id})" style="width:auto;margin:0;">
+                    <span>${cat.name}</span>
+                    <span style="font-size:11px;color:var(--text-dim);">${cat.rarity}★${cat.itemType === 'character' ? '角色' : '武器'}</span>
+                </label>`;
+            }).join('');
+        }
+
+        function toggleCategory(catId) {
+            const idx = selectedCategoryIds.indexOf(catId);
+            if (idx >= 0) {
+                selectedCategoryIds.splice(idx, 1);
+            } else {
+                selectedCategoryIds.push(catId);
+            }
+            renderCategoryGrid();
+            updateUpSelectors();
+        }
+
+        function updateUpSelectors() {
+            // 根据已选分类筛选可选物品
+            const catItems = allItems.filter(i => selectedCategoryIds.includes(i.categoryId));
+
+            // 五星UP下拉
+            const fiveSelect = document.getElementById('fivestarUpSelect');
+            const currentFive = fiveSelect.value;
+            const fiveItems = catItems.filter(i => i.rarity === 5);
+            fiveSelect.innerHTML = '<option value="">无</option>' +
+                fiveItems.map(i => `<option value="${i.id}" ${String(i.id) === currentFive ? 'selected' : ''}>${i.name}</option>`).join('');
+
+            // 四星UP下拉
+            const fourSelect = document.getElementById('fourstarUpSelect');
+            const currentFour = Array.from(fourSelect.selectedOptions).map(o => o.value);
+            const fourItems = catItems.filter(i => i.rarity === 4);
+            fourSelect.innerHTML = fourItems.map(i =>
+                `<option value="${i.id}" ${currentFour.includes(String(i.id)) ? 'selected' : ''}>${i.name}</option>`
+            ).join('');
+        }
+
+        async function loadPoolConfigForEdit(poolId, pool) {
+            try {
+                // 加载分类关联
+                const catRes = await API.request(`/admin/pools/${poolId}/items`);
+                if (catRes.success) {
+                    // 从返回的物品推导出分类ID
+                    const itemIds = new Set(catRes.items.map(i => i.id));
+                    selectedCategoryIds = [...new Set(catRes.items.map(i => i.categoryId))];
+                }
+                // 从池数据加载UP信息
+                if (pool) {
+                    setTimeout(() => {
+                        if (pool.fivestarUp) {
+                            document.getElementById('fivestarUpSelect').value = pool.fivestarUp;
+                        }
+                        if (pool.fourstarUp) {
+                            const fourIds = pool.fourstarUp.split(',').map(s => s.trim());
+                            const fourSelect = document.getElementById('fourstarUpSelect');
+                            Array.from(fourSelect.options).forEach(opt => {
+                                opt.selected = fourIds.includes(opt.value);
+                            });
+                        }
+                    }, 100);
+                }
+            } catch (e) { console.error(e); }
+        }
+
         // ========== 扩展卡池模态框 ==========
         let uploadedBgImageUrl = '';
         let uploadedThumbUrl = '';
@@ -703,7 +819,6 @@
             document.getElementById('poolMaxPity').value = pool ? pool.maxPity : 90;
             document.getElementById('poolSoftPity').value = pool ? pool.softPityStart : 75;
             document.getElementById('poolSoftInc').value = pool ? pool.softPityIncrement : 6.0;
-            document.getElementById('poolUpItems').value = pool ? (pool.upItems || '[]') : '[]';
 
             // 新字段：时间（使用 flatpickr）
             flatpickrInstances['poolStartTime'].setDate(pool && pool.startTime ? pool.startTime.substring(0, 16).replace('T', ' ') : '', true);
@@ -737,6 +852,20 @@
             } else {
                 renderSelectedAvatars();
             }
+
+            // 物品选择（分类模式）
+            selectedCategoryIds = [];
+            Promise.all([loadAllItems(), loadCategories()]).then(() => {
+                if (pool && pool.id) {
+                    loadPoolConfigForEdit(pool.id, pool).then(() => {
+                        renderCategoryGrid();
+                        updateUpSelectors();
+                    });
+                } else {
+                    renderCategoryGrid();
+                    updateUpSelectors();
+                }
+            });
         }
 
         async function loadPoolFourStars(poolId) {
@@ -753,6 +882,12 @@
         // 侧栏复选框联动
         document.getElementById('poolSidebarVisible').addEventListener('change', function() {
             document.getElementById('sidebarOrderLabel').style.display = this.checked ? '' : 'none';
+        });
+
+        // 池类型切换时重新筛选物品列表
+        document.getElementById('poolType').addEventListener('change', () => {
+            renderCategoryGrid();
+            updateUpSelectors();
         });
 
         function previewBgImage(input) {
@@ -807,7 +942,6 @@
                 maxPity: parseInt(document.getElementById('poolMaxPity').value),
                 softPityStart: parseInt(document.getElementById('poolSoftPity').value),
                 softPityIncrement: parseFloat(document.getElementById('poolSoftInc').value),
-                upItems: document.getElementById('poolUpItems').value,
                 startTime: document.getElementById('poolStartTime').value ? document.getElementById('poolStartTime').value.replace(' ', 'T') + ':00' : null,
                 endTime: document.getElementById('poolEndTime').value ? document.getElementById('poolEndTime').value.replace(' ', 'T') + ':00' : null,
                 sidebarVisible: document.getElementById('poolSidebarVisible').checked,
@@ -835,9 +969,22 @@
                 const method = id ? 'PUT' : 'POST';
                 const res = await API.request(url, { method, body: JSON.stringify(data) });
                 if (res.success) {
+                    const poolId = res.pool ? res.pool.id : id;
                     // 保存四星头像关联
-                    if (res.pool && res.pool.id) {
-                        await API.updatePoolFourStars(res.pool.id, selectedAvatarIds);
+                    if (poolId) {
+                        await API.updatePoolFourStars(poolId, selectedAvatarIds);
+                        // 保存分类和UP配置
+                        const fivestarUp = document.getElementById('fivestarUpSelect').value || null;
+                        const fourSelect = document.getElementById('fourstarUpSelect');
+                        const fourstarUpIds = Array.from(fourSelect.selectedOptions).map(o => parseInt(o.value));
+                        await API.request(`/admin/pools/${poolId}/config`, {
+                            method: 'PUT',
+                            body: JSON.stringify({
+                                categoryIds: selectedCategoryIds,
+                                fivestarUp: fivestarUp ? parseInt(fivestarUp) : null,
+                                fourstarUpIds: fourstarUpIds.length > 0 ? fourstarUpIds : null
+                            })
+                        });
                     }
                     closePoolModal();
                     loadPools();

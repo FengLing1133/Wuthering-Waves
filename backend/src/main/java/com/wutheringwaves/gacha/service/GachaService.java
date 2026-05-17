@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -18,35 +19,45 @@ public class GachaService {
     private final GachaRecordMapper gachaRecordMapper;
     private final GachaPityMapper gachaPityMapper;
     private final GachaPoolMapper gachaPoolMapper;
+    private final PoolCategoryMapper poolCategoryMapper;
     private final UserService userService;
 
     @Transactional
     public Map<String, Object> pull(Long userId, String poolType, Long poolId, int count) {
         Map<String, Object> result = new HashMap<>();
 
-        // 检查星声是否足够
+        if (poolId == null) {
+            result.put("success", false);
+            result.put("message", "缺少卡池ID");
+            return result;
+        }
+
         User user = userService.getUserById(userId);
-        int cost = count == 10 ? 1500 : 160;
+        int cost = count == 10 ? 1600 : 160;
         if (user.getStarlight() < cost) {
             result.put("success", false);
             result.put("message", "星声不足");
             return result;
         }
 
-        // 扣除星声
         userService.updateStarlight(userId, -cost);
 
-        // 获取池子中的物品
-        List<GachaItem> items = getItemsByPool(poolType);
+        GachaPool pool = getPoolConfig(poolId);
+        // 常驻武器池：使用用户自选UP
+        if ("standard-weapon".equals(poolType)) {
+            Long userSelectedUp = userService.getSelectedWeaponUp(userId);
+            if (userSelectedUp != null) {
+                pool.setFivestarUp(userSelectedUp);
+            }
+        }
+        List<GachaItem> items = getItemsByPool(pool);
 
-        // 执行抽卡
         List<Map<String, Object>> pullResults = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            Map<String, Object> pullResult = doPull(userId, poolType, poolId, items);
+            Map<String, Object> pullResult = doPull(userId, poolType, pool, items);
             pullResults.add(pullResult);
         }
 
-        // 统计结果
         int fiveStarCount = 0;
         int fourStarCount = 0;
         for (Map<String, Object> pr : pullResults) {
@@ -55,7 +66,6 @@ public class GachaService {
             if (rarity == 4) fourStarCount++;
         }
 
-        // 更新用户信息
         user = userService.getUserById(userId);
 
         result.put("success", true);
@@ -67,17 +77,22 @@ public class GachaService {
         return result;
     }
 
-    private Map<String, Object> doPull(Long userId, String poolType, Long poolId, List<GachaItem> items) {
+    private Map<String, Object> doPull(Long userId, String poolType,
+                                         GachaPool pool, List<GachaItem> items) {
         int currentPity = getCurrentPity(userId, poolType);
-        boolean guaranteed = isGuaranteed(userId, poolType);
+        boolean guaranteedFive = isGuaranteedFive(userId, poolType);
+        boolean guaranteedFour = isGuaranteedFour(userId, poolType);
 
-        int rarity = determineRarity(userId, poolType, poolId, currentPity, guaranteed);
+        int rarity = determineRarity(userId, poolType, pool.getId(), currentPity);
 
-        GachaPool poolConfig = getPoolConfig(poolId);
+        boolean isLimitedPool = poolType.startsWith("limited-");
 
-        GachaItem selectedItem = selectItem(items, rarity, poolType, guaranteed, poolConfig);
+        GachaItem selectedItem = selectItem(items, pool, rarity, poolType,
+                guaranteedFive, guaranteedFour, isLimitedPool);
 
-        updatePity(userId, poolType, rarity, selectedItem.getIsLimited());
+        boolean isUp = isUpItem(selectedItem, pool);
+
+        updatePity(userId, poolType, rarity, isUp);
 
         GachaRecord record = new GachaRecord();
         record.setUserId(userId);
@@ -85,7 +100,7 @@ public class GachaService {
         record.setItemName(selectedItem.getName());
         record.setItemRarity(selectedItem.getRarity());
         record.setItemType(selectedItem.getItemType());
-        record.setIsLimited(selectedItem.getIsLimited());
+        record.setIsLimited(isUp);
         record.setPityCount(currentPity + 1);
         gachaRecordMapper.insert(record);
 
@@ -93,7 +108,7 @@ public class GachaService {
         result.put("name", selectedItem.getName());
         result.put("rarity", selectedItem.getRarity());
         result.put("type", selectedItem.getItemType());
-        result.put("isLimited", selectedItem.getIsLimited());
+        result.put("isLimited", isUp);
         result.put("pityCount", currentPity + 1);
 
         return result;
@@ -104,28 +119,25 @@ public class GachaService {
         return gachaPoolMapper.selectById(poolId);
     }
 
-    private int determineRarity(Long userId, String poolType, Long poolId, int currentPity, boolean guaranteed) {
+    private int determineRarity(Long userId, String poolType, Long poolId, int currentPity) {
         double rand = ThreadLocalRandom.current().nextDouble() * 100;
 
         GachaPool poolConfig = getPoolConfig(poolId);
 
-        int maxPity = poolConfig != null ? poolConfig.getMaxPity() : 90;
+        int maxPity = poolConfig != null ? poolConfig.getMaxPity() : 80;
         double fiveStarRate = poolConfig != null ? poolConfig.getFiveStarRate().doubleValue() : 0.8;
         double fourStarRate = poolConfig != null ? poolConfig.getFourStarRate().doubleValue() : 6.0;
-        int softPityStart = poolConfig != null ? poolConfig.getSoftPityStart() : 75;
+        int softPityStart = poolConfig != null ? poolConfig.getSoftPityStart() : 65;
         double softPityInc = poolConfig != null ? poolConfig.getSoftPityIncrement().doubleValue() : 6.0;
 
-        // 五星率 100%：直接返回五星，跳过所有其他判断
         if (fiveStarRate >= 100) {
             return 5;
         }
 
-        // 硬保底
         if (currentPity >= maxPity - 1) {
             return 5;
         }
 
-        // 软保底
         if (currentPity >= softPityStart - 1) {
             double fiveStarChance = fiveStarRate + (currentPity - softPityStart + 1) * softPityInc;
             if (rand < fiveStarChance) {
@@ -133,14 +145,12 @@ public class GachaService {
             }
         }
 
-        // 基础概率
         if (rand < fiveStarRate) {
             return 5;
         } else if (rand < fiveStarRate + fourStarRate) {
             return 4;
         }
 
-        // 四星保底（10抽）
         int fourStarPity = getFourStarPity(userId, poolType);
         if (fourStarPity >= 9) {
             return 4;
@@ -149,7 +159,10 @@ public class GachaService {
         return 3;
     }
 
-    private GachaItem selectItem(List<GachaItem> items, int rarity, String poolType, boolean guaranteed, GachaPool poolConfig) {
+    private GachaItem selectItem(List<GachaItem> items, GachaPool pool,
+                                  int rarity, String poolType,
+                                  boolean guaranteedFive, boolean guaranteedFour,
+                                  boolean isLimitedPool) {
         List<GachaItem> candidates = items.stream()
                 .filter(item -> item.getRarity() == rarity)
                 .toList();
@@ -164,67 +177,105 @@ public class GachaService {
             throw new IllegalStateException("物品池为空，poolType=" + poolType + ", rarity=" + rarity);
         }
 
-        // 五星UP逻辑：仅限定池生效
-        if (rarity == 5 && poolType.startsWith("limited-")) {
-            List<GachaItem> upItems = getUpItems(candidates, poolConfig);
+        Long fivestarUp = pool.getFivestarUp();
+        Set<Long> fourstarUpIds = parseFourstarUp(pool.getFourstarUp());
 
-            if (!upItems.isEmpty()) {
-                if (guaranteed) {
-                    return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
-                } else {
-                    if (ThreadLocalRandom.current().nextDouble() < 0.5) {
-                        return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
-                    } else {
-                        List<GachaItem> standard = candidates.stream()
-                                .filter(item -> !item.getIsLimited())
-                                .toList();
-                        if (!standard.isEmpty()) {
-                            return standard.get(ThreadLocalRandom.current().nextInt(standard.size()));
-                        }
-                        return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
-                    }
+        List<GachaItem> upItems = candidates.stream()
+                .filter(item -> {
+                    if (rarity == 5) return fivestarUp != null && item.getId().equals(fivestarUp);
+                    if (rarity == 4) return fourstarUpIds.contains(item.getId());
+                    return false;
+                })
+                .toList();
+        List<GachaItem> nonUpItems = candidates.stream()
+                .filter(item -> {
+                    if (rarity == 5) return fivestarUp == null || !item.getId().equals(fivestarUp);
+                    if (rarity == 4) return !fourstarUpIds.contains(item.getId());
+                    return true;
+                })
+                .toList();
+
+        if (!isLimitedPool || upItems.isEmpty()) {
+            return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
+        }
+
+        // 武器池不歪：直接出UP
+        boolean isWeaponPool = poolType.contains("weapon");
+        if (isWeaponPool && !upItems.isEmpty()) {
+            return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
+        }
+
+        if (rarity == 5) {
+            if (guaranteedFive) {
+                return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
+            }
+            if (ThreadLocalRandom.current().nextDouble() < 0.5) {
+                return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
+            } else {
+                if (!nonUpItems.isEmpty()) {
+                    return nonUpItems.get(ThreadLocalRandom.current().nextInt(nonUpItems.size()));
                 }
+                return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
+            }
+        }
+
+        if (rarity == 4) {
+            if (guaranteedFour) {
+                return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
+            }
+            if (ThreadLocalRandom.current().nextDouble() < 0.5) {
+                return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
+            } else {
+                if (!nonUpItems.isEmpty()) {
+                    return nonUpItems.get(ThreadLocalRandom.current().nextInt(nonUpItems.size()));
+                }
+                return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
             }
         }
 
         return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
     }
 
-    private List<GachaItem> getUpItems(List<GachaItem> candidates, GachaPool poolConfig) {
-        if (poolConfig != null && poolConfig.getUpItems() != null && !poolConfig.getUpItems().isEmpty()) {
-            try {
-                String upItemsStr = poolConfig.getUpItems().trim();
-                if (upItemsStr.startsWith("[") && upItemsStr.endsWith("]")) {
-                    upItemsStr = upItemsStr.substring(1, upItemsStr.length() - 1);
-                    List<String> upNames = new ArrayList<>();
-                    for (String name : upItemsStr.split(",")) {
-                        name = name.trim().replace("\"", "").replace("'", "");
-                        if (!name.isEmpty()) {
-                            upNames.add(name);
-                        }
-                    }
-                    List<GachaItem> matched = candidates.stream()
-                            .filter(item -> upNames.contains(item.getName()))
-                            .toList();
-                    if (!matched.isEmpty()) {
-                        return matched;
-                    }
-                }
-            } catch (Exception ignored) {
-            }
-        }
-        return candidates.stream()
-                .filter(GachaItem::getIsLimited)
+    // ========== 按分类查询池内物品 ==========
+
+    private List<GachaItem> getItemsByPool(GachaPool pool) {
+        LambdaQueryWrapper<PoolCategory> pcWrapper = new LambdaQueryWrapper<>();
+        pcWrapper.eq(PoolCategory::getPoolId, pool.getId());
+        List<PoolCategory> poolCategories = poolCategoryMapper.selectList(pcWrapper);
+
+        if (poolCategories.isEmpty()) return Collections.emptyList();
+
+        List<Long> categoryIds = poolCategories.stream()
+                .map(PoolCategory::getCategoryId)
                 .toList();
+
+        LambdaQueryWrapper<GachaItem> itemWrapper = new LambdaQueryWrapper<>();
+        itemWrapper.in(GachaItem::getCategoryId, categoryIds);
+        return gachaItemMapper.selectList(itemWrapper);
     }
 
-    private List<GachaItem> getItemsByPool(String poolType) {
-        LambdaQueryWrapper<GachaItem> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(GachaItem::getPoolType, poolType);
-        return gachaItemMapper.selectList(wrapper);
+    // ========== UP 物品判断辅助 ==========
+
+    private boolean isUpItem(GachaItem item, GachaPool pool) {
+        if (item.getRarity() == 5) {
+            return pool.getFivestarUp() != null && item.getId().equals(pool.getFivestarUp());
+        }
+        if (item.getRarity() == 4) {
+            return parseFourstarUp(pool.getFourstarUp()).contains(item.getId());
+        }
+        return false;
     }
 
-    // ========== 保底相关：统一查 gacha_pity 表 ==========
+    private Set<Long> parseFourstarUp(String fourstarUp) {
+        if (fourstarUp == null || fourstarUp.isBlank()) return Collections.emptySet();
+        return Arrays.stream(fourstarUp.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Long::parseLong)
+                .collect(Collectors.toSet());
+    }
+
+    // ========== 保底相关 ==========
 
     private GachaPity getOrCreatePity(Long userId, String poolType) {
         LambdaQueryWrapper<GachaPity> wrapper = new LambdaQueryWrapper<>();
@@ -238,6 +289,7 @@ public class GachaService {
             pity.setFiveStarCount(0);
             pity.setFourStarCount(0);
             pity.setGuaranteedFive(false);
+            pity.setGuaranteedFour(false);
             gachaPityMapper.insert(pity);
         }
         return pity;
@@ -253,21 +305,27 @@ public class GachaService {
         return pity.getFourStarCount() != null ? pity.getFourStarCount() : 0;
     }
 
-    private boolean isGuaranteed(Long userId, String poolType) {
+    private boolean isGuaranteedFive(Long userId, String poolType) {
         GachaPity pity = getOrCreatePity(userId, poolType);
         return Boolean.TRUE.equals(pity.getGuaranteedFive());
     }
 
-    private void updatePity(Long userId, String poolType, int rarity, boolean isLimited) {
+    private boolean isGuaranteedFour(Long userId, String poolType) {
+        GachaPity pity = getOrCreatePity(userId, poolType);
+        return Boolean.TRUE.equals(pity.getGuaranteedFour());
+    }
+
+    private void updatePity(Long userId, String poolType, int rarity, boolean isUp) {
         GachaPity pity = getOrCreatePity(userId, poolType);
 
         if (rarity == 5) {
             pity.setFiveStarCount(0);
             pity.setFourStarCount(pity.getFourStarCount() + 1);
-            pity.setGuaranteedFive(!isLimited);
+            pity.setGuaranteedFive(!isUp);
         } else if (rarity == 4) {
             pity.setFiveStarCount(pity.getFiveStarCount() + 1);
             pity.setFourStarCount(0);
+            pity.setGuaranteedFour(!isUp);
         } else {
             pity.setFiveStarCount(pity.getFiveStarCount() + 1);
             pity.setFourStarCount(pity.getFourStarCount() + 1);

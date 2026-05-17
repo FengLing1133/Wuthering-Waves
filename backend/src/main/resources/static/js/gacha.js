@@ -87,17 +87,31 @@ const Gacha = {
     updatePoolInfo(pool) {
         if (!pool) return;
 
-        document.getElementById('bannerSubtitle').textContent = pool.poolType && pool.poolType.startsWith('standard-') ? '常驻唤取' : '角色活动唤取';
+        // 副标题区分四种池类型
+        let subtitle = '';
+        switch (pool.poolType) {
+            case 'standard-weapon': subtitle = '武器常驻唤取'; break;
+            case 'standard-character': subtitle = '角色常驻唤取'; break;
+            case 'limited-weapon': subtitle = '武器活动唤取'; break;
+            default: subtitle = '角色活动唤取';
+        }
+        document.getElementById('bannerSubtitle').textContent = subtitle;
         document.getElementById('bannerTitle').textContent = pool.name || '';
         document.getElementById('bannerTimer').textContent = this.formatTimer(pool);
         document.getElementById('upCharacterName').textContent = this.getUpCharacterName(pool);
         document.getElementById('upElement').querySelector('.element-icon').textContent = this.getUpElement(pool);
         document.getElementById('maxPityDisplay').textContent = pool.maxPity || 90;
 
-        // 常驻池隐藏UP角色信息
+        // 常驻角色池隐藏UP信息，其他池显示
         const upSection = document.getElementById('upCharacter');
         if (upSection) {
-            upSection.style.display = pool.poolType && pool.poolType.startsWith('standard-') ? 'none' : '';
+            upSection.style.display = pool.poolType === 'standard-character' ? 'none' : '';
+        }
+
+        // 更换按钮：仅常驻武器池显示
+        const changeUpBtn = document.getElementById('changeUpBtn');
+        if (changeUpBtn) {
+            changeUpBtn.classList.toggle('hidden', pool.poolType !== 'standard-weapon');
         }
 
         // 更新背景图
@@ -146,15 +160,8 @@ const Gacha = {
 
     // 获取UP角色名
     getUpCharacterName(pool) {
-        if (pool.upItems) {
-            try {
-                let items = pool.upItems.trim();
-                if (items.startsWith('[') && items.endsWith(']')) {
-                    items = items.substring(1, items.length - 1);
-                    const names = items.split(',').map(s => s.trim().replace(/"/g, '').replace(/'/g, ''));
-                    return names[0] || 'UP角色';
-                }
-            } catch (e) {}
+        if (pool.upItems && pool.upItems.length > 0) {
+            return pool.upItems[0].name || 'UP';
         }
         return pool.poolType && pool.poolType.includes('weapon') ? 'UP武器' : 'UP角色';
     },
@@ -189,6 +196,16 @@ const Gacha = {
         // 历史记录按钮
         document.getElementById('historyBtn').addEventListener('click', () => {
             this.showHistory();
+        });
+
+        // 更换UP武器按钮
+        document.getElementById('changeUpBtn').addEventListener('click', () => {
+            this.showWeaponSelectModal();
+        });
+
+        // 关闭武器选择弹窗
+        document.getElementById('closeWeaponSelectBtn').addEventListener('click', () => {
+            document.getElementById('weaponSelectModal').classList.add('hidden');
         });
     },
 
@@ -369,5 +386,62 @@ const Gacha = {
     // 工具函数：延时
     sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
+    },
+
+    // 显示武器选择弹窗
+    async showWeaponSelectModal() {
+        const modal = document.getElementById('weaponSelectModal');
+        const grid = document.getElementById('weaponSelectGrid');
+        if (!modal || !grid) return;
+
+        try {
+            const result = await API.getStandardWeaponUpOptions();
+            if (!result.success) {
+                alert(result.message || '获取武器列表失败');
+                return;
+            }
+
+            const { weapons, selectedId } = result;
+
+            grid.innerHTML = weapons.map(weapon => {
+                const stars = '★'.repeat(weapon.rarity);
+                const isSelected = weapon.id === selectedId;
+                const imgStyle = weapon.imageUrl
+                    ? `background-image: url('${weapon.imageUrl}'); background-size: cover; background-position: center;`
+                    : 'background: linear-gradient(135deg, #2a3a5a, #1a2a4a);';
+                return `<div class="weapon-card ${isSelected ? 'selected' : ''}" data-weapon-id="${weapon.id}">
+                    <div class="weapon-card-img" style="${imgStyle}"></div>
+                    <div class="weapon-card-name">${weapon.name}</div>
+                    <div class="weapon-card-stars">${stars}</div>
+                    ${isSelected ? '<div class="weapon-card-badge">当前UP</div>' : ''}
+                </div>`;
+            }).join('');
+
+            // 绑定点击事件
+            grid.querySelectorAll('.weapon-card').forEach(card => {
+                card.addEventListener('click', async () => {
+                    const weaponId = parseInt(card.dataset.weaponId);
+                    try {
+                        const res = await API.setStandardWeaponUp(weaponId);
+                        if (res.success) {
+                            modal.classList.add('hidden');
+                            // 刷新当前卡池信息
+                            if (this.currentPool) {
+                                this.switchPool(this.currentPool);
+                            }
+                        } else {
+                            alert(res.message || '设置失败');
+                        }
+                    } catch (e) {
+                        alert('网络错误');
+                    }
+                });
+            });
+
+            modal.classList.remove('hidden');
+        } catch (error) {
+            console.error('获取武器列表失败:', error);
+            alert('获取武器列表失败');
+        }
     }
 };

@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +24,8 @@ public class AdminService {
     private final UserMapper userMapper;
     private final FourStarAvatarMapper fourStarAvatarMapper;
     private final PoolFourStarMapper poolFourStarMapper;
+    private final PoolCategoryMapper poolCategoryMapper;
+    private final ItemCategoryMapper itemCategoryMapper;
 
     // ========== 卡池管理 ==========
 
@@ -70,11 +73,23 @@ public class AdminService {
     public boolean deletePool(Long id) {
         GachaPool pool = gachaPoolMapper.selectById(id);
         if (pool == null) return false;
+        // 删除 pool_category 关联
+        LambdaQueryWrapper<PoolCategory> pcWrapper = new LambdaQueryWrapper<>();
+        pcWrapper.eq(PoolCategory::getPoolId, id);
+        poolCategoryMapper.delete(pcWrapper);
+        // 删除 pool_four_star 关联
         LambdaQueryWrapper<PoolFourStar> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(PoolFourStar::getPoolId, id);
         poolFourStarMapper.delete(wrapper);
         gachaPoolMapper.deleteById(id);
         return true;
+    }
+
+    // ========== 分类管理 ==========
+
+    public List<ItemCategory> listCategories() {
+        return itemCategoryMapper.selectList(
+                new LambdaQueryWrapper<ItemCategory>().orderByAsc(ItemCategory::getSortOrder));
     }
 
     // ========== 四星头像管理 ==========
@@ -90,7 +105,6 @@ public class AdminService {
 
     @Transactional
     public boolean deleteAvatar(Long id) {
-        // 先删除关联
         LambdaQueryWrapper<PoolFourStar> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(PoolFourStar::getAvatarId, id);
         poolFourStarMapper.delete(wrapper);
@@ -118,11 +132,9 @@ public class AdminService {
         if (avatarIds != null && avatarIds.size() > 3) {
             return false;
         }
-        // 删除旧关联
         LambdaQueryWrapper<PoolFourStar> deleteWrapper = new LambdaQueryWrapper<>();
         deleteWrapper.eq(PoolFourStar::getPoolId, poolId);
         poolFourStarMapper.delete(deleteWrapper);
-        // 插入新关联
         if (avatarIds != null) {
             for (int i = 0; i < avatarIds.size(); i++) {
                 PoolFourStar rel = new PoolFourStar();
@@ -133,6 +145,92 @@ public class AdminService {
             }
         }
         return true;
+    }
+
+    // ========== 卡池物品管理（基于分类） ==========
+
+    public List<GachaItem> getPoolItems(Long poolId) {
+        List<Long> categoryIds = getCategoryIdsByPool(poolId);
+        if (categoryIds.isEmpty()) return Collections.emptyList();
+        LambdaQueryWrapper<GachaItem> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(GachaItem::getCategoryId, categoryIds);
+        return gachaItemMapper.selectList(wrapper);
+    }
+
+    public List<Map<String, Object>> getPoolUpItems(Long poolId) {
+        GachaPool pool = gachaPoolMapper.selectById(poolId);
+        if (pool == null) return Collections.emptyList();
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        if (pool.getFivestarUp() != null) {
+            GachaItem item = gachaItemMapper.selectById(pool.getFivestarUp());
+            if (item != null) result.add(itemToMap(item));
+        }
+        if (pool.getFourstarUp() != null && !pool.getFourstarUp().isBlank()) {
+            for (Long id : parseFourstarUp(pool.getFourstarUp())) {
+                GachaItem item = gachaItemMapper.selectById(id);
+                if (item != null) result.add(itemToMap(item));
+            }
+        }
+        return result;
+    }
+
+    @Transactional
+    public void updatePoolConfig(Long poolId, List<Long> categoryIds,
+                                  Long fivestarUp, List<Long> fourstarUpIds) {
+        // 更新分类关联
+        LambdaQueryWrapper<PoolCategory> deleteWrapper = new LambdaQueryWrapper<>();
+        deleteWrapper.eq(PoolCategory::getPoolId, poolId);
+        poolCategoryMapper.delete(deleteWrapper);
+
+        if (categoryIds != null) {
+            for (Long catId : categoryIds) {
+                PoolCategory pc = new PoolCategory();
+                pc.setPoolId(poolId);
+                pc.setCategoryId(catId);
+                poolCategoryMapper.insert(pc);
+            }
+        }
+
+        // 更新UP物品
+        GachaPool pool = gachaPoolMapper.selectById(poolId);
+        pool.setFivestarUp(fivestarUp);
+        pool.setFourstarUp(fourstarUpIds != null && !fourstarUpIds.isEmpty()
+                ? fourstarUpIds.stream().map(String::valueOf).collect(Collectors.joining(","))
+                : null);
+        gachaPoolMapper.updateById(pool);
+    }
+
+    // ========== 辅助方法 ==========
+
+    public GachaItem getItemById(Long id) {
+        return gachaItemMapper.selectById(id);
+    }
+
+    private List<Long> getCategoryIdsByPool(Long poolId) {
+        LambdaQueryWrapper<PoolCategory> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(PoolCategory::getPoolId, poolId);
+        return poolCategoryMapper.selectList(wrapper).stream()
+                .map(PoolCategory::getCategoryId)
+                .toList();
+    }
+
+    private Map<String, Object> itemToMap(GachaItem item) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", item.getId());
+        map.put("name", item.getName());
+        map.put("rarity", item.getRarity());
+        map.put("itemType", item.getItemType());
+        return map;
+    }
+
+    private Set<Long> parseFourstarUp(String fourstarUp) {
+        if (fourstarUp == null || fourstarUp.isBlank()) return Collections.emptySet();
+        return Arrays.stream(fourstarUp.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Long::parseLong)
+                .collect(Collectors.toSet());
     }
 
     // ========== 用户管理 ==========
@@ -171,11 +269,9 @@ public class AdminService {
     public Map<String, Object> getDashboardStats() {
         Map<String, Object> stats = new HashMap<>();
 
-        // 总用户数
         long totalUsers = userMapper.selectCount(null);
         stats.put("totalUsers", totalUsers);
 
-        // 今日活跃用户（今天有抽卡记录的用户）
         LocalDateTime todayStart = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
         LambdaQueryWrapper<GachaRecord> activeWrapper = new LambdaQueryWrapper<>();
         activeWrapper.ge(GachaRecord::getCreatedAt, todayStart);
@@ -187,21 +283,17 @@ public class AdminService {
                 .count();
         stats.put("dailyActiveUsers", dailyActiveUsers);
 
-        // 总抽卡次数
         long totalPulls = gachaRecordMapper.selectCount(null);
         stats.put("totalPulls", totalPulls);
 
-        // 今日抽卡次数
         LambdaQueryWrapper<GachaRecord> todayPullsWrapper = new LambdaQueryWrapper<>();
         todayPullsWrapper.ge(GachaRecord::getCreatedAt, todayStart);
         long dailyPulls = gachaRecordMapper.selectCount(todayPullsWrapper);
         stats.put("dailyPulls", dailyPulls);
 
-        // 总消耗星声（每次单抽160，十连1500，但记录中没有区分，按单抽160计算）
         long totalConsumed = totalPulls * 160;
         stats.put("totalConsumedStarlight", totalConsumed);
 
-        // 今日消耗星声
         long dailyConsumed = dailyPulls * 160;
         stats.put("dailyConsumedStarlight", dailyConsumed);
 
@@ -229,7 +321,6 @@ public class AdminService {
             dayData.put("activeUsers", dayRecords.stream()
                     .map(GachaRecord::getUserId).distinct().count());
 
-            // 统计出货
             dayData.put("fiveStarCount", dayRecords.stream()
                     .filter(r -> r.getItemRarity() == 5).count());
             dayData.put("fourStarCount", dayRecords.stream()

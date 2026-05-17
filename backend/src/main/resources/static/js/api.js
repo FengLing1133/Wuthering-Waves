@@ -113,6 +113,19 @@ const API = {
         return this.request(`/gacha/pools/${poolId}`);
     },
 
+    // 获取常驻武器池可选UP列表
+    async getStandardWeaponUpOptions() {
+        return this.request('/gacha/standard-weapon-up');
+    },
+
+    // 设置常驻武器池UP
+    async setStandardWeaponUp(weaponId) {
+        return this.request('/gacha/standard-weapon-up', {
+            method: 'PUT',
+            body: JSON.stringify({ weaponId })
+        });
+    },
+
     // ========== 管理员接口 ==========
 
     // 获取所有四星头像

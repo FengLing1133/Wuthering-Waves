@@ -58,6 +58,7 @@ class GachaControllerTest extends BaseTest {
     void pull_single_success() throws Exception {
         Map<String, Object> request = new HashMap<>();
         request.put("poolType", "limited-character");
+        request.put("poolId", 1);
         request.put("count", 1);
 
         Map<String, Object> response = new HashMap<>();
@@ -81,6 +82,7 @@ class GachaControllerTest extends BaseTest {
     void pull_ten_success() throws Exception {
         Map<String, Object> request = new HashMap<>();
         request.put("poolType", "limited-character");
+        request.put("poolId", 1);
         request.put("count", 10);
 
         Map<String, Object> response = new HashMap<>();

@@ -57,6 +57,7 @@ class GachaIntegrationTest extends BaseTest {
         pity.setFiveStarCount(0);
         pity.setFourStarCount(0);
         pity.setGuaranteedFive(false);
+        pity.setGuaranteedFour(false);
         gachaPityMapper.insert(pity);
     }
 
@@ -66,7 +67,7 @@ class GachaIntegrationTest extends BaseTest {
         User user = userMapper.selectById(testUserId);
         int initialStarlight = user.getStarlight();
 
-        Map<String, Object> result = gachaService.pull(testUserId, "limited-character", null, 1);
+        Map<String, Object> result = gachaService.pull(testUserId, "limited-character", 1L, 1);
 
         assertNotNull(result);
         assertTrue((Boolean) result.get("success"));
@@ -86,14 +87,14 @@ class GachaIntegrationTest extends BaseTest {
         User user = userMapper.selectById(testUserId);
         int initialStarlight = user.getStarlight();
 
-        Map<String, Object> result = gachaService.pull(testUserId, "limited-character", null, 10);
+        Map<String, Object> result = gachaService.pull(testUserId, "limited-character", 1L, 10);
 
         assertNotNull(result);
         assertTrue((Boolean) result.get("success"));
 
         // 验证星声扣除
         User updatedUser = userMapper.selectById(testUserId);
-        assertEquals(initialStarlight - 1500, updatedUser.getStarlight());
+        assertEquals(initialStarlight - 1600, updatedUser.getStarlight());
 
         // 验证抽卡记录保存
         List<GachaRecord> records = recordMapper.selectList(null);
@@ -114,7 +115,7 @@ class GachaIntegrationTest extends BaseTest {
         // 连续抽卡直到触发保底
         boolean fiveStarObtained = false;
         for (int i = 0; i < 10; i++) {
-            Map<String, Object> result = gachaService.pull(testUserId, "limited-character", null, 1);
+            Map<String, Object> result = gachaService.pull(testUserId, "limited-character", 1L, 1);
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> results = (List<Map<String, Object>>) result.get("results");
             Map<String, Object> firstResult = results.get(0);
@@ -136,8 +137,8 @@ class GachaIntegrationTest extends BaseTest {
         userMapper.updateById(user);
 
         // 执行两次单抽
-        gachaService.pull(testUserId, "limited-character", null, 1);
-        gachaService.pull(testUserId, "limited-character", null, 1);
+        gachaService.pull(testUserId, "limited-character", 1L, 1);
+        gachaService.pull(testUserId, "limited-character", 1L, 1);
 
         // 验证星声为0
         User updatedUser = userMapper.selectById(testUserId);
@@ -147,7 +148,7 @@ class GachaIntegrationTest extends BaseTest {
     @Test
     @DisplayName("历史记录验证 - 抽卡记录正确保存")
     void pull_recordHistory_fullFlow() {
-        gachaService.pull(testUserId, "limited-character", null, 1);
+        gachaService.pull(testUserId, "limited-character", 1L, 1);
 
         Map<String, Object> historyData = gachaService.getHistory(testUserId, "limited-character", 1, 20);
         assertNotNull(historyData);
@@ -161,7 +162,7 @@ class GachaIntegrationTest extends BaseTest {
     @Test
     @DisplayName("统计信息验证 - 统计数据正确计算")
     void getStats_fullFlow() {
-        gachaService.pull(testUserId, "limited-character", null, 10);
+        gachaService.pull(testUserId, "limited-character", 1L, 10);
 
         Map<String, Object> stats = gachaService.getStats(testUserId, "limited-character");
 

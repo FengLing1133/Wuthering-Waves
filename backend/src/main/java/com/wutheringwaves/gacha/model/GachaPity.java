@@ -17,5 +17,6 @@ public class GachaPity {
     private Integer fiveStarCount;
     private Integer fourStarCount;
     private Boolean guaranteedFive;
+    private Boolean guaranteedFour;
     private LocalDateTime updatedAt;
 }
