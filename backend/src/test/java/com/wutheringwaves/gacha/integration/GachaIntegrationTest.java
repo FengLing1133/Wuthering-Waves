@@ -146,7 +146,9 @@ class GachaIntegrationTest extends BaseTest {
     void pull_recordHistory_fullFlow() {
         gachaService.pull(testUserId, "character", 1);
 
-        List<GachaRecord> history = gachaService.getHistory(testUserId, "character", 1, 20);
+        Map<String, Object> historyData = gachaService.getHistory(testUserId, "character", 1, 20);
+        assertNotNull(historyData);
+        List<GachaRecord> history = (List<GachaRecord>) historyData.get("records");
         assertNotNull(history);
         assertFalse(history.isEmpty());
         assertEquals(testUserId, history.get(0).getUserId());

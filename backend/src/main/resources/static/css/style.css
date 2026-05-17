@@ -480,6 +480,48 @@ body {
     background-position: center top;
 }
 
+/* ========== 保底计数显示 ========== */
+.pity-display {
+    position: absolute;
+    bottom: 120px;
+    right: 30px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.pity-ring {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pity-ring-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.pity-number {
+    font-size: 18px;
+    font-weight: 300;
+    color: var(--accent-blue);
+    z-index: 1;
+}
+
+.pity-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    letter-spacing: 2px;
+}
+
 /* ========== 底部按钮栏 ========== */
 .bottom-bar {
     position: absolute;
@@ -815,7 +857,7 @@ body {
 
 .history-stats {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 16px;
     margin-bottom: 24px;
 }
@@ -898,6 +940,45 @@ body {
 .page-btn.active {
     background: var(--accent-blue);
     border-color: var(--accent-blue);
+}
+
+.page-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.page-dots {
+    color: var(--text-secondary);
+    padding: 6px 4px;
+    font-size: 13px;
+}
+
+.page-info {
+    color: var(--text-secondary);
+    font-size: 13px;
+    padding: 6px 12px;
+    margin-left: 8px;
+}
+
+.close-history-btn {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.close-history-btn:hover {
+    border-color: var(--accent-blue);
+    color: var(--text-primary);
+    background: rgba(74, 158, 255, 0.1);
 }
 
 /* ========== 工具类 ========== */

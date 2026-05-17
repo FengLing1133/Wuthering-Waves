@@ -84,8 +84,11 @@ public class GachaService {
         // 判断出货稀有度
         int rarity = determineRarity(userId, poolType, currentPity, guaranteed);
 
+        // 获取卡池配置（用于UP物品判断）
+        GachaPool poolConfig = getPoolConfig(poolType);
+
         // 从对应稀有度中随机选择物品
-        GachaItem selectedItem = selectItem(items, rarity, poolType, guaranteed);
+        GachaItem selectedItem = selectItem(items, rarity, poolType, guaranteed, poolConfig);
 
         // 更新保底计数
         updatePity(userId, poolType, rarity, selectedItem.getIsLimited());
@@ -160,7 +163,7 @@ public class GachaService {
         return 3;
     }
 
-    private GachaItem selectItem(List<GachaItem> items, int rarity, String poolType, boolean guaranteed) {
+    private GachaItem selectItem(List<GachaItem> items, int rarity, String poolType, boolean guaranteed, GachaPool poolConfig) {
         List<GachaItem> candidates = items.stream()
                 .filter(item -> item.getRarity() == rarity)
                 .toList();
@@ -175,17 +178,64 @@ public class GachaService {
             throw new IllegalStateException("物品池为空，poolType=" + poolType + ", rarity=" + rarity);
         }
 
-        // 如果是大保底且是五星，优先出限定
-        if (rarity == 5 && guaranteed) {
-            List<GachaItem> limited = candidates.stream()
-                    .filter(GachaItem::getIsLimited)
-                    .toList();
-            if (!limited.isEmpty()) {
-                return limited.get(ThreadLocalRandom.current().nextInt(limited.size()));
+        // 五星物品选择逻辑（仅限有限池和武器池，常驻池无UP机制）
+        if (rarity == 5 && (poolType.equals("character") || poolType.equals("weapon") || poolType.equals("limited"))) {
+            List<GachaItem> upItems = getUpItems(candidates, poolConfig);
+
+            if (!upItems.isEmpty()) {
+                if (guaranteed) {
+                    // 大保底：必定出UP物品
+                    return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
+                } else {
+                    // 小保底：50%概率出UP，50%概率出常驻
+                    if (ThreadLocalRandom.current().nextDouble() < 0.5) {
+                        return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
+                    } else {
+                        List<GachaItem> standard = candidates.stream()
+                                .filter(item -> !item.getIsLimited())
+                                .toList();
+                        if (!standard.isEmpty()) {
+                            return standard.get(ThreadLocalRandom.current().nextInt(standard.size()));
+                        }
+                        // 如果没有常驻五星，回退到UP
+                        return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
+                    }
+                }
             }
         }
 
         return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
+    }
+
+    private List<GachaItem> getUpItems(List<GachaItem> candidates, GachaPool poolConfig) {
+        // 优先使用卡池配置的 up_items 字段
+        if (poolConfig != null && poolConfig.getUpItems() != null && !poolConfig.getUpItems().isEmpty()) {
+            try {
+                // 解析 JSON 数组，例如 ["绯雪","柚诺"]
+                String upItemsStr = poolConfig.getUpItems().trim();
+                if (upItemsStr.startsWith("[") && upItemsStr.endsWith("]")) {
+                    upItemsStr = upItemsStr.substring(1, upItemsStr.length() - 1);
+                    List<String> upNames = new ArrayList<>();
+                    for (String name : upItemsStr.split(",")) {
+                        name = name.trim().replace("\"", "").replace("'", "");
+                        if (!name.isEmpty()) {
+                            upNames.add(name);
+                        }
+                    }
+                    List<GachaItem> matched = candidates.stream()
+                            .filter(item -> upNames.contains(item.getName()))
+                            .toList();
+                    if (!matched.isEmpty()) {
+                        return matched;
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        // 回退：使用 isLimited 标记
+        return candidates.stream()
+                .filter(GachaItem::getIsLimited)
+                .toList();
     }
 
     private List<GachaItem> getItemsByPool(String poolType) {
@@ -381,7 +431,7 @@ public class GachaService {
         }
     }
 
-    public List<GachaRecord> getHistory(Long userId, String poolType, int page, int size) {
+    public Map<String, Object> getHistory(Long userId, String poolType, int page, int size) {
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<GachaRecord> pageParam =
                 new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
         LambdaQueryWrapper<GachaRecord> wrapper = new LambdaQueryWrapper<>();
@@ -390,7 +440,15 @@ public class GachaService {
             wrapper.eq(GachaRecord::getPoolType, poolType);
         }
         wrapper.orderByDesc(GachaRecord::getCreatedAt);
-        return gachaRecordMapper.selectPage(pageParam, wrapper).getRecords();
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<GachaRecord> result =
+                gachaRecordMapper.selectPage(pageParam, wrapper);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("records", result.getRecords());
+        response.put("total", result.getTotal());
+        response.put("page", page);
+        response.put("size", size);
+        return response;
     }
 
     public Map<String, Object> getStats(Long userId, String poolType) {

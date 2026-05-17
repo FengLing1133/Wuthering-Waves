@@ -137,7 +137,8 @@ class GachaControllerTest extends BaseTest {
         List<GachaRecord> records = List.of(
                 TestDataFactory.createRecord(1L, "character", "四星角色A", 4, "character")
         );
-        when(gachaService.getHistory(anyLong(), anyString(), anyInt(), anyInt())).thenReturn(records);
+        Map<String, Object> historyData = Map.of("records", records, "total", 1L, "page", 1, "size", 20);
+        when(gachaService.getHistory(anyLong(), anyString(), anyInt(), anyInt())).thenReturn(historyData);
 
         mockMvc.perform(get("/api/gacha/history")
                         .header("Authorization", "Bearer " + testToken)

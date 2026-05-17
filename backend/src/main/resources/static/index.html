@@ -175,6 +175,20 @@
             </div>
         </div>
 
+        <!-- 保底计数显示 -->
+        <div class="pity-display" id="pityDisplay">
+            <div class="pity-ring">
+                <svg viewBox="0 0 36 36" class="pity-ring-svg">
+                    <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(74,158,255,0.15)" stroke-width="2"/>
+                    <circle cx="18" cy="18" r="16" fill="none" stroke="var(--accent-blue)" stroke-width="2"
+                            stroke-dasharray="100.53" stroke-dashoffset="100.53" stroke-linecap="round"
+                            id="pityRingProgress" transform="rotate(-90 18 18)"/>
+                </svg>
+                <span class="pity-number" id="pityNumber">0</span>
+            </div>
+            <span class="pity-label">保底</span>
+        </div>
+
         <!-- 底部按钮栏 -->
         <div class="bottom-bar">
             <div class="bottom-left-btns">
@@ -251,6 +265,7 @@
                     <option value="standard-character">常驻角色</option>
                     <option value="standard-weapon">常驻武器</option>
                 </select>
+                <button class="close-history-btn" id="closeHistoryBtn" title="关闭">✕</button>
             </div>
         </div>
         <div class="history-stats" id="historyStats"></div>

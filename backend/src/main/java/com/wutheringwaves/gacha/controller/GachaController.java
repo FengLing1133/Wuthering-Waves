@@ -66,10 +66,11 @@ public class GachaController {
 
         Long userId = (Long) authentication.getPrincipal();
 
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "records", gachaService.getHistory(userId, poolType, page, size)
-        ));
+        Map<String, Object> historyData = gachaService.getHistory(userId, poolType, page, size);
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("success", true);
+        response.putAll(historyData);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/stats")

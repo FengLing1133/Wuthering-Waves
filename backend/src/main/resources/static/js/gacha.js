@@ -199,9 +199,44 @@ const Gacha = {
     async updatePityCount() {
         try {
             const result = await API.getStats(this.currentPool);
-            // 保底信息可用于更新界面（如果需要）
+            if (result.success && result.stats) {
+                this.updatePityDisplay(result.stats.currentPity || 0);
+            }
         } catch (error) {
             console.error('获取保底信息失败:', error);
+        }
+    },
+
+    // 更新保底显示UI
+    updatePityDisplay(currentPity) {
+        const config = this.poolConfig[this.currentPool];
+        const maxPity = config ? config.maxPity : 90;
+        const pityNumber = document.getElementById('pityNumber');
+        const pityRingProgress = document.getElementById('pityRingProgress');
+
+        if (pityNumber) {
+            pityNumber.textContent = currentPity;
+        }
+
+        // 更新环形进度条
+        if (pityRingProgress) {
+            const circumference = 2 * Math.PI * 16; // r=16
+            const progress = currentPity / maxPity;
+            const offset = circumference * (1 - progress);
+            pityRingProgress.style.strokeDasharray = circumference;
+            pityRingProgress.style.strokeDashoffset = offset;
+
+            // 接近保底时变色
+            if (currentPity >= maxPity - 10) {
+                pityRingProgress.style.stroke = '#ff4a6a';
+                pityNumber.style.color = '#ff4a6a';
+            } else if (currentPity >= maxPity - 20) {
+                pityRingProgress.style.stroke = '#f0d060';
+                pityNumber.style.color = '#f0d060';
+            } else {
+                pityRingProgress.style.stroke = 'var(--accent-blue)';
+                pityNumber.style.color = 'var(--accent-blue)';
+            }
         }
     },
 

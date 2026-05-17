@@ -173,10 +173,11 @@ class GachaServiceTest extends BaseTest {
         page.setRecords(records);
         when(gachaRecordMapper.selectPage(any(), any())).thenReturn(page);
 
-        List<GachaRecord> result = gachaService.getHistory(1L, "character", 1, 20);
+        Map<String, Object> result = gachaService.getHistory(1L, "character", 1, 20);
 
         assertNotNull(result);
-        assertEquals(2, result.size());
+        List<GachaRecord> resultRecords = (List<GachaRecord>) result.get("records");
+        assertEquals(2, resultRecords.size());
     }
 
     @Test
