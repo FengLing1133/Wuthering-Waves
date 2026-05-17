@@ -4,8 +4,7 @@ import com.wutheringwaves.gacha.model.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class TestDataFactory {
 
@@ -40,54 +39,87 @@ public class TestDataFactory {
         pool.setMaxPity(90);
         pool.setSoftPityStart(75);
         pool.setSoftPityIncrement(new BigDecimal("6.00"));
-        pool.setUpItems("1001");
         pool.setStatus("active");
+        pool.setFivestarUp(1001L);
+        pool.setFourstarUp(null);
         pool.setCreatedAt(LocalDateTime.now());
         pool.setUpdatedAt(LocalDateTime.now());
         return pool;
     }
 
-    public static GachaItem createItem(Long id, int rarity, String name, String itemType, String poolType) {
+    public static GachaItem createItem(Long id, int rarity, String name, String itemType) {
+        return createItem(id, rarity, name, itemType, null);
+    }
+
+    public static GachaItem createItem(Long id, int rarity, String name, String itemType, Long categoryId) {
         GachaItem item = new GachaItem();
         item.setId(id);
         item.setName(name);
         item.setRarity(rarity);
         item.setItemType(itemType);
-        item.setPoolType(poolType);
-        item.setIsLimited(false);
+        item.setCategoryId(categoryId);
         return item;
     }
 
-    public static GachaItem createLimitedItem(Long id, int rarity, String name, String itemType, String poolType) {
-        GachaItem item = createItem(id, rarity, name, itemType, poolType);
-        item.setIsLimited(true);
-        return item;
+    public static ItemCategory createCategory(Long id, String name, int rarity, String itemType) {
+        ItemCategory cat = new ItemCategory();
+        cat.setId(id);
+        cat.setName(name);
+        cat.setRarity(rarity);
+        cat.setItemType(itemType);
+        cat.setSortOrder(id.intValue());
+        return cat;
+    }
+
+    public static PoolCategory createPoolCategory(Long poolId, Long categoryId) {
+        PoolCategory pc = new PoolCategory();
+        pc.setPoolId(poolId);
+        pc.setCategoryId(categoryId);
+        return pc;
     }
 
     public static List<GachaItem> createCharacterPoolItems() {
         List<GachaItem> items = new ArrayList<>();
-        items.add(createLimitedItem(1001L, 5, "限定五星角色", "character", "limited-character"));
-        items.add(createItem(1002L, 5, "常驻五星角色", "character", "limited-character"));
-        items.add(createItem(2001L, 4, "四星角色A", "character", "limited-character"));
-        items.add(createItem(2002L, 4, "四星角色B", "character", "limited-character"));
-        items.add(createItem(2003L, 4, "四星武器A", "weapon", "limited-character"));
-        items.add(createItem(3001L, 3, "三星武器A", "weapon", "limited-character"));
-        items.add(createItem(3002L, 3, "三星武器B", "weapon", "limited-character"));
-        items.add(createItem(3003L, 3, "三星武器C", "weapon", "limited-character"));
+        items.add(createItem(1001L, 5, "限定五星角色", "character", 7L));
+        items.add(createItem(1002L, 5, "常驻五星角色", "character", 4L));
+        items.add(createItem(2001L, 4, "四星角色A", "character", 2L));
+        items.add(createItem(2002L, 4, "四星角色B", "character", 2L));
+        items.add(createItem(2003L, 4, "四星武器A", "weapon", 3L));
+        items.add(createItem(3001L, 3, "三星武器A", "weapon", 1L));
+        items.add(createItem(3002L, 3, "三星武器B", "weapon", 1L));
+        items.add(createItem(3003L, 3, "三星武器C", "weapon", 1L));
         return items;
     }
 
     public static List<GachaItem> createWeaponPoolItems() {
         List<GachaItem> items = new ArrayList<>();
-        items.add(createLimitedItem(1003L, 5, "限定五星武器", "weapon", "limited-weapon"));
-        items.add(createItem(1004L, 5, "常驻五星武器", "weapon", "limited-weapon"));
-        items.add(createItem(2004L, 4, "四星武器A", "weapon", "limited-weapon"));
-        items.add(createItem(2005L, 4, "四星武器B", "weapon", "limited-weapon"));
-        items.add(createItem(2006L, 4, "四星角色A", "character", "limited-weapon"));
-        items.add(createItem(3004L, 3, "三星武器A", "weapon", "limited-weapon"));
-        items.add(createItem(3005L, 3, "三星武器B", "weapon", "limited-weapon"));
-        items.add(createItem(3006L, 3, "三星武器C", "weapon", "limited-weapon"));
+        items.add(createItem(1003L, 5, "限定五星武器", "weapon", 6L));
+        items.add(createItem(1004L, 5, "常驻五星武器", "weapon", 5L));
+        items.add(createItem(2004L, 4, "四星武器A", "weapon", 3L));
+        items.add(createItem(2005L, 4, "四星武器B", "weapon", 3L));
+        items.add(createItem(2006L, 4, "四星角色A", "character", 2L));
+        items.add(createItem(3004L, 3, "三星武器A", "weapon", 1L));
+        items.add(createItem(3005L, 3, "三星武器B", "weapon", 1L));
+        items.add(createItem(3006L, 3, "三星武器C", "weapon", 1L));
         return items;
+    }
+
+    public static List<PoolCategory> createCharacterPoolCategories() {
+        return List.of(
+                createPoolCategory(1L, 1L),
+                createPoolCategory(1L, 2L),
+                createPoolCategory(1L, 4L),
+                createPoolCategory(1L, 7L)
+        );
+    }
+
+    public static List<PoolCategory> createWeaponPoolCategories() {
+        return List.of(
+                createPoolCategory(2L, 1L),
+                createPoolCategory(2L, 3L),
+                createPoolCategory(2L, 5L),
+                createPoolCategory(2L, 6L)
+        );
     }
 
     public static GachaPity createGachaPity(Long userId, String poolType, int fiveStarCount, int fourStarCount, boolean guaranteed) {
@@ -97,6 +129,7 @@ public class TestDataFactory {
         pity.setFiveStarCount(fiveStarCount);
         pity.setFourStarCount(fourStarCount);
         pity.setGuaranteedFive(guaranteed);
+        pity.setGuaranteedFour(false);
         pity.setUpdatedAt(LocalDateTime.now());
         return pity;
     }

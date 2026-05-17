@@ -92,4 +92,13 @@ public class UserService {
     public void updateStarlight(Long userId, int delta) {
         userMapper.updateStarlight(userId, delta);
     }
+
+    public void updateSelectedWeaponUp(Long userId, Long weaponId) {
+        userMapper.updateSelectedWeaponUp(userId, weaponId);
+    }
+
+    public Long getSelectedWeaponUp(Long userId) {
+        User user = getUserById(userId);
+        return user != null ? user.getSelectedStandardWeaponUp() : null;
+    }
 }

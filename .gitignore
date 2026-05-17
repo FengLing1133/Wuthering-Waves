@@ -11,10 +11,20 @@ backend/target/
 
 # IDE files
 .idea/
+backend/.idea/
 *.iml
 .vscode/
 *.swp
 *.swo
+
+# Superpowers plugin
+.superpowers/
+
+# Runtime uploads
+backend/uploads/
+
+# Docs
+docs/
 
 # OS files
 .DS_Store

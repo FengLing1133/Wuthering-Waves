@@ -50,7 +50,10 @@
         <!-- 卡池详情 -->
         <div class="banner-detail" id="bannerDetail">
             <div class="banner-info">
-                <p class="banner-subtitle" id="bannerSubtitle">角色活动唤取</p>
+                <div class="subtitle-row">
+                    <p class="banner-subtitle" id="bannerSubtitle">角色活动唤取</p>
+                    <button class="change-up-btn hidden" id="changeUpBtn">更换</button>
+                </div>
                 <h1 class="banner-title" id="bannerTitle">雪色所映千般未来</h1>
                 <div class="banner-timer">
                     <span class="timer-icon">⏱</span>
@@ -170,6 +173,18 @@
             </table>
         </div>
         <div class="history-pagination" id="historyPagination"></div>
+    </div>
+
+    <!-- 武器选择弹窗 -->
+    <div id="weaponSelectModal" class="weapon-select-modal hidden">
+        <div class="weapon-select-overlay"></div>
+        <div class="weapon-select-content">
+            <div class="weapon-select-header">
+                <h3>选择UP武器</h3>
+                <button class="close-btn" id="closeWeaponSelectBtn">×</button>
+            </div>
+            <div class="weapon-select-grid" id="weaponSelectGrid"></div>
+        </div>
     </div>
 
     <!-- 抽卡动画遮罩 -->

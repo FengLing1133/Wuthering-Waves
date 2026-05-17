@@ -1,6 +1,9 @@
 package com.wutheringwaves.gacha.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.wutheringwaves.gacha.mapper.GachaItemMapper;
 import com.wutheringwaves.gacha.model.FourStarAvatar;
+import com.wutheringwaves.gacha.model.GachaItem;
 import com.wutheringwaves.gacha.model.GachaPool;
 import com.wutheringwaves.gacha.service.AdminService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,7 @@ import java.util.*;
 public class AdminController {
 
     private final AdminService adminService;
+    private final GachaItemMapper gachaItemMapper;
 
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
@@ -135,6 +139,66 @@ public class AdminController {
         if (!result) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "更新失败（最多选择3个头像）"));
         }
+        return ResponseEntity.ok(Map.of("success", true, "message", "已更新"));
+    }
+
+    // ========== 分类管理 ==========
+
+    @GetMapping("/categories")
+    public ResponseEntity<Map<String, Object>> listCategories() {
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "categories", adminService.listCategories()
+        ));
+    }
+
+    // ========== 卡池物品管理 ==========
+
+    @GetMapping("/items")
+    public ResponseEntity<Map<String, Object>> listAllItems(
+            @RequestParam(required = false) Integer rarity,
+            @RequestParam(required = false) String itemType) {
+        LambdaQueryWrapper<GachaItem> wrapper = new LambdaQueryWrapper<>();
+        if (rarity != null) wrapper.eq(GachaItem::getRarity, rarity);
+        if (itemType != null && !itemType.isEmpty()) wrapper.eq(GachaItem::getItemType, itemType);
+        wrapper.orderByAsc(GachaItem::getRarity).orderByAsc(GachaItem::getName);
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "items", gachaItemMapper.selectList(wrapper)
+        ));
+    }
+
+    @GetMapping("/pools/{id}/items")
+    public ResponseEntity<Map<String, Object>> getPoolItems(@PathVariable Long id) {
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "items", adminService.getPoolItems(id)
+        ));
+    }
+
+    @GetMapping("/pools/{id}/up-items")
+    public ResponseEntity<Map<String, Object>> getPoolUpItems(@PathVariable Long id) {
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "upItems", adminService.getPoolUpItems(id)
+        ));
+    }
+
+    @PutMapping("/pools/{id}/config")
+    public ResponseEntity<Map<String, Object>> updatePoolConfig(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> request) {
+        @SuppressWarnings("unchecked")
+        List<Number> categoryNumbers = (List<Number>) request.get("categoryIds");
+        List<Long> categoryIds = categoryNumbers != null
+                ? categoryNumbers.stream().map(Number::longValue).toList() : null;
+        Long fivestarUp = request.get("fivestarUp") != null
+                ? ((Number) request.get("fivestarUp")).longValue() : null;
+        @SuppressWarnings("unchecked")
+        List<Number> fourstarUpNumbers = (List<Number>) request.get("fourstarUpIds");
+        List<Long> fourstarUpIds = fourstarUpNumbers != null
+                ? fourstarUpNumbers.stream().map(Number::longValue).toList() : null;
+        adminService.updatePoolConfig(id, categoryIds, fivestarUp, fourstarUpIds);
         return ResponseEntity.ok(Map.of("success", true, "message", "已更新"));
     }
 

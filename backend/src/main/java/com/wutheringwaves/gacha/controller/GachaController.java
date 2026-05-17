@@ -2,6 +2,8 @@ package com.wutheringwaves.gacha.controller;
 
 import com.wutheringwaves.gacha.service.AdminService;
 import com.wutheringwaves.gacha.service.GachaService;
+import com.wutheringwaves.gacha.service.UserService;
+import com.wutheringwaves.gacha.model.GachaItem;
 import com.wutheringwaves.gacha.model.GachaPool;
 import com.wutheringwaves.gacha.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ public class GachaController {
 
     private final GachaService gachaService;
     private final AdminService adminService;
+    private final UserService userService;
     private final JwtUtil jwtUtil;
 
     private static final Set<String> VALID_POOL_TYPES = Set.of(
@@ -134,7 +137,7 @@ public class GachaController {
             poolData.put("description", pool.getDescription());
             poolData.put("bgImageUrl", pool.getBgImageUrl());
             poolData.put("thumbnailUrl", pool.getThumbnailUrl());
-            poolData.put("upItems", pool.getUpItems());
+            poolData.put("upItems", adminService.getPoolUpItems(pool.getId()));
             poolData.put("fiveStarRate", pool.getFiveStarRate());
             poolData.put("fourStarRate", pool.getFourStarRate());
             poolData.put("maxPity", pool.getMaxPity());
@@ -174,7 +177,7 @@ public class GachaController {
         poolData.put("description", pool.getDescription());
         poolData.put("bgImageUrl", pool.getBgImageUrl());
         poolData.put("thumbnailUrl", pool.getThumbnailUrl());
-        poolData.put("upItems", pool.getUpItems());
+        poolData.put("upItems", adminService.getPoolUpItems(pool.getId()));
         poolData.put("fiveStarRate", pool.getFiveStarRate());
         poolData.put("fourStarRate", pool.getFourStarRate());
         poolData.put("maxPity", pool.getMaxPity());
@@ -185,5 +188,67 @@ public class GachaController {
         poolData.put("fourStarAvatars", adminService.getPoolFourStarAvatars(pool.getId()));
 
         return ResponseEntity.ok(Map.of("success", true, "pool", poolData));
+    }
+
+    // ========== 常驻武器池UP自选 ==========
+
+    @GetMapping("/standard-weapon-up")
+    public ResponseEntity<Map<String, Object>> getStandardWeaponUpOptions(Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+
+        // 查找常驻武器池
+        List<GachaPool> pools = adminService.listPools("standard-weapon", "active");
+        if (pools.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "常驻武器池不存在"));
+        }
+        GachaPool pool = pools.get(0);
+
+        // 获取池内所有五星武器
+        List<GachaItem> allItems = adminService.getPoolItems(pool.getId());
+        List<Map<String, Object>> fiveStarWeapons = allItems.stream()
+                .filter(item -> item.getRarity() == 5 && "weapon".equals(item.getItemType()))
+                .map(item -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", item.getId());
+                    m.put("name", item.getName());
+                    m.put("rarity", item.getRarity());
+                    m.put("imageUrl", item.getImageUrl());
+                    return m;
+                })
+                .toList();
+
+        Long selectedId = userService.getSelectedWeaponUp(userId);
+        // 如果用户未选择，使用池默认UP
+        if (selectedId == null) {
+            selectedId = pool.getFivestarUp();
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("weapons", fiveStarWeapons);
+        result.put("selectedId", selectedId);
+        return ResponseEntity.ok(result);
+    }
+
+    @PutMapping("/standard-weapon-up")
+    public ResponseEntity<Map<String, Object>> setStandardWeaponUp(
+            Authentication authentication,
+            @RequestBody Map<String, Object> request) {
+        Long userId = (Long) authentication.getPrincipal();
+
+        Number weaponIdNum = (Number) request.get("weaponId");
+        if (weaponIdNum == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "缺少武器ID"));
+        }
+        Long weaponId = weaponIdNum.longValue();
+
+        // 验证武器存在且为五星武器
+        GachaItem item = adminService.getItemById(weaponId);
+        if (item == null || item.getRarity() != 5 || !"weapon".equals(item.getItemType())) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "无效的武器ID"));
+        }
+
+        userService.updateSelectedWeaponUp(userId, weaponId);
+        return ResponseEntity.ok(Map.of("success", true, "message", "UP武器已更新"));
     }
 }

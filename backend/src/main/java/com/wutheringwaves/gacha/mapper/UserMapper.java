@@ -11,4 +11,7 @@ public interface UserMapper extends BaseMapper<User> {
 
     @Update("UPDATE users SET starlight = starlight + #{delta} WHERE id = #{userId}")
     int updateStarlight(@Param("userId") Long userId, @Param("delta") int delta);
+
+    @Update("UPDATE users SET selected_standard_weapon_up = #{weaponId} WHERE id = #{userId}")
+    int updateSelectedWeaponUp(@Param("userId") Long userId, @Param("weaponId") Long weaponId);
 }

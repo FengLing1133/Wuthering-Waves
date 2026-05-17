@@ -6,14 +6,13 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 @Data
-@TableName("gacha_items")
-public class GachaItem {
+@TableName("item_category")
+public class ItemCategory {
     @TableId(type = IdType.AUTO)
     private Long id;
     private String name;
     private Integer rarity;
     private String itemType;
-    private Long categoryId;
-    private String imageUrl;
     private String description;
+    private Integer sortOrder;
 }
