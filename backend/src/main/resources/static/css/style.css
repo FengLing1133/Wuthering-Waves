@@ -51,7 +51,7 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 0 20px;
-    background: linear-gradient(180deg, rgba(5, 10, 24, 0.95) 0%, rgba(5, 10, 24, 0.7) 100%);
+    background: transparent; /* 改为透明 */
     z-index: 100;
 }
 
@@ -60,6 +60,60 @@ body {
     font-weight: 500;
     letter-spacing: 3px;
     color: var(--text-secondary);
+}
+
+/* 透明椭圆星声框 */
+.astralite-container {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    padding: 6px 14px 6px 8px;
+    z-index: 11;
+}
+
+.astralite-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: radial-gradient(circle, #7ad4ff 30%, #3a9aff 70%, #1a6adf 100%);
+    box-shadow: 0 0 10px rgba(100, 180, 255, 0.6);
+}
+
+.astralite-amount {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+    min-width: 30px;
+    text-align: right;
+}
+
+.astralite-add {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.astralite-add:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
 }
 
 .top-bar-center {
