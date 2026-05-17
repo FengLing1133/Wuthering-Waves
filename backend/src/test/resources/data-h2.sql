@@ -1,8 +1,8 @@
 -- 插入测试用户 (密码为 'password123' 的 BCrypt 加密)
-INSERT INTO users (id, username, password, role, starlight, starshards) VALUES
-(1, 'testuser', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'user', 1600, 0);
-INSERT INTO users (id, username, password, role, starlight, starshards) VALUES
-(2, 'admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'ADMIN', 10000, 100);
+INSERT INTO users (id, username, password, role, starlight) VALUES
+(1, 'testuser', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'user', 1600);
+INSERT INTO users (id, username, password, role, starlight) VALUES
+(2, 'admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'ADMIN', 10000);
 
 -- 插入卡池配置
 INSERT INTO gacha_pool (id, name, pool_type, description, five_star_rate, four_star_rate, max_pity, soft_pity_start, soft_pity_increment, up_items, status) VALUES

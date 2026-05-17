@@ -12,7 +12,6 @@ CREATE TABLE users (
     password VARCHAR(100) NOT NULL,
     role VARCHAR(20) DEFAULT 'user',
     starlight INT DEFAULT 1600,
-    starshards INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

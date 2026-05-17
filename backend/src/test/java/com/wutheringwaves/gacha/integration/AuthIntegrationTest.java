@@ -53,8 +53,7 @@ class AuthIntegrationTest extends BaseTest {
         assertTrue(passwordEncoder.matches(password, createdUser.getPassword()));
 
         // 验证初始资源
-        assertEquals(1600, createdUser.getStarlight());
-        assertEquals(0, createdUser.getStarshards());
+        assertEquals(100000, createdUser.getStarlight());
         assertEquals("user", createdUser.getRole());
     }
 

@@ -16,7 +16,6 @@ public class User {
     private String password;
     private String role;
     private Integer starlight;
-    private Integer starshards;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

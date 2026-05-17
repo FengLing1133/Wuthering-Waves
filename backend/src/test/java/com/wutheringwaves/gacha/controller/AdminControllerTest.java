@@ -154,11 +154,10 @@ class AdminControllerTest extends BaseTest {
     @Test
     @DisplayName("更新用户资源成功 - 返回200")
     void updateUserResources_success() throws Exception {
-        when(adminService.updateUserResources(anyLong(), any(), any())).thenReturn(true);
+        when(adminService.updateUserResources(anyLong(), any())).thenReturn(true);
 
         Map<String, Object> request = new HashMap<>();
         request.put("starlight", 5000);
-        request.put("starshards", 200);
 
         mockMvc.perform(put("/api/admin/users/1/resources")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -170,7 +169,7 @@ class AdminControllerTest extends BaseTest {
     @Test
     @DisplayName("更新用户资源失败 - 用户不存在返回400")
     void updateUserResources_notFound_400() throws Exception {
-        when(adminService.updateUserResources(anyLong(), any(), any())).thenReturn(false);
+        when(adminService.updateUserResources(anyLong(), any())).thenReturn(false);
 
         Map<String, Object> request = new HashMap<>();
         request.put("starlight", 5000);

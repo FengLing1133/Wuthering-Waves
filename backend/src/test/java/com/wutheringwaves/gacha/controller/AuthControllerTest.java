@@ -156,7 +156,6 @@ class AuthControllerTest extends BaseTest {
         user.setUsername("testuser");
         user.setRole("user");
         user.setStarlight(1600);
-        user.setStarshards(0);
 
         when(jwtUtil.validateToken(token)).thenReturn(true);
         when(jwtUtil.getUserIdFromToken(token)).thenReturn(1L);

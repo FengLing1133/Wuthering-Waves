@@ -74,8 +74,7 @@ public class AuthController {
                             "id", user.getId(),
                             "username", user.getUsername(),
                             "role", user.getRole() != null ? user.getRole() : "user",
-                            "starlight", user.getStarlight(),
-                            "starshards", user.getStarshards()
+                            "starlight", user.getStarlight()
                     )
             ));
         } catch (Exception e) {

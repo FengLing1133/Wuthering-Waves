@@ -11,14 +11,13 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     role VARCHAR(20) DEFAULT 'user' COMMENT '角色：user/admin',
     starlight INT DEFAULT 100000 COMMENT '星声（抽卡货币）',
-    starshards INT DEFAULT 0 COMMENT '星辉（兑换货币）',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- 预置管理员账户（admin/123456）
-INSERT INTO users (username, password, role, starlight, starshards) VALUES
-('admin', '$2a$10$Q/6lluMY0rON1Q//Tvf0k.0xaAbYKkAYfphbajDj3LG5xPvldhGg.', 'admin', 999999, 999999)
+INSERT INTO users (username, password, role, starlight) VALUES
+('admin', '$2a$10$Q/6lluMY0rON1Q//Tvf0k.0xaAbYKkAYfphbajDj3LG5xPvldhGg.', 'admin', 999999)
 ON DUPLICATE KEY UPDATE role = 'admin';
 
 -- 抽卡记录表

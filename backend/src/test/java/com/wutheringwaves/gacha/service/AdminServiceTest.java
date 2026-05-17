@@ -173,11 +173,10 @@ class AdminServiceTest extends BaseTest {
         when(userMapper.selectById(1L)).thenReturn(user);
         when(userMapper.updateById(any(com.wutheringwaves.gacha.model.User.class))).thenReturn(1);
 
-        boolean result = adminService.updateUserResources(1L, 5000, 200);
+        boolean result = adminService.updateUserResources(1L, 5000);
 
         assertTrue(result);
         assertEquals(5000, user.getStarlight());
-        assertEquals(200, user.getStarshards());
     }
 
     @Test
@@ -185,7 +184,7 @@ class AdminServiceTest extends BaseTest {
     void updateUserResources_notFound() {
         when(userMapper.selectById(999L)).thenReturn(null);
 
-        boolean result = adminService.updateUserResources(999L, 5000, 200);
+        boolean result = adminService.updateUserResources(999L, 5000);
 
         assertFalse(result);
     }

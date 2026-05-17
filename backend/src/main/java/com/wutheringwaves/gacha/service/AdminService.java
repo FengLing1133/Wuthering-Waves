@@ -74,11 +74,10 @@ public class AdminService {
         return userMapper.selectPage(pageParam, wrapper);
     }
 
-    public boolean updateUserResources(Long userId, Integer starlight, Integer starshards) {
+    public boolean updateUserResources(Long userId, Integer starlight) {
         User user = userMapper.selectById(userId);
         if (user == null) return false;
         if (starlight != null) user.setStarlight(starlight);
-        if (starshards != null) user.setStarshards(starshards);
         userMapper.updateById(user);
         return true;
     }

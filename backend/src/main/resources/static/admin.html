@@ -187,7 +187,6 @@
                         <th>用户名</th>
                         <th>角色</th>
                         <th>星声</th>
-                        <th>星辉</th>
                         <th>注册时间</th>
                         <th>操作</th>
                     </tr>
@@ -241,7 +240,6 @@
             <input type="hidden" id="resUserId">
             <p style="color:var(--text-secondary);margin-bottom:16px;">用户：<span id="resUsername"></span></p>
             <label><span>星声数量</span><input type="number" id="resStarlight" min="0"></label>
-            <label><span>星辉数量</span><input type="number" id="resStarshards" min="0"></label>
             <div class="modal-actions">
                 <button class="btn" style="background:rgba(255,255,255,0.1);color:var(--text-secondary);" onclick="closeResourceModal()">取消</button>
                 <button class="btn btn-gold" onclick="saveResources()">保存</button>
@@ -490,10 +488,9 @@
                             <td>${u.username}</td>
                             <td><span class="badge ${u.role==='admin'?'badge-active':'badge-inactive'}">${u.role || 'user'}</span></td>
                             <td>${(u.starlight||0).toLocaleString()}</td>
-                            <td>${(u.starshards||0).toLocaleString()}</td>
                             <td>${u.createdAt ? u.createdAt.replace('T', ' ').substring(0, 19) : '-'}</td>
                             <td class="btn-group">
-                                <button class="btn btn-sm btn-primary" onclick="openResourceModal(${u.id},'${u.username}',${u.starlight||0},${u.starshards||0})">调整资源</button>
+                                <button class="btn btn-sm btn-primary" onclick="openResourceModal(${u.id},'${u.username}',${u.starlight||0})">调整资源</button>
                                 <button class="btn btn-sm btn-gold" onclick="viewRecords(${u.id},'${u.username}')">抽卡记录</button>
                             </td>
                         </tr>
@@ -514,12 +511,11 @@
             document.getElementById('usersPagination').innerHTML = html;
         }
 
-        function openResourceModal(id, username, starlight, starshards) {
+        function openResourceModal(id, username, starlight) {
             document.getElementById('resourceModal').classList.add('active');
             document.getElementById('resUserId').value = id;
             document.getElementById('resUsername').textContent = username;
             document.getElementById('resStarlight').value = starlight;
-            document.getElementById('resStarshards').value = starshards;
         }
 
         function closeResourceModal() { document.getElementById('resourceModal').classList.remove('active'); }
@@ -527,8 +523,7 @@
         async function saveResources() {
             const id = document.getElementById('resUserId').value;
             const data = {
-                starlight: parseInt(document.getElementById('resStarlight').value),
-                starshards: parseInt(document.getElementById('resStarshards').value)
+                starlight: parseInt(document.getElementById('resStarlight').value)
             };
             try {
                 const res = await API.request(`/admin/users/${id}/resources`, { method: 'PUT', body: JSON.stringify(data) });

@@ -28,8 +28,6 @@ async function loadUserInfo() {
             API.setUser(user);
 
             document.getElementById('astraliteCount').textContent = user.starlight || 0;
-            document.getElementById('lustrumCount').textContent = user.starshards || 0;
-            document.getElementById('coralsCount').textContent = user.corals || 0;
 
             // admin 用户显示管理后台入口
             if (user.role === 'admin') {

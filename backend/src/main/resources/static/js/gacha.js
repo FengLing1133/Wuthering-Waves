@@ -286,7 +286,7 @@ const Gacha = {
 
             if (result.success) {
                 // 更新货币显示
-                this.updateCurrency(result.starlight, result.starshards);
+                this.updateCurrency(result.starlight);
 
                 // 显示结果
                 this.showResult(result.results);
@@ -374,9 +374,8 @@ const Gacha = {
     },
 
     // 更新货币显示
-    updateCurrency(starlight, starshards) {
+    updateCurrency(starlight) {
         document.getElementById('astraliteCount').textContent = starlight;
-        document.getElementById('lustrumCount').textContent = starshards;
     },
 
     // 工具函数：延时

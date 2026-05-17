@@ -60,7 +60,6 @@ class AdminIntegrationTest extends BaseTest {
         admin.setPassword(passwordEncoder.encode("admin123"));
         admin.setRole("ADMIN");
         admin.setStarlight(10000);
-        admin.setStarshards(100);
         userMapper.insert(admin);
         adminUserId = admin.getId();
 
@@ -70,7 +69,6 @@ class AdminIntegrationTest extends BaseTest {
         normalUser.setPassword(passwordEncoder.encode("user123"));
         normalUser.setRole("user");
         normalUser.setStarlight(1600);
-        normalUser.setStarshards(0);
         userMapper.insert(normalUser);
         normalUserId = normalUser.getId();
 
@@ -229,7 +227,7 @@ class AdminIntegrationTest extends BaseTest {
         assertEquals(1600, before.getStarlight());
 
         // 管理员增加星声
-        boolean updated = adminService.updateUserResources(normalUserId, 5000, null);
+        boolean updated = adminService.updateUserResources(normalUserId, 5000);
         assertTrue(updated);
 
         // 验证星声已更新
@@ -249,7 +247,7 @@ class AdminIntegrationTest extends BaseTest {
     @DisplayName("用户资源调整 - 减少星声后星声不足")
     void userResources_decreaseStarlight_thenPullFail_shouldWork() {
         // 管理员将星声设为100
-        adminService.updateUserResources(normalUserId, 100, null);
+        adminService.updateUserResources(normalUserId, 100);
 
         // 尝试十连（需要1500）
         Map<String, Object> pullResult = gachaService.pull(normalUserId, "limited-character", 10);
@@ -258,30 +256,18 @@ class AdminIntegrationTest extends BaseTest {
     }
 
     @Test
-    @DisplayName("用户资源调整 - 调整星辉")
-    void userResources_adjustStarshards_shouldWork() {
-        adminService.updateUserResources(normalUserId, null, 50);
+    @DisplayName("用户资源调整 - 调整星声")
+    void userResources_adjustStarlight_shouldWork() {
+        adminService.updateUserResources(normalUserId, 5000);
 
         User updated = userMapper.selectById(normalUserId);
-        assertEquals(50, updated.getStarshards());
-        // 星声不变
-        assertEquals(1600, updated.getStarlight());
-    }
-
-    @Test
-    @DisplayName("用户资源调整 - 同时调整星声和星辉")
-    void userResources_adjustBoth_shouldWork() {
-        adminService.updateUserResources(normalUserId, 3000, 20);
-
-        User updated = userMapper.selectById(normalUserId);
-        assertEquals(3000, updated.getStarlight());
-        assertEquals(20, updated.getStarshards());
+        assertEquals(5000, updated.getStarlight());
     }
 
     @Test
     @DisplayName("用户资源调整 - 调整不存在的用户返回false")
     void userResources_nonExistentUser_shouldReturnFalse() {
-        boolean result = adminService.updateUserResources(99999L, 1000, null);
+        boolean result = adminService.updateUserResources(99999L, 1000);
         assertFalse(result);
     }
 
@@ -289,11 +275,11 @@ class AdminIntegrationTest extends BaseTest {
     @DisplayName("用户资源调整 - 多次调整后抽卡累计正确")
     void userResources_multipleAdjustments_thenPull_shouldBeAccurate() {
         // 第一次调整：增加到3000
-        adminService.updateUserResources(normalUserId, 3000, null);
+        adminService.updateUserResources(normalUserId, 3000);
         // 单抽一次（160）
         gachaService.pull(normalUserId, "limited-character", 1);
         // 第二次调整：增加2000（当前2840 + 2000 = 4840）
-        adminService.updateUserResources(normalUserId, 2000, null);
+        adminService.updateUserResources(normalUserId, 2000);
 
         User updated = userMapper.selectById(normalUserId);
         // 2840 + 2000 = 4840... 但updateUserResources是设置还是增加？
@@ -308,7 +294,7 @@ class AdminIntegrationTest extends BaseTest {
     @DisplayName("报表统计 - 仪表盘统计数据正确")
     void statsDashboard_shouldReturnCorrectCounts() {
         // 产生抽卡数据
-        adminService.updateUserResources(normalUserId, 10000, null);
+        adminService.updateUserResources(normalUserId, 10000);
         gachaService.pull(normalUserId, "limited-character", 10);
 
         Map<String, Object> stats = adminService.getDashboardStats();
@@ -330,7 +316,7 @@ class AdminIntegrationTest extends BaseTest {
     @DisplayName("报表统计 - 每日统计数据正确")
     void statsDaily_shouldReturnDailyBreakdown() {
         // 产生抽卡数据
-        adminService.updateUserResources(normalUserId, 10000, null);
+        adminService.updateUserResources(normalUserId, 10000);
         gachaService.pull(normalUserId, "limited-character", 5);
 
         List<Map<String, Object>> dailyStats = adminService.getDailyStats(7);
@@ -351,7 +337,7 @@ class AdminIntegrationTest extends BaseTest {
     @DisplayName("报表统计 - 抽卡后五星/四星计数正确")
     void statsDaily_afterPulls_shouldCountRarities() {
         // 大量抽卡以确保有各稀有度的数据
-        adminService.updateUserResources(normalUserId, 50000, null);
+        adminService.updateUserResources(normalUserId, 50000);
         gachaService.pull(normalUserId, "limited-character", 30);
 
         Map<String, Object> stats = gachaService.getStats(normalUserId, "limited-character");
@@ -418,7 +404,7 @@ class AdminIntegrationTest extends BaseTest {
     @DisplayName("用户管理 - 查询用户抽卡记录")
     void getUserRecords_shouldReturnRecords() {
         // 先产生抽卡记录
-        adminService.updateUserResources(normalUserId, 10000, null);
+        adminService.updateUserResources(normalUserId, 10000);
         gachaService.pull(normalUserId, "limited-character", 10);
 
         var page = adminService.getUserRecords(normalUserId, "limited-character", 1, 20);

@@ -16,7 +16,6 @@ public class TestDataFactory {
         user.setPassword("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
         user.setRole("user");
         user.setStarlight(1600);
-        user.setStarshards(0);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
         return user;
@@ -27,7 +26,6 @@ public class TestDataFactory {
         user.setUsername("admin_" + id);
         user.setRole("ADMIN");
         user.setStarlight(10000);
-        user.setStarshards(100);
         return user;
     }
 

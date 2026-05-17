@@ -90,10 +90,8 @@ public class AdminController {
             @RequestBody Map<String, Object> request) {
         Integer starlight = request.get("starlight") != null ?
                 ((Number) request.get("starlight")).intValue() : null;
-        Integer starshards = request.get("starshards") != null ?
-                ((Number) request.get("starshards")).intValue() : null;
 
-        boolean result = adminService.updateUserResources(id, starlight, starshards);
+        boolean result = adminService.updateUserResources(id, starlight);
         if (!result) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "用户不存在"));
         }
