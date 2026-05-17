@@ -55,62 +55,8 @@
 
     <!-- 左侧卡池列表 -->
     <aside class="banner-sidebar" id="bannerSidebar">
-        <!-- 限定角色池 1 -->
-        <div class="banner-slot active" data-pool="character-1" data-banner="0">
-            <div class="banner-thumb">
-                <div class="banner-thumb-img" style="background-image: url('/images/banners/juese-feixue-v3.png'); background-size: cover; background-position: center;"></div>
-            </div>
-            <span class="banner-tag">活动</span>
-        </div>
-        <!-- 限定角色池 2 -->
-        <div class="banner-slot" data-pool="character-2" data-banner="1">
-            <div class="banner-thumb">
-                <div class="banner-thumb-img" style="background-image: url('/images/banners/juese-younuo-v3.png'); background-size: cover; background-position: center;"></div>
-            </div>
-            <span class="banner-tag">活动</span>
-        </div>
-        <!-- 限定角色池 3 -->
-        <div class="banner-slot" data-pool="character-3" data-banner="2">
-            <div class="banner-thumb">
-                <div class="banner-thumb-img" style="background-image: url('/images/banners/juese-moning-v3.png'); background-size: cover; background-position: center;"></div>
-            </div>
-            <span class="banner-tag">活动</span>
-        </div>
-        <!-- 限定武器池 1 -->
-        <div class="banner-slot" data-pool="weapon-1" data-banner="3">
-            <div class="banner-thumb">
-                <div class="banner-thumb-img" style="background-image: url('/images/banners/zhuanwu-feixue-v3.png'); background-size: cover; background-position: center;"></div>
-            </div>
-            <span class="banner-tag">活动</span>
-        </div>
-        <!-- 限定武器池 2 -->
-        <div class="banner-slot" data-pool="weapon-2" data-banner="4">
-            <div class="banner-thumb">
-                <div class="banner-thumb-img" style="background-image: url('/images/banners/zhuanwu-younuo-v3.png'); background-size: cover; background-position: center;"></div>
-            </div>
-            <span class="banner-tag">活动</span>
-        </div>
-        <!-- 限定武器池 3 -->
-        <div class="banner-slot" data-pool="weapon-3" data-banner="5">
-            <div class="banner-thumb">
-                <div class="banner-thumb-img" style="background-image: url('/images/banners/zhuanwu-moning-v3.png'); background-size: cover; background-position: center;"></div>
-            </div>
-            <span class="banner-tag">活动</span>
-        </div>
-        <!-- 常驻角色池 -->
-        <div class="banner-slot" data-pool="standard-character" data-banner="6">
-            <div class="banner-thumb">
-                <div class="banner-thumb-img" style="background-image: url('/images/banners/juese-changzhu-v3.png'); background-size: cover; background-position: center;"></div>
-            </div>
-            <span class="banner-tag">常驻</span>
-        </div>
-        <!-- 常驻武器池 -->
-        <div class="banner-slot" data-pool="standard-weapon" data-banner="7">
-            <div class="banner-thumb">
-                <div class="banner-thumb-img" style="background-image: url('/images/banners/zhuanwu-changzhu-v3.png'); background-size: cover; background-position: center;"></div>
-            </div>
-            <span class="banner-tag">常驻</span>
-        </div>
+        <!-- 动态加载卡池列表 -->
+        <div id="bannerSlots"></div>
     </aside>
 
     <!-- 主内容区 -->
