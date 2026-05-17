@@ -56,7 +56,6 @@ CREATE TABLE IF NOT EXISTS gacha_pool (
     name VARCHAR(100) NOT NULL COMMENT '卡池名称',
     pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon',
     description TEXT COMMENT '卡池描述',
-    image_url VARCHAR(255) COMMENT '卡池封面图片路径',
     five_star_rate DECIMAL(5,2) DEFAULT 0.80 COMMENT '五星基础概率(%)',
     four_star_rate DECIMAL(5,2) DEFAULT 6.00 COMMENT '四星基础概率(%)',
     max_pity INT DEFAULT 90 COMMENT '硬保底抽数',

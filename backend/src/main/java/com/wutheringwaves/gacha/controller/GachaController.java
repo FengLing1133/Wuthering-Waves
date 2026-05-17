@@ -131,7 +131,6 @@ public class GachaController {
             poolData.put("description", pool.getDescription());
             poolData.put("bgImageUrl", pool.getBgImageUrl());
             poolData.put("thumbnailUrl", pool.getThumbnailUrl());
-            poolData.put("imageUrl", pool.getImageUrl());
             poolData.put("upItems", pool.getUpItems());
             poolData.put("fiveStarRate", pool.getFiveStarRate());
             poolData.put("fourStarRate", pool.getFourStarRate());
@@ -172,7 +171,6 @@ public class GachaController {
         poolData.put("description", pool.getDescription());
         poolData.put("bgImageUrl", pool.getBgImageUrl());
         poolData.put("thumbnailUrl", pool.getThumbnailUrl());
-        poolData.put("imageUrl", pool.getImageUrl());
         poolData.put("upItems", pool.getUpItems());
         poolData.put("fiveStarRate", pool.getFiveStarRate());
         poolData.put("fourStarRate", pool.getFourStarRate());

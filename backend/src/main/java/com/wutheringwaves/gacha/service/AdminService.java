@@ -59,8 +59,21 @@ public class AdminService {
     public boolean togglePoolStatus(Long id) {
         GachaPool pool = gachaPoolMapper.selectById(id);
         if (pool == null) return false;
-        pool.setStatus("active".equals(pool.getStatus()) ? "inactive" : "active");
+        boolean activating = "inactive".equals(pool.getStatus());
+        pool.setStatus(activating ? "active" : "inactive");
+        pool.setSidebarVisible(activating);
         gachaPoolMapper.updateById(pool);
+        return true;
+    }
+
+    @Transactional
+    public boolean deletePool(Long id) {
+        GachaPool pool = gachaPoolMapper.selectById(id);
+        if (pool == null) return false;
+        LambdaQueryWrapper<PoolFourStar> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(PoolFourStar::getPoolId, id);
+        poolFourStarMapper.delete(wrapper);
+        gachaPoolMapper.deleteById(id);
         return true;
     }
 

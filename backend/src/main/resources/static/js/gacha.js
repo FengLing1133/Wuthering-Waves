@@ -103,7 +103,7 @@ const Gacha = {
         // 更新背景图
         const bgEl = document.getElementById('bannerBg');
         if (bgEl) {
-            const bgUrl = pool.bgImageUrl || pool.imageUrl;
+            const bgUrl = pool.bgImageUrl;
             if (bgUrl) {
                 bgEl.style.backgroundImage = `url('${bgUrl}')`;
             }

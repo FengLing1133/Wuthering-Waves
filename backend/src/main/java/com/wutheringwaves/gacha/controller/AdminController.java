@@ -72,6 +72,15 @@ public class AdminController {
         return ResponseEntity.ok(Map.of("success", true, "message", "状态已切换"));
     }
 
+    @DeleteMapping("/pools/{id}")
+    public ResponseEntity<Map<String, Object>> deletePool(@PathVariable Long id) {
+        boolean result = adminService.deletePool(id);
+        if (!result) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "卡池不存在"));
+        }
+        return ResponseEntity.ok(Map.of("success", true, "message", "卡池已删除"));
+    }
+
     // ========== 四星头像管理 ==========
 
     @GetMapping("/avatars")
@@ -197,7 +206,7 @@ public class AdminController {
 
         try {
             // 确保上传目录存在
-            Path uploadPath = Paths.get(uploadDir);
+            Path uploadPath = Paths.get(uploadDir).toAbsolutePath();
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }

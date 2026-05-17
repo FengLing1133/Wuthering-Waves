@@ -76,10 +76,12 @@
         .bar-value { font-size: 11px; color: var(--text-secondary); }
 
         /* 图片上传 */
-        .upload-area { border: 2px dashed var(--border-subtle); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .upload-area { position: relative; border: 2px dashed var(--border-subtle); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s; }
         .upload-area:hover { border-color: var(--accent-blue); background: rgba(74,158,255,0.05); }
         .upload-area input { display: none; }
         .upload-preview { max-width: 200px; max-height: 120px; margin-top: 10px; border-radius: 8px; }
+        .upload-delete-btn { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%; background: #e74c3c; color: white; border: none; cursor: pointer; font-size: 14px; line-height: 24px; text-align: center; display: none; z-index: 1; }
+        .upload-delete-btn:hover { background: #c0392b; }
 
         /* 分页 */
         .pagination { display: flex; justify-content: center; gap: 4px; margin-top: 16px; }
@@ -238,6 +240,7 @@
                 <span>主背景大图</span>
                 <div class="upload-area" onclick="document.getElementById('poolBgImageInput').click()">
                     <input type="file" id="poolBgImageInput" accept="image/*" onchange="previewBgImage(this)">
+                    <button type="button" class="upload-delete-btn" id="bgDeleteBtn" onclick="event.stopPropagation();deleteBgImage()">&#10005;</button>
                     <p style="color:var(--text-dim);font-size:13px;">点击上传背景大图</p>
                     <img id="poolBgImagePreview" class="upload-preview" style="display:none;">
                 </div>
@@ -248,6 +251,7 @@
                 <span>侧栏缩略图</span>
                 <div class="upload-area" onclick="document.getElementById('poolThumbInput').click()">
                     <input type="file" id="poolThumbInput" accept="image/*" onchange="previewThumb(this)">
+                    <button type="button" class="upload-delete-btn" id="thumbDeleteBtn" onclick="event.stopPropagation();deleteThumb()">&#10005;</button>
                     <p style="color:var(--text-dim);font-size:13px;">点击上传缩略图</p>
                     <img id="poolThumbPreview" class="upload-preview" style="display:none;">
                 </div>
@@ -265,14 +269,6 @@
                 <button class="btn btn-sm btn-primary" onclick="openNewAvatarModal()" type="button">+ 新增头像</button>
             </div>
 
-            <label>
-                <span>卡池封面图片</span>
-                <div class="upload-area" onclick="document.getElementById('poolImageInput').click()">
-                    <input type="file" id="poolImageInput" accept="image/*" onchange="previewImage(this)">
-                    <p style="color:var(--text-dim);font-size:13px;">点击上传图片</p>
-                    <img id="poolImagePreview" class="upload-preview" style="display:none;">
-                </div>
-            </label>
             <div class="modal-actions">
                 <button class="btn" style="background:rgba(255,255,255,0.1);color:var(--text-secondary);" onclick="closePoolModal()">取消</button>
                 <button class="btn btn-gold" onclick="savePool()">保存</button>
@@ -424,7 +420,6 @@
         }
 
         // ========== 卡池管理 ==========
-        let uploadedImageUrl = '';
 
         async function loadPools() {
             const type = document.getElementById('poolFilter').value;
@@ -449,6 +444,7 @@
                             <td class="btn-group">
                                 <button class="btn btn-sm btn-primary" onclick="editPool(${p.id})">编辑</button>
                                 <button class="btn btn-sm ${p.status==='active'?'btn-danger':'btn-gold'}" onclick="togglePool(${p.id})">${p.status==='active'?'下架':'上架'}</button>
+                                <button class="btn btn-sm btn-danger" onclick="deletePool(${p.id},'${p.name.replace(/'/g, "\\'")}')">删除</button>
                             </td>
                         </tr>
                     `).join('');
@@ -474,6 +470,15 @@
                 const res = await API.request(`/admin/pools/${id}/toggle`, { method: 'POST' });
                 if (res.success) loadPools();
             } catch (e) { console.error(e); }
+        }
+
+        async function deletePool(id, name) {
+            if (!confirm(`确定要永久删除卡池「${name}」吗？此操作不可恢复。`)) return;
+            try {
+                const res = await API.deletePool(id);
+                if (res.success) loadPools();
+                else alert(res.message || '删除失败');
+            } catch (e) { alert('删除失败'); console.error(e); }
         }
 
 
@@ -693,23 +698,19 @@
             document.getElementById('poolSidebarOrder').value = pool ? (pool.sidebarOrder || 0) : 0;
             document.getElementById('sidebarOrderLabel').style.display = sidebarCheck.checked ? '' : 'none';
 
-            // 旧封面图
-            uploadedImageUrl = pool ? (pool.imageUrl || '') : '';
-            const preview = document.getElementById('poolImagePreview');
-            if (uploadedImageUrl) { preview.src = uploadedImageUrl; preview.style.display = 'block'; }
-            else { preview.style.display = 'none'; }
-
             // 新字段：背景大图
             uploadedBgImageUrl = pool ? (pool.bgImageUrl || '') : '';
             const bgPreview = document.getElementById('poolBgImagePreview');
             if (uploadedBgImageUrl) { bgPreview.src = uploadedBgImageUrl; bgPreview.style.display = 'block'; }
             else { bgPreview.style.display = 'none'; }
+            document.getElementById('bgDeleteBtn').style.display = uploadedBgImageUrl ? 'block' : 'none';
 
             // 新字段：缩略图
             uploadedThumbUrl = pool ? (pool.thumbnailUrl || '') : '';
             const thumbPreview = document.getElementById('poolThumbPreview');
             if (uploadedThumbUrl) { thumbPreview.src = uploadedThumbUrl; thumbPreview.style.display = 'block'; }
             else { thumbPreview.style.display = 'none'; }
+            document.getElementById('thumbDeleteBtn').style.display = uploadedThumbUrl ? 'block' : 'none';
 
             // 四星头像选择
             selectedAvatarIds = [];
@@ -744,6 +745,7 @@
                     const preview = document.getElementById('poolBgImagePreview');
                     preview.src = e.target.result;
                     preview.style.display = 'block';
+                    document.getElementById('bgDeleteBtn').style.display = 'block';
                 };
                 reader.readAsDataURL(input.files[0]);
             }
@@ -756,9 +758,24 @@
                     const preview = document.getElementById('poolThumbPreview');
                     preview.src = e.target.result;
                     preview.style.display = 'block';
+                    document.getElementById('thumbDeleteBtn').style.display = 'block';
                 };
                 reader.readAsDataURL(input.files[0]);
             }
+        }
+
+        function deleteBgImage() {
+            uploadedBgImageUrl = '';
+            document.getElementById('poolBgImageInput').value = '';
+            document.getElementById('poolBgImagePreview').style.display = 'none';
+            document.getElementById('bgDeleteBtn').style.display = 'none';
+        }
+
+        function deleteThumb() {
+            uploadedThumbUrl = '';
+            document.getElementById('poolThumbInput').value = '';
+            document.getElementById('poolThumbPreview').style.display = 'none';
+            document.getElementById('thumbDeleteBtn').style.display = 'none';
         }
 
         // 重写 savePool 以保存新字段
@@ -774,7 +791,6 @@
                 softPityStart: parseInt(document.getElementById('poolSoftPity').value),
                 softPityIncrement: parseFloat(document.getElementById('poolSoftInc').value),
                 upItems: document.getElementById('poolUpItems').value,
-                imageUrl: uploadedImageUrl,
                 startTime: document.getElementById('poolStartTime').value || null,
                 endTime: document.getElementById('poolEndTime').value || null,
                 sidebarVisible: document.getElementById('poolSidebarVisible').checked,
@@ -784,13 +800,6 @@
             };
 
             try {
-                // 上传封面图
-                const fileInput = document.getElementById('poolImageInput');
-                if (fileInput.files.length > 0) {
-                    const uploadRes = await API.uploadImage(fileInput.files[0]);
-                    if (uploadRes.success) data.imageUrl = uploadRes.imageUrl;
-                }
-
                 // 上传背景大图
                 const bgInput = document.getElementById('poolBgImageInput');
                 if (bgInput.files.length > 0) {

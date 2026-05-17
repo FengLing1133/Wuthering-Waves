@@ -16,7 +16,6 @@ public class GachaPool {
     private String name;
     private String poolType;
     private String description;
-    private String imageUrl;
     private BigDecimal fiveStarRate;
     private BigDecimal fourStarRate;
     private Integer maxPity;
