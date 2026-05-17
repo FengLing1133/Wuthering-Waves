@@ -21,7 +21,7 @@ public class GachaService {
     private final UserService userService;
 
     @Transactional
-    public Map<String, Object> pull(Long userId, String poolType, int count) {
+    public Map<String, Object> pull(Long userId, String poolType, Long poolId, int count) {
         Map<String, Object> result = new HashMap<>();
 
         // 检查星声是否足够
@@ -42,7 +42,7 @@ public class GachaService {
         // 执行抽卡
         List<Map<String, Object>> pullResults = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            Map<String, Object> pullResult = doPull(userId, poolType, items);
+            Map<String, Object> pullResult = doPull(userId, poolType, poolId, items);
             pullResults.add(pullResult);
         }
 
@@ -67,13 +67,13 @@ public class GachaService {
         return result;
     }
 
-    private Map<String, Object> doPull(Long userId, String poolType, List<GachaItem> items) {
+    private Map<String, Object> doPull(Long userId, String poolType, Long poolId, List<GachaItem> items) {
         int currentPity = getCurrentPity(userId, poolType);
         boolean guaranteed = isGuaranteed(userId, poolType);
 
-        int rarity = determineRarity(userId, poolType, currentPity, guaranteed);
+        int rarity = determineRarity(userId, poolType, poolId, currentPity, guaranteed);
 
-        GachaPool poolConfig = getPoolConfig(poolType);
+        GachaPool poolConfig = getPoolConfig(poolId);
 
         GachaItem selectedItem = selectItem(items, rarity, poolType, guaranteed, poolConfig);
 
@@ -99,24 +99,26 @@ public class GachaService {
         return result;
     }
 
-    private GachaPool getPoolConfig(String poolType) {
-        LambdaQueryWrapper<GachaPool> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(GachaPool::getPoolType, poolType);
-        wrapper.eq(GachaPool::getStatus, "active");
-        wrapper.last("LIMIT 1");
-        return gachaPoolMapper.selectOne(wrapper);
+    private GachaPool getPoolConfig(Long poolId) {
+        if (poolId == null) return null;
+        return gachaPoolMapper.selectById(poolId);
     }
 
-    private int determineRarity(Long userId, String poolType, int currentPity, boolean guaranteed) {
+    private int determineRarity(Long userId, String poolType, Long poolId, int currentPity, boolean guaranteed) {
         double rand = ThreadLocalRandom.current().nextDouble() * 100;
 
-        GachaPool poolConfig = getPoolConfig(poolType);
+        GachaPool poolConfig = getPoolConfig(poolId);
 
         int maxPity = poolConfig != null ? poolConfig.getMaxPity() : 90;
         double fiveStarRate = poolConfig != null ? poolConfig.getFiveStarRate().doubleValue() : 0.8;
         double fourStarRate = poolConfig != null ? poolConfig.getFourStarRate().doubleValue() : 6.0;
         int softPityStart = poolConfig != null ? poolConfig.getSoftPityStart() : 75;
         double softPityInc = poolConfig != null ? poolConfig.getSoftPityIncrement().doubleValue() : 6.0;
+
+        // 五星率 100%：直接返回五星，跳过所有其他判断
+        if (fiveStarRate >= 100) {
+            return 5;
+        }
 
         // 硬保底
         if (currentPity >= maxPity - 1) {

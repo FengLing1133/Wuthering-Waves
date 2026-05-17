@@ -65,7 +65,7 @@ class GachaControllerTest extends BaseTest {
         response.put("results", List.of(Map.of("name", "四星角色A", "rarity", 4, "type", "character", "isLimited", false, "pityCount", 1)));
         response.put("starlight", 1440);
 
-        when(gachaService.pull(anyLong(), anyString(), anyInt())).thenReturn(response);
+        when(gachaService.pull(anyLong(), anyString(), any(), anyInt())).thenReturn(response);
 
         mockMvc.perform(post("/api/gacha/pull")
                         .header("Authorization", "Bearer " + testToken)
@@ -91,7 +91,7 @@ class GachaControllerTest extends BaseTest {
         ));
         response.put("starlight", 100);
 
-        when(gachaService.pull(anyLong(), anyString(), anyInt())).thenReturn(response);
+        when(gachaService.pull(anyLong(), anyString(), any(), anyInt())).thenReturn(response);
 
         mockMvc.perform(post("/api/gacha/pull")
                         .header("Authorization", "Bearer " + testToken)

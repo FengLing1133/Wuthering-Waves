@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>鸣潮抽卡系统 - 管理后台</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
     <style>
         body { overflow: auto; }
         .admin-container { padding: 60px 20px 20px; max-width: 1400px; margin: 0 auto; }
@@ -224,8 +226,8 @@
 
             <!-- 时间设置 -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                <label><span>上架时间</span><input type="datetime-local" id="poolStartTime"></label>
-                <label><span>下架时间</span><input type="datetime-local" id="poolEndTime"></label>
+                <label><span>上架时间</span><input type="text" id="poolStartTime" class="flatpickr-datetime" placeholder="选择日期时间"></label>
+                <label><span>下架时间</span><input type="text" id="poolEndTime" class="flatpickr-datetime" placeholder="选择日期时间"></label>
             </div>
 
             <!-- 侧栏绑定 -->
@@ -336,7 +338,22 @@
     </div>
 
     <script src="/js/api.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh.js"></script>
     <script>
+        // ========== flatpickr 初始化 ==========
+        const flatpickrInstances = {};
+        document.querySelectorAll('.flatpickr-datetime').forEach(input => {
+            flatpickrInstances[input.id] = flatpickr(input, {
+                enableTime: true,
+                dateFormat: 'Y-m-d H:i',
+                time_24hr: true,
+                locale: 'zh',
+                defaultHour: 10,
+                defaultMinute: 0
+            });
+        });
+
         // ========== 初始化 ==========
         const adminUser = API.getUser();
         if (!adminUser || adminUser.role !== 'admin') {
@@ -688,9 +705,9 @@
             document.getElementById('poolSoftInc').value = pool ? pool.softPityIncrement : 6.0;
             document.getElementById('poolUpItems').value = pool ? (pool.upItems || '[]') : '[]';
 
-            // 新字段：时间
-            document.getElementById('poolStartTime').value = pool && pool.startTime ? pool.startTime.substring(0, 16) : '';
-            document.getElementById('poolEndTime').value = pool && pool.endTime ? pool.endTime.substring(0, 16) : '';
+            // 新字段：时间（使用 flatpickr）
+            flatpickrInstances['poolStartTime'].setDate(pool && pool.startTime ? pool.startTime.substring(0, 16).replace('T', ' ') : '', true);
+            flatpickrInstances['poolEndTime'].setDate(pool && pool.endTime ? pool.endTime.substring(0, 16).replace('T', ' ') : '', true);
 
             // 新字段：侧栏
             const sidebarCheck = document.getElementById('poolSidebarVisible');
@@ -791,8 +808,8 @@
                 softPityStart: parseInt(document.getElementById('poolSoftPity').value),
                 softPityIncrement: parseFloat(document.getElementById('poolSoftInc').value),
                 upItems: document.getElementById('poolUpItems').value,
-                startTime: document.getElementById('poolStartTime').value || null,
-                endTime: document.getElementById('poolEndTime').value || null,
+                startTime: document.getElementById('poolStartTime').value ? document.getElementById('poolStartTime').value.replace(' ', 'T') + ':00' : null,
+                endTime: document.getElementById('poolEndTime').value ? document.getElementById('poolEndTime').value.replace(' ', 'T') + ':00' : null,
                 sidebarVisible: document.getElementById('poolSidebarVisible').checked,
                 sidebarOrder: parseInt(document.getElementById('poolSidebarOrder').value) || 0,
                 bgImageUrl: uploadedBgImageUrl,

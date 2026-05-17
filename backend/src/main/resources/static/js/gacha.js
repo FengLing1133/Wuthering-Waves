@@ -126,8 +126,6 @@ const Gacha = {
                     <div class="rate-up-avatar" style="background-image: url('${avatar.avatarUrl}'); background-size: cover; background-position: center top;"></div>
                 </div>
             `).join('');
-        } else {
-            rateUpSection.style.display = 'none';
         }
     },
 
@@ -274,7 +272,7 @@ const Gacha = {
 
         try {
             const poolType = this.getCurrentPoolType();
-            const result = await API.pull(poolType, count);
+            const result = await API.pull(poolType, count, this.currentPool);
 
             await this.sleep(2000);
             this.hidePullAnimation();
