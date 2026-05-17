@@ -13,14 +13,10 @@
         <div class="top-bar-left">
             <span class="top-bar-title">唤取</span>
         </div>
-        <div class="top-bar-center">
-            <div class="currency-display">
-                <div class="currency-item">
-                    <div class="currency-icon currency-astralite"></div>
-                    <span class="currency-value" id="astraliteCount">1600</span>
-                    <button class="currency-add-btn">+</button>
-                </div>
-            </div>
+        <div class="astralite-container">
+            <div class="astralite-icon"></div>
+            <span class="astralite-amount" id="astraliteCount">1600</span>
+            <div class="astralite-add">+</div>
         </div>
         <div class="top-bar-right">
             <button class="top-icon-btn" title="背包">
@@ -127,12 +123,12 @@
                 </button>
             </div>
             <div class="bottom-right-btns">
-                <button class="pull-btn single-pull" id="singlePullBtn">
+                <button class="pull-btn" id="singlePullBtn">
                     <div class="pull-btn-icon"></div>
                     <span class="pull-btn-text">× 160</span>
                     <span class="pull-btn-label">唤取1次</span>
                 </button>
-                <button class="pull-btn ten-pull" id="tenPullBtn">
+                <button class="pull-btn" id="tenPullBtn">
                     <div class="pull-btn-icon"></div>
                     <span class="pull-btn-text">× 1600</span>
                     <span class="pull-btn-label">唤取10次</span>
