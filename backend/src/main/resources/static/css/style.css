@@ -85,8 +85,7 @@ body {
     height: 28px;
     border-radius: 50%;
     flex-shrink: 0;
-    background: radial-gradient(circle, #7ad4ff 30%, #3a9aff 70%, #1a6adf 100%);
-    box-shadow: 0 0 10px rgba(100, 180, 255, 0.6);
+    background: url('/assets/xingsheng.png') center/contain no-repeat;
 }
 
 .astralite-amount {
@@ -280,14 +279,7 @@ body {
 
 /* 左侧渐变遮罩 */
 .banner-gradient {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 45%;
-    height: calc(100% - 100px);
-    background: linear-gradient(90deg, rgba(5, 10, 24, 0.85) 0%, rgba(5, 10, 24, 0.4) 60%, transparent 100%);
-    z-index: 2;
-    pointer-events: none;
+    display: none;
 }
 
 /* 卡池详情 */
@@ -400,27 +392,6 @@ body {
     letter-spacing: 2px;
 }
 
-.try-btn {
-    position: absolute;
-    bottom: 22%;
-    right: 6%;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    color: var(--text-primary);
-    padding: 8px 20px;
-    border-radius: 20px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.3s;
-    backdrop-filter: blur(4px);
-    z-index: 10;
-}
-
-.try-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.4);
-}
-
 /* 4星概率提升 */
 .rate-up-section {
     position: absolute;
@@ -464,10 +435,6 @@ body {
 
 /* ========== 保底计数显示 ========== */
 .pity-display {
-    position: absolute;
-    bottom: 20px;
-    right: 300px;
-    z-index: 10;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -550,50 +517,25 @@ body {
     align-items: center;
 }
 
-/* 新风格抽卡按钮 */
+/* 六边形抽卡按钮 */
 .pull-btn {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
-    height: 48px;
-    padding: 0 24px 0 12px;
-    border-radius: 24px;
+    width: 200px;
+    height: 80px;
+    padding: 0;
     border: none;
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
-    overflow: hidden;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(230, 230, 230, 0.98) 100%);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-}
-
-.pull-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-radius: 24px;
-    border: 1px solid rgba(180, 180, 180, 0.3);
-    pointer-events: none;
-}
-
-.pull-btn::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 50%;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, transparent 100%);
-    border-radius: 24px 24px 0 0;
-    pointer-events: none;
+    background: url('/assets/anjian2.png') center/100% 100% no-repeat;
 }
 
 .pull-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    filter: brightness(1.1);
 }
 
 .pull-btn:active {
@@ -601,12 +543,12 @@ body {
 }
 
 .pull-btn-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: radial-gradient(circle, #7ad4ff 30%, #3a9aff 70%, #1a6adf 100%);
-    box-shadow: 0 0 8px rgba(100, 180, 255, 0.5);
+    width: 24px;
+    height: 24px;
+    background: url('/assets/xingsheng.png') center/contain no-repeat;
     flex-shrink: 0;
+    position: relative;
+    z-index: 1;
 }
 
 .pull-btn-text {
