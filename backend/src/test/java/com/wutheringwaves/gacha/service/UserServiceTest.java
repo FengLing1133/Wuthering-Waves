@@ -154,16 +154,6 @@ class UserServiceTest extends BaseTest {
     }
 
     @Test
-    @DisplayName("添加星辉成功")
-    void addStarshards_success() {
-        when(userMapper.addStarshards(anyLong(), anyInt())).thenReturn(1);
-
-        userService.addStarshards(1L, 10);
-
-        verify(userMapper).addStarshards(1L, 10);
-    }
-
-    @Test
     @DisplayName("注册成功 - 初始资源正确")
     void register_success_initialResources() {
         String username = "newuser";
@@ -179,8 +169,7 @@ class UserServiceTest extends BaseTest {
 
         @SuppressWarnings("unchecked")
         Map<String, Object> userMap = (Map<String, Object>) result.get("user");
-        assertEquals(1600, userMap.get("starlight"));
-        assertEquals(0, userMap.get("starshards"));
+        assertEquals(100000, userMap.get("starlight"));
         assertEquals("user", userMap.get("role"));
     }
 }

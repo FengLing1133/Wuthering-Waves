@@ -35,8 +35,7 @@ public class UserService {
         User user = new User();
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(password));
-        user.setStarlight(1600);  // 初始星声
-        user.setStarshards(0);
+        user.setStarlight(100000);  // 初始星声
         user.setRole("user");
         userMapper.insert(user);
 
@@ -50,8 +49,7 @@ public class UserService {
                 "id", user.getId(),
                 "username", user.getUsername(),
                 "role", user.getRole(),
-                "starlight", user.getStarlight(),
-                "starshards", user.getStarshards()
+                "starlight", user.getStarlight()
         ));
 
         return result;
@@ -81,8 +79,7 @@ public class UserService {
                 "id", user.getId(),
                 "username", user.getUsername(),
                 "role", user.getRole(),
-                "starlight", user.getStarlight(),
-                "starshards", user.getStarshards()
+                "starlight", user.getStarlight()
         ));
 
         return result;
@@ -94,9 +91,5 @@ public class UserService {
 
     public void updateStarlight(Long userId, int delta) {
         userMapper.updateStarlight(userId, delta);
-    }
-
-    public void addStarshards(Long userId, int amount) {
-        userMapper.addStarshards(userId, amount);
     }
 }

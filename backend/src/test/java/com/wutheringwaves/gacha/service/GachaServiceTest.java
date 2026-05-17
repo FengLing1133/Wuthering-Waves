@@ -204,7 +204,6 @@ class GachaServiceTest extends BaseTest {
         assertNotNull(result);
         assertTrue((Boolean) result.get("success"));
         assertNotNull(result.get("starlight"));
-        assertNotNull(result.get("starshards"));
         assertNotNull(result.get("fiveStarCount"));
         assertNotNull(result.get("fourStarCount"));
 

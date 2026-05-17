@@ -24,6 +24,12 @@ public class GachaPool {
     private BigDecimal softPityIncrement;
     private String upItems;
     private String status;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private Boolean sidebarVisible;
+    private Integer sidebarOrder;
+    private String bgImageUrl;
+    private String thumbnailUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

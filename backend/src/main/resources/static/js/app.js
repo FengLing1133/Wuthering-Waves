@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function initApp() {
     await loadUserInfo();
-    Gacha.init();
+    Gacha.init().catch(err => console.error('初始化失败:', err));
     initHistory();
     bindNavigation();
     document.getElementById('logoutBtn').addEventListener('click', logout);
@@ -28,8 +28,6 @@ async function loadUserInfo() {
             API.setUser(user);
 
             document.getElementById('astraliteCount').textContent = user.starlight || 0;
-            document.getElementById('lustrumCount').textContent = user.starshards || 0;
-            document.getElementById('coralsCount').textContent = user.corals || 0;
 
             // admin 用户显示管理后台入口
             if (user.role === 'admin') {

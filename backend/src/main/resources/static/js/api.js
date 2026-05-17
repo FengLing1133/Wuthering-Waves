@@ -101,5 +101,63 @@ const API = {
     // 获取统计数据
     async getStats(poolType = 'character') {
         return this.request(`/gacha/stats?poolType=${poolType}`);
+    },
+
+    // 获取活跃卡池列表（公开，无需认证）
+    async getActivePools() {
+        return this.request('/gacha/pools');
+    },
+
+    // 获取卡池详情（公开，无需认证）
+    async getPoolDetail(poolId) {
+        return this.request(`/gacha/pools/${poolId}`);
+    },
+
+    // ========== 管理员接口 ==========
+
+    // 获取所有四星头像
+    async getAvatars() {
+        return this.request('/admin/avatars');
+    },
+
+    // 创建四星头像
+    async createAvatar(name, avatarUrl) {
+        return this.request('/admin/avatars', {
+            method: 'POST',
+            body: JSON.stringify({ name, avatarUrl })
+        });
+    },
+
+    // 删除四星头像
+    async deleteAvatar(id) {
+        return this.request(`/admin/avatars/${id}`, {
+            method: 'DELETE'
+        });
+    },
+
+    // 获取卡池关联的四星头像
+    async getPoolFourStars(poolId) {
+        return this.request(`/admin/pools/${poolId}/four-stars`);
+    },
+
+    // 更新卡池关联的四星头像
+    async updatePoolFourStars(poolId, avatarIds) {
+        return this.request(`/admin/pools/${poolId}/four-stars`, {
+            method: 'PUT',
+            body: JSON.stringify({ avatarIds })
+        });
+    },
+
+    // 上传图片
+    async uploadImage(file) {
+        const token = this.getToken();
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch('/api/admin/upload', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+        return response.json();
     }
 };

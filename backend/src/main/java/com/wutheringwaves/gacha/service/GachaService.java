@@ -55,19 +55,12 @@ public class GachaService {
             if (rarity == 4) fourStarCount++;
         }
 
-        // 星辉返还
-        int shardsEarned = fiveStarCount * 10 + fourStarCount * 2;
-        if (shardsEarned > 0) {
-            userService.addStarshards(userId, shardsEarned);
-        }
-
         // 更新用户信息
         user = userService.getUserById(userId);
 
         result.put("success", true);
         result.put("results", pullResults);
         result.put("starlight", user.getStarlight());
-        result.put("starshards", user.getStarshards());
         result.put("fiveStarCount", fiveStarCount);
         result.put("fourStarCount", fourStarCount);
 

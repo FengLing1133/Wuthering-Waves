@@ -1,5 +1,6 @@
 package com.wutheringwaves.gacha.controller;
 
+import com.wutheringwaves.gacha.model.FourStarAvatar;
 import com.wutheringwaves.gacha.model.GachaPool;
 import com.wutheringwaves.gacha.service.AdminService;
 import lombok.RequiredArgsConstructor;
@@ -71,6 +72,63 @@ public class AdminController {
         return ResponseEntity.ok(Map.of("success", true, "message", "状态已切换"));
     }
 
+    // ========== 四星头像管理 ==========
+
+    @GetMapping("/avatars")
+    public ResponseEntity<Map<String, Object>> listAvatars() {
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "avatars", adminService.listAvatars()
+        ));
+    }
+
+    @PostMapping("/avatars")
+    public ResponseEntity<Map<String, Object>> createAvatar(@RequestBody Map<String, String> request) {
+        String name = request.get("name");
+        String avatarUrl = request.get("avatarUrl");
+        if (name == null || name.isEmpty() || avatarUrl == null || avatarUrl.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "名称和头像URL不能为空"));
+        }
+        FourStarAvatar avatar = new FourStarAvatar();
+        avatar.setName(name);
+        avatar.setAvatarUrl(avatarUrl);
+        FourStarAvatar created = adminService.createAvatar(avatar);
+        return ResponseEntity.ok(Map.of("success", true, "avatar", created));
+    }
+
+    @DeleteMapping("/avatars/{id}")
+    public ResponseEntity<Map<String, Object>> deleteAvatar(@PathVariable Long id) {
+        boolean result = adminService.deleteAvatar(id);
+        if (!result) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "头像不存在"));
+        }
+        return ResponseEntity.ok(Map.of("success", true, "message", "已删除"));
+    }
+
+    @GetMapping("/pools/{id}/four-stars")
+    public ResponseEntity<Map<String, Object>> getPoolFourStars(@PathVariable Long id) {
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "avatars", adminService.getPoolFourStarAvatars(id)
+        ));
+    }
+
+    @PutMapping("/pools/{id}/four-stars")
+    public ResponseEntity<Map<String, Object>> updatePoolFourStars(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> request) {
+        @SuppressWarnings("unchecked")
+        List<Number> avatarIdNumbers = (List<Number>) request.get("avatarIds");
+        List<Long> avatarIds = avatarIdNumbers != null
+                ? avatarIdNumbers.stream().map(Number::longValue).toList()
+                : null;
+        boolean result = adminService.updatePoolFourStars(id, avatarIds);
+        if (!result) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "更新失败（最多选择3个头像）"));
+        }
+        return ResponseEntity.ok(Map.of("success", true, "message", "已更新"));
+    }
+
     // ========== 用户管理 ==========
 
     @GetMapping("/users")
@@ -90,10 +148,8 @@ public class AdminController {
             @RequestBody Map<String, Object> request) {
         Integer starlight = request.get("starlight") != null ?
                 ((Number) request.get("starlight")).intValue() : null;
-        Integer starshards = request.get("starshards") != null ?
-                ((Number) request.get("starshards")).intValue() : null;
 
-        boolean result = adminService.updateUserResources(id, starlight, starshards);
+        boolean result = adminService.updateUserResources(id, starlight);
         if (!result) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "用户不存在"));
         }

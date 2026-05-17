@@ -5,17 +5,12 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
 @Data
-@TableName("users")
-public class User {
+@TableName("pool_four_star")
+public class PoolFourStar {
     @TableId(type = IdType.AUTO)
     private Long id;
-    private String username;
-    private String password;
-    private String role;
-    private Integer starlight;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Long poolId;
+    private Long avatarId;
+    private Integer sortOrder;
 }

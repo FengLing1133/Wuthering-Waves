@@ -47,7 +47,6 @@ class GachaIntegrationTest extends BaseTest {
         user.setPassword(passwordEncoder.encode("password123"));
         user.setRole("user");
         user.setStarlight(10000);
-        user.setStarshards(0);
         userMapper.insert(user);
         testUserId = user.getId();
 

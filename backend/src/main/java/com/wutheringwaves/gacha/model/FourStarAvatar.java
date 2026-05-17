@@ -8,14 +8,11 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("users")
-public class User {
+@TableName("four_star_avatars")
+public class FourStarAvatar {
     @TableId(type = IdType.AUTO)
     private Long id;
-    private String username;
-    private String password;
-    private String role;
-    private Integer starlight;
+    private String name;
+    private String avatarUrl;
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }

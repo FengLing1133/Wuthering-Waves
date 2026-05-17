@@ -21,6 +21,8 @@ public class AdminService {
     private final GachaItemMapper gachaItemMapper;
     private final GachaRecordMapper gachaRecordMapper;
     private final UserMapper userMapper;
+    private final FourStarAvatarMapper fourStarAvatarMapper;
+    private final PoolFourStarMapper poolFourStarMapper;
 
     // ========== 卡池管理 ==========
 
@@ -62,6 +64,64 @@ public class AdminService {
         return true;
     }
 
+    // ========== 四星头像管理 ==========
+
+    public List<FourStarAvatar> listAvatars() {
+        return fourStarAvatarMapper.selectList(null);
+    }
+
+    public FourStarAvatar createAvatar(FourStarAvatar avatar) {
+        fourStarAvatarMapper.insert(avatar);
+        return avatar;
+    }
+
+    @Transactional
+    public boolean deleteAvatar(Long id) {
+        // 先删除关联
+        LambdaQueryWrapper<PoolFourStar> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(PoolFourStar::getAvatarId, id);
+        poolFourStarMapper.delete(wrapper);
+        return fourStarAvatarMapper.deleteById(id) > 0;
+    }
+
+    public List<FourStarAvatar> getPoolFourStarAvatars(Long poolId) {
+        LambdaQueryWrapper<PoolFourStar> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(PoolFourStar::getPoolId, poolId);
+        wrapper.orderByAsc(PoolFourStar::getSortOrder);
+        List<PoolFourStar> relations = poolFourStarMapper.selectList(wrapper);
+
+        List<FourStarAvatar> avatars = new ArrayList<>();
+        for (PoolFourStar rel : relations) {
+            FourStarAvatar avatar = fourStarAvatarMapper.selectById(rel.getAvatarId());
+            if (avatar != null) {
+                avatars.add(avatar);
+            }
+        }
+        return avatars;
+    }
+
+    @Transactional
+    public boolean updatePoolFourStars(Long poolId, List<Long> avatarIds) {
+        if (avatarIds != null && avatarIds.size() > 3) {
+            return false;
+        }
+        // 删除旧关联
+        LambdaQueryWrapper<PoolFourStar> deleteWrapper = new LambdaQueryWrapper<>();
+        deleteWrapper.eq(PoolFourStar::getPoolId, poolId);
+        poolFourStarMapper.delete(deleteWrapper);
+        // 插入新关联
+        if (avatarIds != null) {
+            for (int i = 0; i < avatarIds.size(); i++) {
+                PoolFourStar rel = new PoolFourStar();
+                rel.setPoolId(poolId);
+                rel.setAvatarId(avatarIds.get(i));
+                rel.setSortOrder(i);
+                poolFourStarMapper.insert(rel);
+            }
+        }
+        return true;
+    }
+
     // ========== 用户管理 ==========
 
     public Page<User> listUsers(int page, int size, String keyword) {
@@ -74,11 +134,10 @@ public class AdminService {
         return userMapper.selectPage(pageParam, wrapper);
     }
 
-    public boolean updateUserResources(Long userId, Integer starlight, Integer starshards) {
+    public boolean updateUserResources(Long userId, Integer starlight) {
         User user = userMapper.selectById(userId);
         if (user == null) return false;
         if (starlight != null) user.setStarlight(starlight);
-        if (starshards != null) user.setStarshards(starshards);
         userMapper.updateById(user);
         return true;
     }
