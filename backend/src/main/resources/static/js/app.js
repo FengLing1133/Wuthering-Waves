@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function initApp() {
     await loadUserInfo();
-    Gacha.init();
+    Gacha.init().catch(err => console.error('初始化失败:', err));
     initHistory();
     bindNavigation();
     document.getElementById('logoutBtn').addEventListener('click', logout);

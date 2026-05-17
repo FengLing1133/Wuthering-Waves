@@ -1,140 +1,174 @@
 // 抽卡模块
 const Gacha = {
-    currentPool: 'character-1',
+    currentPool: null,
+    currentPoolData: null,
     isPulling: false,
+    poolList: [],
 
-    // 卡池配置
-    poolConfig: {
-        'character-1': {
-            title: '雪色所映千般未来',
-            subtitle: '角色活动唤取',
-            description: '限定五星角色概率提升',
-            maxPity: 90,
-            fiveStarRate: '0.800%',
-            fourStarRate: '6.000%',
-            threeStarRate: '93.200%',
-            upCharacter: '绯雪',
-            upElement: '❄',
-            upElementName: '冰',
-            timer: '4天13小时',
-            background: '/images/background/characters/beijing-feixue.png'
-        },
-        'character-2': {
-            title: '暮光之誓',
-            subtitle: '角色活动唤取',
-            description: '限定五星角色概率提升',
-            maxPity: 90,
-            fiveStarRate: '0.800%',
-            fourStarRate: '6.000%',
-            threeStarRate: '93.200%',
-            upCharacter: '柚诺',
-            upElement: '🔥',
-            upElementName: '火',
-            timer: '6天8小时',
-            background: '/images/background/characters/beijing-younuo.png'
-        },
-        'character-3': {
-            title: '深渊之歌',
-            subtitle: '角色活动唤取',
-            description: '限定五星角色概率提升',
-            maxPity: 90,
-            fiveStarRate: '0.800%',
-            fourStarRate: '6.000%',
-            threeStarRate: '93.200%',
-            upCharacter: '莫凝',
-            upElement: '⚡',
-            upElementName: '雷',
-            timer: '2天20小时',
-            background: '/images/background/characters/beijing-moning.png'
-        },
-        'weapon-1': {
-            title: '霜锋映月',
-            subtitle: '武器活动唤取',
-            description: '限定五星武器概率提升',
-            maxPity: 80,
-            fiveStarRate: '0.700%',
-            fourStarRate: '6.000%',
-            threeStarRate: '93.300%',
-            upCharacter: '绯雪专武',
-            upElement: '⚔',
-            upElementName: '武器',
-            timer: '4天13小时',
-            background: '/images/background/weapons/wuqi-feixue.png'
-        },
-        'weapon-2': {
-            title: '星陨之刃',
-            subtitle: '武器活动唤取',
-            description: '限定五星武器概率提升',
-            maxPity: 80,
-            fiveStarRate: '0.700%',
-            fourStarRate: '6.000%',
-            threeStarRate: '93.300%',
-            upCharacter: '柚诺专武',
-            upElement: '⚔',
-            upElementName: '武器',
-            timer: '6天8小时',
-            background: '/images/background/weapons/wuqi-younuo.png'
-        },
-        'weapon-3': {
-            title: '破晓之弓',
-            subtitle: '武器活动唤取',
-            description: '限定五星武器概率提升',
-            maxPity: 80,
-            fiveStarRate: '0.700%',
-            fourStarRate: '6.000%',
-            threeStarRate: '93.300%',
-            upCharacter: '莫凝专武',
-            upElement: '⚔',
-            upElementName: '武器',
-            timer: '2天20小时',
-            background: '/images/background/weapons/wuqi-moning.png'
-        },
-        'standard-character': {
-            title: '寂都之忆',
-            subtitle: '常驻角色唤取',
-            description: '常驻五星角色概率提升',
-            maxPity: 90,
-            fiveStarRate: '0.800%',
-            fourStarRate: '6.000%',
-            threeStarRate: '93.200%',
-            upCharacter: '常驻角色',
-            upElement: '✦',
-            upElementName: '常驻',
-            timer: '永久开放',
-            background: '/images/background/characters/beijing-changzhu.png'
-        },
-        'standard-weapon': {
-            title: '铸城之锋',
-            subtitle: '常驻武器唤取',
-            description: '常驻五星武器概率提升',
-            maxPity: 80,
-            fiveStarRate: '0.700%',
-            fourStarRate: '6.000%',
-            threeStarRate: '93.300%',
-            upCharacter: '常驻武器',
-            upElement: '⚔',
-            upElementName: '武器',
-            timer: '永久开放',
-            background: '/images/background/weapons/wuqi-changzhu.png'
+    // 初始化
+    async init() {
+        this.bindEvents();
+        this.createSnowflakes();
+        await this.loadPools();
+    },
+
+    // 从API加载卡池列表
+    async loadPools() {
+        try {
+            const result = await API.getActivePools();
+            if (result.success && result.pools && result.pools.length > 0) {
+                this.poolList = result.pools;
+                this.renderSidebar();
+                // 默认选中第一个
+                this.switchPool(this.poolList[0].id);
+            } else {
+                document.getElementById('bannerSlots').innerHTML =
+                    '<div style="text-align:center;padding:20px;color:var(--text-dim);">暂无活动卡池</div>';
+            }
+        } catch (error) {
+            console.error('加载卡池列表失败:', error);
+            document.getElementById('bannerSlots').innerHTML =
+                '<div style="text-align:center;padding:20px;color:var(--text-dim);">加载失败</div>';
         }
     },
 
-    // 初始化
-    init() {
-        this.bindEvents();
-        this.updatePoolInfo(this.currentPool);
-        this.createSnowflakes();
+    // 动态渲染侧栏
+    renderSidebar() {
+        const container = document.getElementById('bannerSlots');
+        container.innerHTML = this.poolList.map((pool, index) => {
+            const thumbStyle = pool.thumbnailUrl
+                ? `background-image: url('${pool.thumbnailUrl}'); background-size: cover; background-position: center;`
+                : 'background: linear-gradient(135deg, #1a2a4a, #0d1b2e);';
+            const isActive = index === 0 ? 'active' : '';
+            const tag = pool.poolType && pool.poolType.startsWith('standard-') ? '常驻' : '活动';
+            return `<div class="banner-slot ${isActive}" data-pool-id="${pool.id}">
+                <div class="banner-thumb">
+                    <div class="banner-thumb-img" style="${thumbStyle}"></div>
+                </div>
+                <span class="banner-tag">${tag}</span>
+            </div>`;
+        }).join('');
+
+        // 绑定点击事件
+        container.querySelectorAll('.banner-slot').forEach(slot => {
+            slot.addEventListener('click', () => {
+                const poolId = parseInt(slot.dataset.poolId);
+                this.switchPool(poolId);
+            });
+        });
+    },
+
+    // 切换卡池
+    async switchPool(poolId) {
+        this.currentPool = poolId;
+
+        // 更新侧边栏选中状态
+        document.querySelectorAll('.banner-slot').forEach(slot => {
+            slot.classList.toggle('active', parseInt(slot.dataset.poolId) === poolId);
+        });
+
+        // 隐藏历史记录，显示主界面
+        document.getElementById('historyView').classList.add('hidden');
+
+        // 获取卡池详情
+        try {
+            const result = await API.getPoolDetail(poolId);
+            if (result.success) {
+                this.currentPoolData = result.pool;
+                this.updatePoolInfo(this.currentPoolData);
+                this.updatePityCount();
+            }
+        } catch (error) {
+            console.error('获取卡池详情失败:', error);
+        }
+    },
+
+    // 更新卡池信息
+    updatePoolInfo(pool) {
+        if (!pool) return;
+
+        document.getElementById('bannerSubtitle').textContent = pool.poolType && pool.poolType.startsWith('standard-') ? '常驻唤取' : '角色活动唤取';
+        document.getElementById('bannerTitle').textContent = pool.name || '';
+        document.getElementById('bannerTimer').textContent = this.formatTimer(pool);
+        document.getElementById('upCharacterName').textContent = this.getUpCharacterName(pool);
+        document.getElementById('upElement').querySelector('.element-icon').textContent = this.getUpElement(pool);
+        document.getElementById('maxPityDisplay').textContent = pool.maxPity || 90;
+
+        // 常驻池隐藏UP角色信息
+        const upSection = document.getElementById('upCharacter');
+        if (upSection) {
+            upSection.style.display = pool.poolType && pool.poolType.startsWith('standard-') ? 'none' : '';
+        }
+
+        // 更新背景图
+        const bgEl = document.getElementById('bannerBg');
+        if (bgEl) {
+            const bgUrl = pool.bgImageUrl || pool.imageUrl;
+            if (bgUrl) {
+                bgEl.style.backgroundImage = `url('${bgUrl}')`;
+            }
+        }
+
+        // 更新四星概率提升头像
+        this.updateRateUpAvatars(pool);
+    },
+
+    // 更新四星概率提升头像显示
+    updateRateUpAvatars(pool) {
+        const rateUpList = document.getElementById('rateUpList');
+        const rateUpSection = document.getElementById('rateUpSection');
+        if (!rateUpList || !rateUpSection) return;
+
+        if (pool.fourStarAvatars && pool.fourStarAvatars.length > 0) {
+            rateUpSection.style.display = '';
+            rateUpList.innerHTML = pool.fourStarAvatars.map(avatar => `
+                <div class="rate-up-item">
+                    <div class="rate-up-avatar" style="background-image: url('${avatar.avatarUrl}'); background-size: cover; background-position: center top;"></div>
+                </div>
+            `).join('');
+        } else {
+            rateUpSection.style.display = 'none';
+        }
+    },
+
+    // 格式化倒计时
+    formatTimer(pool) {
+        if (pool.endTime) {
+            const end = new Date(pool.endTime);
+            const now = new Date();
+            const diff = end - now;
+            if (diff <= 0) return '已结束';
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            return `${days}天${hours}小时`;
+        }
+        if (pool.poolType && pool.poolType.startsWith('standard-')) return '永久开放';
+        return '永久开放';
+    },
+
+    // 获取UP角色名
+    getUpCharacterName(pool) {
+        if (pool.upItems) {
+            try {
+                let items = pool.upItems.trim();
+                if (items.startsWith('[') && items.endsWith(']')) {
+                    items = items.substring(1, items.length - 1);
+                    const names = items.split(',').map(s => s.trim().replace(/"/g, '').replace(/'/g, ''));
+                    return names[0] || 'UP角色';
+                }
+            } catch (e) {}
+        }
+        return pool.poolType && pool.poolType.includes('weapon') ? 'UP武器' : 'UP角色';
+    },
+
+    // 获取元素图标
+    getUpElement(pool) {
+        if (pool.poolType && pool.poolType.includes('weapon')) return '⚔';
+        return '✦';
     },
 
     // 绑定事件
     bindEvents() {
-        // 卡池切换
-        document.querySelectorAll('.banner-slot').forEach(slot => {
-            slot.addEventListener('click', () => {
-                this.switchPool(slot.dataset.pool);
-            });
-        });
-
         // 单抽按钮
         document.getElementById('singlePullBtn').addEventListener('click', () => {
             this.pull(1);
@@ -160,51 +194,19 @@ const Gacha = {
         });
     },
 
-    // 切换卡池
-    switchPool(pool) {
-        this.currentPool = pool;
-
-        // 更新侧边栏选中状态
-        document.querySelectorAll('.banner-slot').forEach(slot => {
-            slot.classList.toggle('active', slot.dataset.pool === pool);
-        });
-
-        // 隐藏历史记录，显示主界面
-        document.getElementById('historyView').classList.add('hidden');
-
-        this.updatePoolInfo(pool);
-        this.updatePityCount();
-    },
-
-    // 更新卡池信息
-    updatePoolInfo(pool) {
-        const config = this.poolConfig[pool];
-        if (!config) return;
-
-        document.getElementById('bannerSubtitle').textContent = config.subtitle;
-        document.getElementById('bannerTitle').textContent = config.title;
-        document.getElementById('bannerTimer').textContent = config.timer;
-        document.getElementById('upCharacterName').textContent = config.upCharacter;
-        document.getElementById('upElement').querySelector('.element-icon').textContent = config.upElement;
-        document.getElementById('maxPityDisplay').textContent = config.maxPity;
-
-        // 常驻池隐藏UP角色信息
-        const upSection = document.getElementById('upCharacter');
-        if (upSection) {
-            upSection.style.display = pool.startsWith('standard-') ? 'none' : '';
+    // 获取当前卡池的poolType（用于抽卡API调用）
+    getCurrentPoolType() {
+        if (this.currentPoolData) {
+            return this.currentPoolData.poolType;
         }
-
-        // 更新背景图
-        const bgEl = document.getElementById('bannerBg');
-        if (bgEl && config.background) {
-            bgEl.style.backgroundImage = `url('${config.background}')`;
-        }
+        return 'limited-character';
     },
 
     // 更新保底计数
     async updatePityCount() {
         try {
-            const result = await API.getStats(this.currentPool);
+            const poolType = this.getCurrentPoolType();
+            const result = await API.getStats(poolType);
             if (result.success && result.stats) {
                 this.updatePityDisplay(result.stats.currentPity || 0);
             }
@@ -215,8 +217,7 @@ const Gacha = {
 
     // 更新保底显示UI
     updatePityDisplay(currentPity) {
-        const config = this.poolConfig[this.currentPool];
-        const maxPity = config ? config.maxPity : 90;
+        const maxPity = this.currentPoolData ? (this.currentPoolData.maxPity || 90) : 90;
         const pityNumber = document.getElementById('pityNumber');
         const pityRingProgress = document.getElementById('pityRingProgress');
 
@@ -224,15 +225,13 @@ const Gacha = {
             pityNumber.textContent = currentPity;
         }
 
-        // 更新环形进度条
         if (pityRingProgress) {
-            const circumference = 2 * Math.PI * 16; // r=16
+            const circumference = 2 * Math.PI * 16;
             const progress = currentPity / maxPity;
             const offset = circumference * (1 - progress);
             pityRingProgress.style.strokeDasharray = circumference;
             pityRingProgress.style.strokeDashoffset = offset;
 
-            // 接近保底时变色
             if (currentPity >= maxPity - 10) {
                 pityRingProgress.style.stroke = '#ff4a6a';
                 pityNumber.style.color = '#ff4a6a';
@@ -271,27 +270,18 @@ const Gacha = {
         if (this.isPulling) return;
 
         this.isPulling = true;
-
-        // 显示动画
         this.showPullAnimation();
 
         try {
-            const result = await API.pull(this.currentPool, count);
+            const poolType = this.getCurrentPoolType();
+            const result = await API.pull(poolType, count);
 
-            // 等待动画播放
             await this.sleep(2000);
-
-            // 隐藏动画
             this.hidePullAnimation();
 
             if (result.success) {
-                // 更新货币显示
                 this.updateCurrency(result.starlight);
-
-                // 显示结果
                 this.showResult(result.results);
-
-                // 更新保底计数
                 this.updatePityCount();
             } else {
                 alert(result.message || '抽卡失败');
