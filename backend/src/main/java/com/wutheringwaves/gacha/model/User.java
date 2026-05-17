@@ -14,6 +14,7 @@ public class User {
     private Long id;
     private String username;
     private String password;
+    private String role;
     private Integer starlight;
     private Integer starshards;
     private LocalDateTime createdAt;

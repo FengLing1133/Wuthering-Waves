@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鸣潮抽卡系统 - 管理后台</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body { overflow: auto; }
+        .admin-container { padding: 60px 20px 20px; max-width: 1400px; margin: 0 auto; }
+
+        /* Tab 导航 */
+        .tab-nav { display: flex; gap: 4px; margin-bottom: 20px; background: var(--bg-secondary); border-radius: 8px; padding: 4px; }
+        .tab-btn { flex: 1; padding: 12px 20px; border: none; background: transparent; color: var(--text-secondary); font-size: 14px; cursor: pointer; border-radius: 6px; transition: all 0.3s; }
+        .tab-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+        .tab-btn.active { background: var(--bg-card); color: var(--accent-gold); border: 1px solid var(--border-active); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* 统计卡片 */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 20px; }
+        .stat-card h3 { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; font-weight: normal; }
+        .stat-card .value { font-size: 28px; font-weight: bold; color: var(--accent-gold); }
+        .stat-card .sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+        /* 表格 */
+        .data-table { width: 100%; border-collapse: collapse; background: var(--bg-card); border-radius: 12px; overflow: hidden; }
+        .data-table th, .data-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border-subtle); }
+        .data-table th { background: rgba(255,255,255,0.05); color: var(--text-secondary); font-weight: normal; font-size: 13px; }
+        .data-table td { font-size: 14px; }
+        .data-table tr:hover { background: rgba(255,255,255,0.03); }
+
+        /* 按钮 */
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+        .btn-primary { background: var(--accent-blue); color: white; }
+        .btn-primary:hover { background: var(--accent-blue-dim); }
+        .btn-gold { background: var(--btn-gradient); color: var(--text-primary); border: 1px solid var(--border-active); }
+        .btn-gold:hover { background: var(--btn-hover-gradient); }
+        .btn-danger { background: var(--accent-red); color: white; }
+        .btn-danger:hover { opacity: 0.8; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+        .btn-group { display: flex; gap: 8px; }
+
+        /* 搜索栏 */
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
+        .search-input { padding: 8px 14px; border: 1px solid var(--border-subtle); background: var(--bg-secondary); color: var(--text-primary); border-radius: 6px; font-size: 14px; width: 250px; }
+        .search-input:focus { outline: none; border-color: var(--accent-blue); }
+
+        /* 弹窗 */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; display: none; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 24px; width: 500px; max-width: 90vw; max-height: 85vh; overflow-y: auto; }
+        .modal h2 { font-size: 18px; margin-bottom: 20px; color: var(--accent-gold); }
+        .modal label { display: block; margin-bottom: 12px; }
+        .modal label span { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+        .modal input, .modal select, .modal textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--border-subtle); background: var(--bg-primary); color: var(--text-primary); border-radius: 6px; font-size: 14px; }
+        .modal textarea { min-height: 80px; resize: vertical; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+
+        /* 状态标签 */
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .badge-active { background: rgba(74,255,74,0.15); color: #4aff4a; }
+        .badge-inactive { background: rgba(255,74,106,0.15); color: var(--accent-red); }
+        .badge-5star { color: var(--accent-gold); }
+        .badge-4star { color: var(--accent-purple); }
+        .badge-3star { color: var(--accent-blue); }
+
+        /* 图表区域 */
+        .chart-container { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .chart-container h3 { font-size: 15px; color: var(--text-secondary); margin-bottom: 16px; }
+        .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 200px; padding-top: 20px; }
+        .bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .bar { width: 100%; background: linear-gradient(180deg, var(--accent-blue), var(--accent-blue-dim)); border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.3s; }
+        .bar-label { font-size: 11px; color: var(--text-dim); }
+        .bar-value { font-size: 11px; color: var(--text-secondary); }
+
+        /* 图片上传 */
+        .upload-area { border: 2px dashed var(--border-subtle); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .upload-area:hover { border-color: var(--accent-blue); background: rgba(74,158,255,0.05); }
+        .upload-area input { display: none; }
+        .upload-preview { max-width: 200px; max-height: 120px; margin-top: 10px; border-radius: 8px; }
+
+        /* 分页 */
+        .pagination { display: flex; justify-content: center; gap: 4px; margin-top: 16px; }
+        .page-btn { padding: 6px 12px; border: 1px solid var(--border-subtle); background: transparent; color: var(--text-secondary); border-radius: 4px; cursor: pointer; }
+        .page-btn.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
+        .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* 日报表表格 */
+        .daily-table { margin-top: 16px; }
+    </style>
+</head>
+<body>
+    <!-- 顶部栏 -->
+    <div class="top-bar">
+        <div class="top-bar-title">鸣潮抽卡系统 - 管理后台</div>
+        <div class="top-bar-right" style="display:flex;align-items:center;gap:16px;">
+            <span id="adminName" style="color:var(--text-secondary);font-size:14px;"></span>
+            <button class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:var(--text-secondary);" onclick="logout()">退出登录</button>
+        </div>
+    </div>
+
+    <div class="admin-container">
+        <!-- Tab 导航 -->
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('dashboard')">数据报表</button>
+            <button class="tab-btn" onclick="switchTab('pools')">卡池管理</button>
+            <button class="tab-btn" onclick="switchTab('users')">用户管理</button>
+        </div>
+
+        <!-- 数据报表 Tab -->
+        <div id="tab-dashboard" class="tab-content active">
+            <div class="stats-grid" id="dashboardStats"></div>
+            <div class="chart-container">
+                <h3>近 7 日抽卡趋势</h3>
+                <div class="bar-chart" id="pullsChart"></div>
+            </div>
+            <div class="chart-container">
+                <h3>近 7 日活跃用户</h3>
+                <div class="bar-chart" id="usersChart"></div>
+            </div>
+            <div class="chart-container daily-table">
+                <h3>每日数据明细</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>抽卡次数</th>
+                            <th>消耗星声</th>
+                            <th>活跃用户</th>
+                            <th>五星出货</th>
+                            <th>四星出货</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dailyTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 卡池管理 Tab -->
+        <div id="tab-pools" class="tab-content">
+            <div class="toolbar">
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <select id="poolFilter" class="search-input" style="width:150px;" onchange="loadPools()">
+                        <option value="">全部类型</option>
+                        <option value="character">角色池</option>
+                        <option value="weapon">武器池</option>
+                        <option value="limited">限定池</option>
+                    </select>
+                    <select id="poolStatusFilter" class="search-input" style="width:150px;" onchange="loadPools()">
+                        <option value="">全部状态</option>
+                        <option value="active">上架中</option>
+                        <option value="inactive">已下架</option>
+                    </select>
+                </div>
+                <button class="btn btn-gold" onclick="openPoolModal()">+ 新增卡池</button>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>卡池名称</th>
+                        <th>类型</th>
+                        <th>五星概率</th>
+                        <th>保底抽数</th>
+                        <th>UP物品</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="poolsTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- 用户管理 Tab -->
+        <div id="tab-users" class="tab-content">
+            <div class="toolbar">
+                <input type="text" class="search-input" id="userSearch" placeholder="搜索用户名..." onkeydown="if(event.key==='Enter')loadUsers()">
+                <button class="btn btn-primary" onclick="loadUsers()">搜索</button>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>用户名</th>
+                        <th>角色</th>
+                        <th>星声</th>
+                        <th>星辉</th>
+                        <th>注册时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody"></tbody>
+            </table>
+            <div class="pagination" id="usersPagination"></div>
+        </div>
+    </div>
+
+    <!-- 卡池编辑弹窗 -->
+    <div class="modal-overlay" id="poolModal">
+        <div class="modal">
+            <h2 id="poolModalTitle">新增卡池</h2>
+            <input type="hidden" id="poolId">
+            <label><span>卡池名称</span><input type="text" id="poolName" placeholder="如：角色活动唤取"></label>
+            <label><span>卡池类型</span>
+                <select id="poolType">
+                    <option value="character">角色池</option>
+                    <option value="weapon">武器池</option>
+                    <option value="limited">限定池</option>
+                </select>
+            </label>
+            <label><span>卡池描述</span><textarea id="poolDesc" placeholder="卡池描述信息"></textarea></label>
+            <label><span>五星基础概率 (%)</span><input type="number" id="poolFiveRate" step="0.01" value="0.8"></label>
+            <label><span>四星基础概率 (%)</span><input type="number" id="poolFourRate" step="0.01" value="6.0"></label>
+            <label><span>硬保底抽数</span><input type="number" id="poolMaxPity" value="90"></label>
+            <label><span>软保底起始抽数</span><input type="number" id="poolSoftPity" value="75"></label>
+            <label><span>软保底每抽递增 (%)</span><input type="number" id="poolSoftInc" step="0.01" value="6.0"></label>
+            <label><span>UP物品（JSON数组）</span><input type="text" id="poolUpItems" placeholder='["物品1","物品2"]'></label>
+            <label>
+                <span>卡池封面图片</span>
+                <div class="upload-area" onclick="document.getElementById('poolImageInput').click()">
+                    <input type="file" id="poolImageInput" accept="image/*" onchange="previewImage(this)">
+                    <p style="color:var(--text-dim);font-size:13px;">点击上传图片</p>
+                    <img id="poolImagePreview" class="upload-preview" style="display:none;">
+                </div>
+            </label>
+            <div class="modal-actions">
+                <button class="btn" style="background:rgba(255,255,255,0.1);color:var(--text-secondary);" onclick="closePoolModal()">取消</button>
+                <button class="btn btn-gold" onclick="savePool()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户资源调整弹窗 -->
+    <div class="modal-overlay" id="resourceModal">
+        <div class="modal">
+            <h2>调整用户资源</h2>
+            <input type="hidden" id="resUserId">
+            <p style="color:var(--text-secondary);margin-bottom:16px;">用户：<span id="resUsername"></span></p>
+            <label><span>星声数量</span><input type="number" id="resStarlight" min="0"></label>
+            <label><span>星辉数量</span><input type="number" id="resStarshards" min="0"></label>
+            <div class="modal-actions">
+                <button class="btn" style="background:rgba(255,255,255,0.1);color:var(--text-secondary);" onclick="closeResourceModal()">取消</button>
+                <button class="btn btn-gold" onclick="saveResources()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户抽卡记录弹窗 -->
+    <div class="modal-overlay" id="recordsModal">
+        <div class="modal" style="width:700px;">
+            <h2>抽卡记录</h2>
+            <p style="color:var(--text-secondary);margin-bottom:16px;">用户：<span id="recUsername"></span></p>
+            <div style="max-height:400px;overflow-y:auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>卡池</th>
+                            <th>物品</th>
+                            <th>稀有度</th>
+                            <th>保底计数</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsTableBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-actions">
+                <button class="btn" style="background:rgba(255,255,255,0.1);color:var(--text-secondary);" onclick="closeRecordsModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script>
+        // ========== 初始化 ==========
+        const adminUser = API.getUser();
+        if (!adminUser || adminUser.role !== 'admin') {
+            window.location.href = '/login.html';
+        }
+        document.getElementById('adminName').textContent = adminUser ? adminUser.username : '';
+
+        // ========== Tab 切换 ==========
+        function switchTab(name) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + name).classList.add('active');
+
+            if (name === 'dashboard') loadDashboard();
+            if (name === 'pools') loadPools();
+            if (name === 'users') loadUsers();
+        }
+
+        // ========== 退出登录 ==========
+        function logout() {
+            API.clearToken();
+            window.location.href = '/login.html';
+        }
+
+        // ========== 数据报表 ==========
+        async function loadDashboard() {
+            try {
+                const [dashRes, dailyRes] = await Promise.all([
+                    API.request('/admin/stats/dashboard'),
+                    API.request('/admin/stats/daily?days=7')
+                ]);
+
+                if (dashRes.success) {
+                    const s = dashRes.stats;
+                    document.getElementById('dashboardStats').innerHTML = `
+                        <div class="stat-card"><h3>总用户数</h3><div class="value">${s.totalUsers}</div></div>
+                        <div class="stat-card"><h3>今日活跃用户</h3><div class="value">${s.dailyActiveUsers}</div><div class="sub">今日有抽卡行为的用户</div></div>
+                        <div class="stat-card"><h3>总抽卡次数</h3><div class="value">${s.totalPulls.toLocaleString()}</div></div>
+                        <div class="stat-card"><h3>今日抽卡次数</h3><div class="value">${s.dailyPulls}</div></div>
+                        <div class="stat-card"><h3>总消耗星声</h3><div class="value">${s.totalConsumedStarlight.toLocaleString()}</div></div>
+                        <div class="stat-card"><h3>今日消耗星声</h3><div class="value">${s.dailyConsumedStarlight.toLocaleString()}</div></div>
+                    `;
+                }
+
+                if (dailyRes.success) {
+                    renderBarChart('pullsChart', dailyRes.dailyStats, 'pulls', '次');
+                    renderBarChart('usersChart', dailyRes.dailyStats, 'activeUsers', '人');
+                    renderDailyTable(dailyRes.dailyStats);
+                }
+            } catch (e) {
+                console.error('加载报表失败:', e);
+            }
+        }
+
+        function renderBarChart(containerId, data, key, unit) {
+            const container = document.getElementById(containerId);
+            const maxVal = Math.max(...data.map(d => d[key]), 1);
+            container.innerHTML = data.map(d => {
+                const pct = (d[key] / maxVal * 100);
+                const date = d.date.substring(5);
+                return `<div class="bar-item">
+                    <div class="bar-value">${d[key]}${unit}</div>
+                    <div class="bar" style="height:${Math.max(pct, 3)}%"></div>
+                    <div class="bar-label">${date}</div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderDailyTable(data) {
+            document.getElementById('dailyTableBody').innerHTML = data.map(d => `
+                <tr>
+                    <td>${d.date}</td>
+                    <td>${d.pulls}</td>
+                    <td>${d.consumedStarlight.toLocaleString()}</td>
+                    <td>${d.activeUsers}</td>
+                    <td class="badge-5star">${d.fiveStarCount}</td>
+                    <td class="badge-4star">${d.fourStarCount}</td>
+                </tr>
+            `).join('');
+        }
+
+        // ========== 卡池管理 ==========
+        let uploadedImageUrl = '';
+
+        async function loadPools() {
+            const type = document.getElementById('poolFilter').value;
+            const status = document.getElementById('poolStatusFilter').value;
+            let url = '/admin/pools?';
+            if (type) url += `poolType=${type}&`;
+            if (status) url += `status=${status}`;
+
+            try {
+                const res = await API.request(url);
+                if (res.success) {
+                    document.getElementById('poolsTableBody').innerHTML = res.pools.map(p => `
+                        <tr>
+                            <td>${p.id}</td>
+                            <td>${p.name}</td>
+                            <td>${{character:'角色池',weapon:'武器池',limited:'限定池'}[p.poolType]||p.poolType}</td>
+                            <td>${p.fiveStarRate}%</td>
+                            <td>${p.maxPity}</td>
+                            <td>${p.upItems || '-'}</td>
+                            <td><span class="badge ${p.status==='active'?'badge-active':'badge-inactive'}">${p.status==='active'?'上架中':'已下架'}</span></td>
+                            <td class="btn-group">
+                                <button class="btn btn-sm btn-primary" onclick="editPool(${p.id})">编辑</button>
+                                <button class="btn btn-sm ${p.status==='active'?'btn-danger':'btn-gold'}" onclick="togglePool(${p.id})">${p.status==='active'?'下架':'上架'}</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error('加载卡池失败:', e);
+            }
+        }
+
+        function openPoolModal(pool = null) {
+            document.getElementById('poolModal').classList.add('active');
+            document.getElementById('poolModalTitle').textContent = pool ? '编辑卡池' : '新增卡池';
+            document.getElementById('poolId').value = pool ? pool.id : '';
+            document.getElementById('poolName').value = pool ? pool.name : '';
+            document.getElementById('poolType').value = pool ? pool.poolType : 'character';
+            document.getElementById('poolDesc').value = pool ? (pool.description || '') : '';
+            document.getElementById('poolFiveRate').value = pool ? pool.fiveStarRate : 0.8;
+            document.getElementById('poolFourRate').value = pool ? pool.fourStarRate : 6.0;
+            document.getElementById('poolMaxPity').value = pool ? pool.maxPity : 90;
+            document.getElementById('poolSoftPity').value = pool ? pool.softPityStart : 75;
+            document.getElementById('poolSoftInc').value = pool ? pool.softPityIncrement : 6.0;
+            document.getElementById('poolUpItems').value = pool ? (pool.upItems || '[]') : '[]';
+            uploadedImageUrl = pool ? (pool.imageUrl || '') : '';
+            const preview = document.getElementById('poolImagePreview');
+            if (uploadedImageUrl) { preview.src = uploadedImageUrl; preview.style.display = 'block'; }
+            else { preview.style.display = 'none'; }
+        }
+
+        function closePoolModal() { document.getElementById('poolModal').classList.remove('active'); }
+
+        async function editPool(id) {
+            try {
+                const res = await API.request(`/admin/pools/${id}`);
+                if (res.success) openPoolModal(res.pool);
+            } catch (e) { console.error(e); }
+        }
+
+        async function savePool() {
+            const id = document.getElementById('poolId').value;
+            const data = {
+                name: document.getElementById('poolName').value,
+                poolType: document.getElementById('poolType').value,
+                description: document.getElementById('poolDesc').value,
+                fiveStarRate: parseFloat(document.getElementById('poolFiveRate').value),
+                fourStarRate: parseFloat(document.getElementById('poolFourRate').value),
+                maxPity: parseInt(document.getElementById('poolMaxPity').value),
+                softPityStart: parseInt(document.getElementById('poolSoftPity').value),
+                softPityIncrement: parseFloat(document.getElementById('poolSoftInc').value),
+                upItems: document.getElementById('poolUpItems').value,
+                imageUrl: uploadedImageUrl
+            };
+
+            try {
+                const fileInput = document.getElementById('poolImageInput');
+                if (fileInput.files.length > 0) {
+                    const formData = new FormData();
+                    formData.append('file', fileInput.files[0]);
+                    const uploadRes = await fetch('/api/admin/upload', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${API.getToken()}` },
+                        body: formData
+                    }).then(r => r.json());
+                    if (uploadRes.success) data.imageUrl = uploadRes.imageUrl;
+                }
+
+                const url = id ? `/admin/pools/${id}` : '/admin/pools';
+                const method = id ? 'PUT' : 'POST';
+                const res = await API.request(url, { method, body: JSON.stringify(data) });
+                if (res.success) { closePoolModal(); loadPools(); }
+                else alert(res.message || '保存失败');
+            } catch (e) { alert('保存失败'); console.error(e); }
+        }
+
+        async function togglePool(id) {
+            try {
+                const res = await API.request(`/admin/pools/${id}/toggle`, { method: 'POST' });
+                if (res.success) loadPools();
+            } catch (e) { console.error(e); }
+        }
+
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const preview = document.getElementById('poolImagePreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // ========== 用户管理 ==========
+        let userPage = 1;
+
+        async function loadUsers() {
+            const keyword = document.getElementById('userSearch').value;
+            try {
+                const res = await API.request(`/admin/users?page=${userPage}&size=20&keyword=${encodeURIComponent(keyword)}`);
+                if (res.success) {
+                    const page = res.users;
+                    document.getElementById('usersTableBody').innerHTML = page.records.map(u => `
+                        <tr>
+                            <td>${u.id}</td>
+                            <td>${u.username}</td>
+                            <td><span class="badge ${u.role==='admin'?'badge-active':'badge-inactive'}">${u.role || 'user'}</span></td>
+                            <td>${(u.starlight||0).toLocaleString()}</td>
+                            <td>${(u.starshards||0).toLocaleString()}</td>
+                            <td>${u.createdAt ? u.createdAt.replace('T', ' ').substring(0, 19) : '-'}</td>
+                            <td class="btn-group">
+                                <button class="btn btn-sm btn-primary" onclick="openResourceModal(${u.id},'${u.username}',${u.starlight||0},${u.starshards||0})">调整资源</button>
+                                <button class="btn btn-sm btn-gold" onclick="viewRecords(${u.id},'${u.username}')">抽卡记录</button>
+                            </td>
+                        </tr>
+                    `).join('');
+
+                    renderPagination(page);
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function renderPagination(page) {
+            const totalPages = Math.ceil(page.total / page.size);
+            let html = `<button class="page-btn" ${userPage<=1?'disabled':''} onclick="userPage--;loadUsers()">上一页</button>`;
+            for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+                html += `<button class="page-btn ${i===userPage?'active':''}" onclick="userPage=${i};loadUsers()">${i}</button>`;
+            }
+            html += `<button class="page-btn" ${userPage>=totalPages?'disabled':''} onclick="userPage++;loadUsers()">下一页</button>`;
+            document.getElementById('usersPagination').innerHTML = html;
+        }
+
+        function openResourceModal(id, username, starlight, starshards) {
+            document.getElementById('resourceModal').classList.add('active');
+            document.getElementById('resUserId').value = id;
+            document.getElementById('resUsername').textContent = username;
+            document.getElementById('resStarlight').value = starlight;
+            document.getElementById('resStarshards').value = starshards;
+        }
+
+        function closeResourceModal() { document.getElementById('resourceModal').classList.remove('active'); }
+
+        async function saveResources() {
+            const id = document.getElementById('resUserId').value;
+            const data = {
+                starlight: parseInt(document.getElementById('resStarlight').value),
+                starshards: parseInt(document.getElementById('resStarshards').value)
+            };
+            try {
+                const res = await API.request(`/admin/users/${id}/resources`, { method: 'PUT', body: JSON.stringify(data) });
+                if (res.success) { closeResourceModal(); loadUsers(); }
+                else alert(res.message || '更新失败');
+            } catch (e) { alert('更新失败'); console.error(e); }
+        }
+
+        async function viewRecords(userId, username) {
+            document.getElementById('recordsModal').classList.add('active');
+            document.getElementById('recUsername').textContent = username;
+            try {
+                const res = await API.request(`/admin/users/${userId}/records?page=1&size=50`);
+                if (res.success) {
+                    document.getElementById('recordsTableBody').innerHTML = res.records.records.map(r => `
+                        <tr>
+                            <td>${r.createdAt ? r.createdAt.replace('T',' ').substring(0,19) : '-'}</td>
+                            <td>${{character:'角色池',weapon:'武器池',limited:'限定池'}[r.poolType]||r.poolType}</td>
+                            <td>${r.itemName}</td>
+                            <td><span class="badge-${r.itemRarity}star">${r.itemRarity}星</span></td>
+                            <td>${r.pityCount || '-'}</td>
+                        </tr>
+                    `).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);">暂无记录</td></tr>';
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function closeRecordsModal() { document.getElementById('recordsModal').classList.remove('active'); }
+
+        // 点击遮罩关闭弹窗
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', e => {
+                if (e.target === overlay) overlay.classList.remove('active');
+            });
+        });
+
+        // 初始加载
+        loadDashboard();
+    </script>
+</body>
+</html>

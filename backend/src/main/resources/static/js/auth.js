@@ -2,7 +2,12 @@
 document.addEventListener('DOMContentLoaded', () => {
     // 检查是否已登录
     if (API.getToken()) {
-        window.location.href = '/index.html';
+        const user = API.getUser();
+        if (user && user.role === 'admin') {
+            window.location.href = '/admin.html';
+        } else {
+            window.location.href = '/index.html';
+        }
         return;
     }
 
@@ -65,7 +70,11 @@ function initLoginForm() {
                 API.setUser(result.user);
                 showMessage('登录成功，正在跳转...', 'success');
                 setTimeout(() => {
-                    window.location.href = '/index.html';
+                    if (result.user.role === 'admin') {
+                        window.location.href = '/admin.html';
+                    } else {
+                        window.location.href = '/index.html';
+                    }
                 }, 1000);
             } else {
                 showMessage(result.message || '登录失败', 'error');

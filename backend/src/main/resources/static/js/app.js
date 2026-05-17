@@ -27,6 +27,12 @@ async function loadUserInfo() {
             document.getElementById('astraliteCount').textContent = user.starlight || 0;
             document.getElementById('lustrumCount').textContent = user.starshards || 0;
             document.getElementById('coralsCount').textContent = user.corals || 0;
+
+            // admin 用户显示管理后台入口
+            if (user.role === 'admin') {
+                const adminBtn = document.getElementById('adminBtn');
+                if (adminBtn) adminBtn.style.display = '';
+            }
         }
     } catch (error) {
         console.error('获取用户信息失败:', error);

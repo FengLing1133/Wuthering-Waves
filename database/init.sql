@@ -9,11 +9,17 @@ CREATE TABLE IF NOT EXISTS users (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
+    role VARCHAR(20) DEFAULT 'user' COMMENT '角色：user/admin',
     starlight INT DEFAULT 100000 COMMENT '星声（抽卡货币）',
     starshards INT DEFAULT 0 COMMENT '星辉（兑换货币）',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+-- 预置管理员账户（admin/123456）
+INSERT INTO users (username, password, role, starlight, starshards) VALUES
+('admin', '$2a$10$Q/6lluMY0rON1Q//Tvf0k.0xaAbYKkAYfphbajDj3LG5xPvldhGg.', 'admin', 999999, 999999)
+ON DUPLICATE KEY UPDATE role = 'admin';
 
 -- 抽卡记录表
 CREATE TABLE IF NOT EXISTS gacha_records (
@@ -61,6 +67,32 @@ CREATE TABLE IF NOT EXISTS limited_pity (
     guaranteed_five BOOLEAN DEFAULT FALSE COMMENT '是否大保底（下次必出UP）',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+-- 卡池配置表
+CREATE TABLE IF NOT EXISTS gacha_pool (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL COMMENT '卡池名称',
+    pool_type VARCHAR(20) NOT NULL COMMENT '池子类型：character/weapon/limited',
+    description TEXT COMMENT '卡池描述',
+    image_url VARCHAR(255) COMMENT '卡池封面图片路径',
+    five_star_rate DECIMAL(5,2) DEFAULT 0.80 COMMENT '五星基础概率(%)',
+    four_star_rate DECIMAL(5,2) DEFAULT 6.00 COMMENT '四星基础概率(%)',
+    max_pity INT DEFAULT 90 COMMENT '硬保底抽数',
+    soft_pity_start INT DEFAULT 75 COMMENT '软保底起始抽数',
+    soft_pity_increment DECIMAL(5,2) DEFAULT 6.00 COMMENT '软保底每抽概率递增(%)',
+    up_items VARCHAR(500) COMMENT 'UP物品名称列表（JSON数组）',
+    status VARCHAR(20) DEFAULT 'active' COMMENT '状态：active/inactive',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_pool_type (pool_type),
+    INDEX idx_status (status)
+);
+
+-- 初始卡池数据
+INSERT INTO gacha_pool (name, pool_type, description, five_star_rate, four_star_rate, max_pity, soft_pity_start, soft_pity_increment, up_items, status) VALUES
+('角色活动唤取', 'character', '限定角色概率UP！本期UP角色：吟霖', 0.80, 6.00, 90, 75, 6.00, '["吟霖"]', 'active'),
+('武器活动唤取', 'weapon', '限定武器概率UP！', 0.70, 6.00, 80, 75, 6.00, '[]', 'active'),
+('限定活动唤取', 'limited', '限定角色与武器概率UP！', 0.80, 6.00, 90, 75, 6.00, '["吟霖","吟霖的专武"]', 'active');
 
 -- 抽卡物品配置表
 CREATE TABLE IF NOT EXISTS gacha_items (

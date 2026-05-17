@@ -37,10 +37,11 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(password));
         user.setStarlight(1600);  // 初始星声
         user.setStarshards(0);
+        user.setRole("user");
         userMapper.insert(user);
 
         // 生成 JWT
-        String token = jwtUtil.generateToken(user.getId(), user.getUsername());
+        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
 
         result.put("success", true);
         result.put("message", "注册成功");
@@ -48,6 +49,7 @@ public class UserService {
         result.put("user", Map.of(
                 "id", user.getId(),
                 "username", user.getUsername(),
+                "role", user.getRole(),
                 "starlight", user.getStarlight(),
                 "starshards", user.getStarshards()
         ));
@@ -70,7 +72,7 @@ public class UserService {
         }
 
         // 生成 JWT
-        String token = jwtUtil.generateToken(user.getId(), user.getUsername());
+        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
 
         result.put("success", true);
         result.put("message", "登录成功");
@@ -78,6 +80,7 @@ public class UserService {
         result.put("user", Map.of(
                 "id", user.getId(),
                 "username", user.getUsername(),
+                "role", user.getRole(),
                 "starlight", user.getStarlight(),
                 "starshards", user.getStarshards()
         ));

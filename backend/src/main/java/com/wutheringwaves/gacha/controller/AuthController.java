@@ -73,6 +73,7 @@ public class AuthController {
                     "user", Map.of(
                             "id", user.getId(),
                             "username", user.getUsername(),
+                            "role", user.getRole() != null ? user.getRole() : "user",
                             "starlight", user.getStarlight(),
                             "starshards", user.getStarshards()
                     )

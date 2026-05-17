@@ -19,10 +19,8 @@ public class GachaService {
     private final CharacterPityMapper characterPityMapper;
     private final WeaponPityMapper weaponPityMapper;
     private final LimitedPityMapper limitedPityMapper;
+    private final GachaPoolMapper gachaPoolMapper;
     private final UserService userService;
-
-    private static final int CHARACTER_MAX_PITY = 90;
-    private static final int WEAPON_MAX_PITY = 80;
 
     @Transactional
     public Map<String, Object> pull(Long userId, String poolType, int count) {
@@ -114,28 +112,39 @@ public class GachaService {
         return result;
     }
 
+    private GachaPool getPoolConfig(String poolType) {
+        LambdaQueryWrapper<GachaPool> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(GachaPool::getPoolType, poolType);
+        wrapper.eq(GachaPool::getStatus, "active");
+        wrapper.last("LIMIT 1");
+        return gachaPoolMapper.selectOne(wrapper);
+    }
+
     private int determineRarity(Long userId, String poolType, int currentPity, boolean guaranteed) {
         double rand = ThreadLocalRandom.current().nextDouble() * 100;
 
-        int maxPity = poolType.equals("weapon") ? WEAPON_MAX_PITY : CHARACTER_MAX_PITY;
+        GachaPool poolConfig = getPoolConfig(poolType);
+
+        int maxPity = poolConfig != null ? poolConfig.getMaxPity() : 90;
+        double fiveStarRate = poolConfig != null ? poolConfig.getFiveStarRate().doubleValue() : 0.8;
+        double fourStarRate = poolConfig != null ? poolConfig.getFourStarRate().doubleValue() : 6.0;
+        int softPityStart = poolConfig != null ? poolConfig.getSoftPityStart() : 75;
+        double softPityInc = poolConfig != null ? poolConfig.getSoftPityIncrement().doubleValue() : 6.0;
 
         // 硬保底
         if (currentPity >= maxPity - 1) {
             return 5;
         }
 
-        // 软保底（75抽后概率递增）
-        if (currentPity >= 74) {
-            double fiveStarChance = 0.8 + (currentPity - 74) * 6.0;
+        // 软保底（从 softPityStart 开始概率递增）
+        if (currentPity >= softPityStart - 1) {
+            double fiveStarChance = fiveStarRate + (currentPity - softPityStart + 1) * softPityInc;
             if (rand < fiveStarChance) {
                 return 5;
             }
         }
 
         // 基础概率
-        double fiveStarRate = poolType.equals("weapon") ? 0.7 : 0.8;
-        double fourStarRate = 6.0;
-
         if (rand < fiveStarRate) {
             return 5;
         } else if (rand < fiveStarRate + fourStarRate) {
