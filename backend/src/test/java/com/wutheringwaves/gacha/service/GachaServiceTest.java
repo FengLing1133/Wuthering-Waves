@@ -68,7 +68,7 @@ class GachaServiceTest extends BaseTest {
     void pull_singlePull_success() {
         setupDefaultMocks();
 
-        Map<String, Object> result = gachaService.pull(1L, "limited-character", 1);
+        Map<String, Object> result = gachaService.pull(1L, "limited-character", null, 1);
 
         assertNotNull(result);
         assertTrue((Boolean) result.get("success"));
@@ -84,7 +84,7 @@ class GachaServiceTest extends BaseTest {
     void pull_tenPull_success() {
         setupDefaultMocks();
 
-        Map<String, Object> result = gachaService.pull(1L, "limited-character", 10);
+        Map<String, Object> result = gachaService.pull(1L, "limited-character", null, 10);
 
         assertNotNull(result);
         assertTrue((Boolean) result.get("success"));
@@ -100,7 +100,7 @@ class GachaServiceTest extends BaseTest {
         testUser.setStarlight(100);
         when(userService.getUserById(1L)).thenReturn(testUser);
 
-        Map<String, Object> result = gachaService.pull(1L, "limited-character", 1);
+        Map<String, Object> result = gachaService.pull(1L, "limited-character", null, 1);
 
         assertNotNull(result);
         assertFalse((Boolean) result.get("success"));
@@ -113,7 +113,7 @@ class GachaServiceTest extends BaseTest {
         testPity.setFiveStarCount(89);
         setupDefaultMocks();
 
-        Map<String, Object> result = gachaService.pull(1L, "limited-character", 1);
+        Map<String, Object> result = gachaService.pull(1L, "limited-character", null, 1);
 
         assertNotNull(result);
         assertTrue((Boolean) result.get("success"));
@@ -129,7 +129,7 @@ class GachaServiceTest extends BaseTest {
         testPity.setFiveStarCount(89);
         setupDefaultMocks();
 
-        Map<String, Object> result = gachaService.pull(1L, "limited-character", 1);
+        Map<String, Object> result = gachaService.pull(1L, "limited-character", null, 1);
 
         assertNotNull(result);
         assertTrue((Boolean) result.get("success"));
@@ -145,7 +145,7 @@ class GachaServiceTest extends BaseTest {
         testPity.setFourStarCount(9);
         setupDefaultMocks();
 
-        Map<String, Object> result = gachaService.pull(1L, "limited-character", 1);
+        Map<String, Object> result = gachaService.pull(1L, "limited-character", null, 1);
 
         assertNotNull(result);
         assertTrue((Boolean) result.get("success"));
@@ -199,7 +199,7 @@ class GachaServiceTest extends BaseTest {
     void pull_resultContainsCorrectFields() {
         setupDefaultMocks();
 
-        Map<String, Object> result = gachaService.pull(1L, "limited-character", 1);
+        Map<String, Object> result = gachaService.pull(1L, "limited-character", null, 1);
 
         assertNotNull(result);
         assertTrue((Boolean) result.get("success"));
@@ -225,7 +225,7 @@ class GachaServiceTest extends BaseTest {
         int fiveStarCount = 0;
         for (int i = 0; i < 100; i++) {
             testPity.setFiveStarCount(80);
-            Map<String, Object> result = gachaService.pull(1L, "limited-character", 1);
+            Map<String, Object> result = gachaService.pull(1L, "limited-character", null, 1);
             List<?> results = (List<?>) result.get("results");
             Map<?, ?> firstResult = (Map<?, ?>) results.get(0);
             if (5 == (int) firstResult.get("rarity")) {

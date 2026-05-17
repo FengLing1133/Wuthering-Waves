@@ -50,6 +50,7 @@ public class GachaController {
         Long userId = (Long) authentication.getPrincipal();
         String poolType = (String) request.get("poolType");
         Integer count = (Integer) request.get("count");
+        Number poolIdNum = (Number) request.get("poolId");
 
         if (poolType == null || count == null) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "参数错误"));
@@ -65,7 +66,9 @@ public class GachaController {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "抽卡次数只能是1或10"));
         }
 
-        return ResponseEntity.ok(gachaService.pull(userId, poolType, count));
+        Long poolId = poolIdNum != null ? poolIdNum.longValue() : null;
+
+        return ResponseEntity.ok(gachaService.pull(userId, poolType, poolId, count));
     }
 
     @GetMapping("/history")

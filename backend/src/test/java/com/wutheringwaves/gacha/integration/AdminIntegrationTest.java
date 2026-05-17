@@ -235,7 +235,7 @@ class AdminIntegrationTest extends BaseTest {
         assertEquals(5000, after.getStarlight());
 
         // 使用新星声抽卡
-        Map<String, Object> pullResult = gachaService.pull(normalUserId, "limited-character", 10);
+        Map<String, Object> pullResult = gachaService.pull(normalUserId, "limited-character", null, 10);
         assertTrue((Boolean) pullResult.get("success"));
 
         // 验证星声正确扣除（十连 1500）
@@ -250,7 +250,7 @@ class AdminIntegrationTest extends BaseTest {
         adminService.updateUserResources(normalUserId, 100);
 
         // 尝试十连（需要1500）
-        Map<String, Object> pullResult = gachaService.pull(normalUserId, "limited-character", 10);
+        Map<String, Object> pullResult = gachaService.pull(normalUserId, "limited-character", null, 10);
         assertFalse((Boolean) pullResult.get("success"));
         assertEquals("星声不足", pullResult.get("message"));
     }
@@ -277,7 +277,7 @@ class AdminIntegrationTest extends BaseTest {
         // 第一次调整：增加到3000
         adminService.updateUserResources(normalUserId, 3000);
         // 单抽一次（160）
-        gachaService.pull(normalUserId, "limited-character", 1);
+        gachaService.pull(normalUserId, "limited-character", null, 1);
         // 第二次调整：增加2000（当前2840 + 2000 = 4840）
         adminService.updateUserResources(normalUserId, 2000);
 
@@ -295,7 +295,7 @@ class AdminIntegrationTest extends BaseTest {
     void statsDashboard_shouldReturnCorrectCounts() {
         // 产生抽卡数据
         adminService.updateUserResources(normalUserId, 10000);
-        gachaService.pull(normalUserId, "limited-character", 10);
+        gachaService.pull(normalUserId, "limited-character", null, 10);
 
         Map<String, Object> stats = adminService.getDashboardStats();
 
@@ -317,7 +317,7 @@ class AdminIntegrationTest extends BaseTest {
     void statsDaily_shouldReturnDailyBreakdown() {
         // 产生抽卡数据
         adminService.updateUserResources(normalUserId, 10000);
-        gachaService.pull(normalUserId, "limited-character", 5);
+        gachaService.pull(normalUserId, "limited-character", null, 5);
 
         List<Map<String, Object>> dailyStats = adminService.getDailyStats(7);
 
@@ -338,7 +338,7 @@ class AdminIntegrationTest extends BaseTest {
     void statsDaily_afterPulls_shouldCountRarities() {
         // 大量抽卡以确保有各稀有度的数据
         adminService.updateUserResources(normalUserId, 50000);
-        gachaService.pull(normalUserId, "limited-character", 30);
+        gachaService.pull(normalUserId, "limited-character", null, 30);
 
         Map<String, Object> stats = gachaService.getStats(normalUserId, "limited-character");
         int totalPulls = (int) stats.get("totalPulls");
@@ -405,7 +405,7 @@ class AdminIntegrationTest extends BaseTest {
     void getUserRecords_shouldReturnRecords() {
         // 先产生抽卡记录
         adminService.updateUserResources(normalUserId, 10000);
-        gachaService.pull(normalUserId, "limited-character", 10);
+        gachaService.pull(normalUserId, "limited-character", null, 10);
 
         var page = adminService.getUserRecords(normalUserId, "limited-character", 1, 20);
         assertNotNull(page);

@@ -86,10 +86,10 @@ const API = {
     },
 
     // 抽卡
-    async pull(poolType, count) {
+    async pull(poolType, count, poolId) {
         return this.request('/gacha/pull', {
             method: 'POST',
-            body: JSON.stringify({ poolType, count })
+            body: JSON.stringify({ poolType, count, poolId })
         });
     },
 
