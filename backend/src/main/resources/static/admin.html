@@ -166,6 +166,7 @@
                         <th>五星概率</th>
                         <th>保底抽数</th>
                         <th>UP物品</th>
+                        <th>侧栏</th>
                         <th>状态</th>
                         <th>操作</th>
                     </tr>
@@ -218,6 +219,52 @@
             <label><span>软保底起始抽数</span><input type="number" id="poolSoftPity" value="75"></label>
             <label><span>软保底每抽递增 (%)</span><input type="number" id="poolSoftInc" step="0.01" value="6.0"></label>
             <label><span>UP物品（JSON数组）</span><input type="text" id="poolUpItems" placeholder='["物品1","物品2"]'></label>
+
+            <!-- 时间设置 -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <label><span>上架时间</span><input type="datetime-local" id="poolStartTime"></label>
+                <label><span>下架时间</span><input type="datetime-local" id="poolEndTime"></label>
+            </div>
+
+            <!-- 侧栏绑定 -->
+            <label style="display:flex;align-items:center;gap:8px;flex-direction:row;">
+                <input type="checkbox" id="poolSidebarVisible" style="width:auto;">
+                <span style="margin:0;">显示在抽卡页面侧栏</span>
+            </label>
+            <label id="sidebarOrderLabel" style="display:none;"><span>侧栏排序（越小越靠前）</span><input type="number" id="poolSidebarOrder" value="0" min="0"></label>
+
+            <!-- 背景大图 -->
+            <label>
+                <span>主背景大图</span>
+                <div class="upload-area" onclick="document.getElementById('poolBgImageInput').click()">
+                    <input type="file" id="poolBgImageInput" accept="image/*" onchange="previewBgImage(this)">
+                    <p style="color:var(--text-dim);font-size:13px;">点击上传背景大图</p>
+                    <img id="poolBgImagePreview" class="upload-preview" style="display:none;">
+                </div>
+            </label>
+
+            <!-- 侧栏缩略图 -->
+            <label>
+                <span>侧栏缩略图</span>
+                <div class="upload-area" onclick="document.getElementById('poolThumbInput').click()">
+                    <input type="file" id="poolThumbInput" accept="image/*" onchange="previewThumb(this)">
+                    <p style="color:var(--text-dim);font-size:13px;">点击上传缩略图</p>
+                    <img id="poolThumbPreview" class="upload-preview" style="display:none;">
+                </div>
+            </label>
+
+            <!-- 四星头像选择 -->
+            <label>
+                <span>概率提升四星头像（最多选择3个）</span>
+                <div id="avatarSelectGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;margin-top:8px;max-height:200px;overflow-y:auto;padding:8px;background:var(--bg-primary);border-radius:6px;border:1px solid var(--border-subtle);">
+                    <div style="color:var(--text-dim);font-size:13px;grid-column:1/-1;">加载中...</div>
+                </div>
+                <div id="selectedAvatars" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;"></div>
+            </label>
+            <div style="margin-bottom:12px;">
+                <button class="btn btn-sm btn-primary" onclick="openNewAvatarModal()" type="button">+ 新增头像</button>
+            </div>
+
             <label>
                 <span>卡池封面图片</span>
                 <div class="upload-area" onclick="document.getElementById('poolImageInput').click()">
@@ -268,6 +315,26 @@
             </div>
             <div class="modal-actions">
                 <button class="btn" style="background:rgba(255,255,255,0.1);color:var(--text-secondary);" onclick="closeRecordsModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增四星头像弹窗 -->
+    <div class="modal-overlay" id="newAvatarModal">
+        <div class="modal" style="width:400px;">
+            <h2>新增四星头像</h2>
+            <label><span>角色名称</span><input type="text" id="newAvatarName" placeholder="如：白芷"></label>
+            <label>
+                <span>头像图片</span>
+                <div class="upload-area" onclick="document.getElementById('newAvatarImageInput').click()">
+                    <input type="file" id="newAvatarImageInput" accept="image/*" onchange="previewNewAvatar(this)">
+                    <p style="color:var(--text-dim);font-size:13px;">点击上传头像</p>
+                    <img id="newAvatarPreview" class="upload-preview" style="display:none;">
+                </div>
+            </label>
+            <div class="modal-actions">
+                <button class="btn" style="background:rgba(255,255,255,0.1);color:var(--text-secondary);" onclick="closeNewAvatarModal()">取消</button>
+                <button class="btn btn-gold" onclick="saveNewAvatar()">保存</button>
             </div>
         </div>
     </div>
@@ -377,6 +444,7 @@
                             <td>${p.fiveStarRate}%</td>
                             <td>${p.maxPity}</td>
                             <td>${p.upItems || '-'}</td>
+                            <td>${p.sidebarVisible ? '<span class="badge badge-active">显示</span>' : '<span class="badge badge-inactive">隐藏</span>'}</td>
                             <td><span class="badge ${p.status==='active'?'badge-active':'badge-inactive'}">${p.status==='active'?'上架中':'已下架'}</span></td>
                             <td class="btn-group">
                                 <button class="btn btn-sm btn-primary" onclick="editPool(${p.id})">编辑</button>
@@ -390,24 +458,6 @@
             }
         }
 
-        function openPoolModal(pool = null) {
-            document.getElementById('poolModal').classList.add('active');
-            document.getElementById('poolModalTitle').textContent = pool ? '编辑卡池' : '新增卡池';
-            document.getElementById('poolId').value = pool ? pool.id : '';
-            document.getElementById('poolName').value = pool ? pool.name : '';
-            document.getElementById('poolType').value = pool ? pool.poolType : 'limited-character';
-            document.getElementById('poolDesc').value = pool ? (pool.description || '') : '';
-            document.getElementById('poolFiveRate').value = pool ? pool.fiveStarRate : 0.8;
-            document.getElementById('poolFourRate').value = pool ? pool.fourStarRate : 6.0;
-            document.getElementById('poolMaxPity').value = pool ? pool.maxPity : 90;
-            document.getElementById('poolSoftPity').value = pool ? pool.softPityStart : 75;
-            document.getElementById('poolSoftInc').value = pool ? pool.softPityIncrement : 6.0;
-            document.getElementById('poolUpItems').value = pool ? (pool.upItems || '[]') : '[]';
-            uploadedImageUrl = pool ? (pool.imageUrl || '') : '';
-            const preview = document.getElementById('poolImagePreview');
-            if (uploadedImageUrl) { preview.src = uploadedImageUrl; preview.style.display = 'block'; }
-            else { preview.style.display = 'none'; }
-        }
 
         function closePoolModal() { document.getElementById('poolModal').classList.remove('active'); }
 
@@ -418,41 +468,6 @@
             } catch (e) { console.error(e); }
         }
 
-        async function savePool() {
-            const id = document.getElementById('poolId').value;
-            const data = {
-                name: document.getElementById('poolName').value,
-                poolType: document.getElementById('poolType').value,
-                description: document.getElementById('poolDesc').value,
-                fiveStarRate: parseFloat(document.getElementById('poolFiveRate').value),
-                fourStarRate: parseFloat(document.getElementById('poolFourRate').value),
-                maxPity: parseInt(document.getElementById('poolMaxPity').value),
-                softPityStart: parseInt(document.getElementById('poolSoftPity').value),
-                softPityIncrement: parseFloat(document.getElementById('poolSoftInc').value),
-                upItems: document.getElementById('poolUpItems').value,
-                imageUrl: uploadedImageUrl
-            };
-
-            try {
-                const fileInput = document.getElementById('poolImageInput');
-                if (fileInput.files.length > 0) {
-                    const formData = new FormData();
-                    formData.append('file', fileInput.files[0]);
-                    const uploadRes = await fetch('/api/admin/upload', {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${API.getToken()}` },
-                        body: formData
-                    }).then(r => r.json());
-                    if (uploadRes.success) data.imageUrl = uploadRes.imageUrl;
-                }
-
-                const url = id ? `/admin/pools/${id}` : '/admin/pools';
-                const method = id ? 'PUT' : 'POST';
-                const res = await API.request(url, { method, body: JSON.stringify(data) });
-                if (res.success) { closePoolModal(); loadPools(); }
-                else alert(res.message || '保存失败');
-            } catch (e) { alert('保存失败'); console.error(e); }
-        }
 
         async function togglePool(id) {
             try {
@@ -461,17 +476,6 @@
             } catch (e) { console.error(e); }
         }
 
-        function previewImage(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    const preview = document.getElementById('poolImagePreview');
-                    preview.src = e.target.result;
-                    preview.style.display = 'block';
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
 
         // ========== 用户管理 ==========
         let userPage = 1;
@@ -552,6 +556,270 @@
         }
 
         function closeRecordsModal() { document.getElementById('recordsModal').classList.remove('active'); }
+
+        // ========== 四星头像管理 ==========
+        let allAvatars = [];
+        let selectedAvatarIds = [];
+
+        async function loadAvatars() {
+            try {
+                const res = await API.getAvatars();
+                if (res.success) {
+                    allAvatars = res.avatars;
+                    renderAvatarGrid();
+                }
+            } catch (e) { console.error('加载头像失败:', e); }
+        }
+
+        function renderAvatarGrid() {
+            const grid = document.getElementById('avatarSelectGrid');
+            if (allAvatars.length === 0) {
+                grid.innerHTML = '<div style="color:var(--text-dim);font-size:13px;grid-column:1/-1;">暂无头像，请先新增</div>';
+                return;
+            }
+            grid.innerHTML = allAvatars.map(a => {
+                const isSelected = selectedAvatarIds.includes(a.id);
+                return `<div class="avatar-select-item" data-id="${a.id}" onclick="toggleAvatar(${a.id})"
+                    style="cursor:pointer;border:2px solid ${isSelected ? 'var(--accent-gold)' : 'var(--border-subtle)'};border-radius:8px;padding:4px;text-align:center;transition:all 0.2s;${isSelected ? 'background:rgba(255,215,0,0.1);' : ''}">
+                    <img src="${a.avatarUrl}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect width=%2260%22 height=%2260%22 fill=%22%23333%22/><text x=%2230%22 y=%2235%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2212%22>?</text></svg>'">
+                    <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.name}</div>
+                </div>`;
+            }).join('');
+        }
+
+        function toggleAvatar(id) {
+            const idx = selectedAvatarIds.indexOf(id);
+            if (idx >= 0) {
+                selectedAvatarIds.splice(idx, 1);
+            } else {
+                if (selectedAvatarIds.length >= 3) {
+                    alert('最多选择3个四星头像');
+                    return;
+                }
+                selectedAvatarIds.push(id);
+            }
+            renderAvatarGrid();
+            renderSelectedAvatars();
+        }
+
+        function renderSelectedAvatars() {
+            const container = document.getElementById('selectedAvatars');
+            container.innerHTML = selectedAvatarIds.map(id => {
+                const avatar = allAvatars.find(a => a.id === id);
+                if (!avatar) return '';
+                return `<div style="display:flex;align-items:center;gap:4px;background:var(--bg-card);padding:4px 8px;border-radius:6px;border:1px solid var(--border-active);">
+                    <img src="${avatar.avatarUrl}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">
+                    <span style="font-size:12px;">${avatar.name}</span>
+                    <span onclick="toggleAvatar(${id})" style="cursor:pointer;color:var(--accent-red);margin-left:4px;">×</span>
+                </div>`;
+            }).join('');
+        }
+
+        function openNewAvatarModal() {
+            document.getElementById('newAvatarModal').classList.add('active');
+            document.getElementById('newAvatarName').value = '';
+            document.getElementById('newAvatarPreview').style.display = 'none';
+            document.getElementById('newAvatarImageInput').value = '';
+        }
+
+        function closeNewAvatarModal() {
+            document.getElementById('newAvatarModal').classList.remove('active');
+        }
+
+        function previewNewAvatar(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const preview = document.getElementById('newAvatarPreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        async function saveNewAvatar() {
+            const name = document.getElementById('newAvatarName').value.trim();
+            if (!name) { alert('请输入角色名称'); return; }
+
+            const fileInput = document.getElementById('newAvatarImageInput');
+            let avatarUrl = '';
+
+            try {
+                if (fileInput.files.length > 0) {
+                    const uploadRes = await API.uploadImage(fileInput.files[0]);
+                    if (uploadRes.success) avatarUrl = uploadRes.imageUrl;
+                    else { alert('图片上传失败'); return; }
+                } else {
+                    alert('请选择头像图片');
+                    return;
+                }
+
+                const res = await API.createAvatar(name, avatarUrl);
+                if (res.success) {
+                    closeNewAvatarModal();
+                    await loadAvatars();
+                } else {
+                    alert(res.message || '创建失败');
+                }
+            } catch (e) { alert('操作失败'); console.error(e); }
+        }
+
+        // ========== 扩展卡池模态框 ==========
+        let uploadedBgImageUrl = '';
+        let uploadedThumbUrl = '';
+
+        function openPoolModal(pool = null) {
+            document.getElementById('poolModal').classList.add('active');
+            document.getElementById('poolModalTitle').textContent = pool ? '编辑卡池' : '新增卡池';
+            document.getElementById('poolId').value = pool ? pool.id : '';
+            document.getElementById('poolName').value = pool ? pool.name : '';
+            document.getElementById('poolType').value = pool ? pool.poolType : 'limited-character';
+            document.getElementById('poolDesc').value = pool ? (pool.description || '') : '';
+            document.getElementById('poolFiveRate').value = pool ? pool.fiveStarRate : 0.8;
+            document.getElementById('poolFourRate').value = pool ? pool.fourStarRate : 6.0;
+            document.getElementById('poolMaxPity').value = pool ? pool.maxPity : 90;
+            document.getElementById('poolSoftPity').value = pool ? pool.softPityStart : 75;
+            document.getElementById('poolSoftInc').value = pool ? pool.softPityIncrement : 6.0;
+            document.getElementById('poolUpItems').value = pool ? (pool.upItems || '[]') : '[]';
+
+            // 新字段：时间
+            document.getElementById('poolStartTime').value = pool && pool.startTime ? pool.startTime.substring(0, 16) : '';
+            document.getElementById('poolEndTime').value = pool && pool.endTime ? pool.endTime.substring(0, 16) : '';
+
+            // 新字段：侧栏
+            const sidebarCheck = document.getElementById('poolSidebarVisible');
+            sidebarCheck.checked = pool ? Boolean(pool.sidebarVisible) : false;
+            document.getElementById('poolSidebarOrder').value = pool ? (pool.sidebarOrder || 0) : 0;
+            document.getElementById('sidebarOrderLabel').style.display = sidebarCheck.checked ? '' : 'none';
+
+            // 旧封面图
+            uploadedImageUrl = pool ? (pool.imageUrl || '') : '';
+            const preview = document.getElementById('poolImagePreview');
+            if (uploadedImageUrl) { preview.src = uploadedImageUrl; preview.style.display = 'block'; }
+            else { preview.style.display = 'none'; }
+
+            // 新字段：背景大图
+            uploadedBgImageUrl = pool ? (pool.bgImageUrl || '') : '';
+            const bgPreview = document.getElementById('poolBgImagePreview');
+            if (uploadedBgImageUrl) { bgPreview.src = uploadedBgImageUrl; bgPreview.style.display = 'block'; }
+            else { bgPreview.style.display = 'none'; }
+
+            // 新字段：缩略图
+            uploadedThumbUrl = pool ? (pool.thumbnailUrl || '') : '';
+            const thumbPreview = document.getElementById('poolThumbPreview');
+            if (uploadedThumbUrl) { thumbPreview.src = uploadedThumbUrl; thumbPreview.style.display = 'block'; }
+            else { thumbPreview.style.display = 'none'; }
+
+            // 四星头像选择
+            selectedAvatarIds = [];
+            loadAvatars();
+            if (pool && pool.id) {
+                loadPoolFourStars(pool.id);
+            } else {
+                renderSelectedAvatars();
+            }
+        }
+
+        async function loadPoolFourStars(poolId) {
+            try {
+                const res = await API.getPoolFourStars(poolId);
+                if (res.success) {
+                    selectedAvatarIds = res.avatars.map(a => a.id);
+                    renderAvatarGrid();
+                    renderSelectedAvatars();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        // 侧栏复选框联动
+        document.getElementById('poolSidebarVisible').addEventListener('change', function() {
+            document.getElementById('sidebarOrderLabel').style.display = this.checked ? '' : 'none';
+        });
+
+        function previewBgImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const preview = document.getElementById('poolBgImagePreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function previewThumb(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const preview = document.getElementById('poolThumbPreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // 重写 savePool 以保存新字段
+        async function savePool() {
+            const id = document.getElementById('poolId').value;
+            const data = {
+                name: document.getElementById('poolName').value,
+                poolType: document.getElementById('poolType').value,
+                description: document.getElementById('poolDesc').value,
+                fiveStarRate: parseFloat(document.getElementById('poolFiveRate').value),
+                fourStarRate: parseFloat(document.getElementById('poolFourRate').value),
+                maxPity: parseInt(document.getElementById('poolMaxPity').value),
+                softPityStart: parseInt(document.getElementById('poolSoftPity').value),
+                softPityIncrement: parseFloat(document.getElementById('poolSoftInc').value),
+                upItems: document.getElementById('poolUpItems').value,
+                imageUrl: uploadedImageUrl,
+                startTime: document.getElementById('poolStartTime').value || null,
+                endTime: document.getElementById('poolEndTime').value || null,
+                sidebarVisible: document.getElementById('poolSidebarVisible').checked,
+                sidebarOrder: parseInt(document.getElementById('poolSidebarOrder').value) || 0,
+                bgImageUrl: uploadedBgImageUrl,
+                thumbnailUrl: uploadedThumbUrl
+            };
+
+            try {
+                // 上传封面图
+                const fileInput = document.getElementById('poolImageInput');
+                if (fileInput.files.length > 0) {
+                    const uploadRes = await API.uploadImage(fileInput.files[0]);
+                    if (uploadRes.success) data.imageUrl = uploadRes.imageUrl;
+                }
+
+                // 上传背景大图
+                const bgInput = document.getElementById('poolBgImageInput');
+                if (bgInput.files.length > 0) {
+                    const uploadRes = await API.uploadImage(bgInput.files[0]);
+                    if (uploadRes.success) data.bgImageUrl = uploadRes.imageUrl;
+                }
+
+                // 上传缩略图
+                const thumbInput = document.getElementById('poolThumbInput');
+                if (thumbInput.files.length > 0) {
+                    const uploadRes = await API.uploadImage(thumbInput.files[0]);
+                    if (uploadRes.success) data.thumbnailUrl = uploadRes.imageUrl;
+                }
+
+                const url = id ? `/admin/pools/${id}` : '/admin/pools';
+                const method = id ? 'PUT' : 'POST';
+                const res = await API.request(url, { method, body: JSON.stringify(data) });
+                if (res.success) {
+                    // 保存四星头像关联
+                    if (res.pool && res.pool.id) {
+                        await API.updatePoolFourStars(res.pool.id, selectedAvatarIds);
+                    }
+                    closePoolModal();
+                    loadPools();
+                } else {
+                    alert(res.message || '保存失败');
+                }
+            } catch (e) { alert('保存失败'); console.error(e); }
+        }
 
         // 点击遮罩关闭弹窗
         document.querySelectorAll('.modal-overlay').forEach(overlay => {
