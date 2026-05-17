@@ -184,3 +184,35 @@ INSERT INTO gacha_items (name, rarity, item_type, pool_type, is_limited) VALUES
 ('琼枝冰绡', 5, 'weapon', 'standard-weapon', FALSE),
 ('悲喜剧', 5, 'weapon', 'standard-weapon', FALSE),
 ('千古洑流', 5, 'weapon', 'standard-weapon', FALSE);
+
+-- ========== 管理员卡池编辑功能扩展 ==========
+
+-- gacha_pool 表新增字段
+ALTER TABLE gacha_pool ADD COLUMN start_time DATETIME COMMENT '上架时间';
+ALTER TABLE gacha_pool ADD COLUMN end_time DATETIME COMMENT '下架时间';
+ALTER TABLE gacha_pool ADD COLUMN sidebar_visible BOOLEAN DEFAULT FALSE COMMENT '是否显示在抽卡页面侧栏';
+ALTER TABLE gacha_pool ADD COLUMN sidebar_order INT DEFAULT 0 COMMENT '侧栏排序（越小越靠前）';
+ALTER TABLE gacha_pool ADD COLUMN bg_image_url VARCHAR(255) COMMENT '抽卡页面主背景大图';
+ALTER TABLE gacha_pool ADD COLUMN thumbnail_url VARCHAR(255) COMMENT '侧栏缩略图';
+
+-- 四星角色头像表
+CREATE TABLE IF NOT EXISTS four_star_avatars (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL COMMENT '角色名称',
+    avatar_url VARCHAR(255) NOT NULL COMMENT '头像图片路径',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 卡池-四星头像关联表
+CREATE TABLE IF NOT EXISTS pool_four_star (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    pool_id BIGINT NOT NULL COMMENT '卡池ID',
+    avatar_id BIGINT NOT NULL COMMENT '四星头像ID',
+    sort_order INT DEFAULT 0 COMMENT '排序',
+    FOREIGN KEY (pool_id) REFERENCES gacha_pool(id) ON DELETE CASCADE,
+    FOREIGN KEY (avatar_id) REFERENCES four_star_avatars(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_pool_avatar (pool_id, avatar_id)
+);
+
+-- 为初始卡池设置侧栏可见（默认展示）
+UPDATE gacha_pool SET sidebar_visible = TRUE, sidebar_order = id;
