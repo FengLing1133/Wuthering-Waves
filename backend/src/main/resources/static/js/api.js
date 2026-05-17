@@ -135,6 +135,13 @@ const API = {
         });
     },
 
+    // 删除卡池
+    async deletePool(id) {
+        return this.request(`/admin/pools/${id}`, {
+            method: 'DELETE'
+        });
+    },
+
     // 获取卡池关联的四星头像
     async getPoolFourStars(poolId) {
         return this.request(`/admin/pools/${poolId}/four-stars`);
