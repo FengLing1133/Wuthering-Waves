@@ -537,8 +537,8 @@ body {
 /* ========== 保底计数显示 ========== */
 .pity-display {
     position: absolute;
-    bottom: 60px;
-    right: 40px;
+    bottom: 20px;
+    right: 300px;
     z-index: 10;
     display: flex;
     flex-direction: column;
