@@ -57,7 +57,7 @@ class GachaControllerTest extends BaseTest {
     @DisplayName("单抽成功 - 返回200和物品")
     void pull_single_success() throws Exception {
         Map<String, Object> request = new HashMap<>();
-        request.put("poolType", "character");
+        request.put("poolType", "limited-character");
         request.put("count", 1);
 
         Map<String, Object> response = new HashMap<>();
@@ -80,7 +80,7 @@ class GachaControllerTest extends BaseTest {
     @DisplayName("十连抽成功 - 返回200")
     void pull_ten_success() throws Exception {
         Map<String, Object> request = new HashMap<>();
-        request.put("poolType", "character");
+        request.put("poolType", "limited-character");
         request.put("count", 10);
 
         Map<String, Object> response = new HashMap<>();
@@ -105,7 +105,7 @@ class GachaControllerTest extends BaseTest {
     @DisplayName("抽卡失败 - 无效抽卡次数返回400")
     void pull_invalidCount_400() throws Exception {
         Map<String, Object> request = new HashMap<>();
-        request.put("poolType", "character");
+        request.put("poolType", "limited-character");
         request.put("count", 5);
 
         mockMvc.perform(post("/api/gacha/pull")
@@ -135,14 +135,14 @@ class GachaControllerTest extends BaseTest {
     @DisplayName("获取历史记录成功 - 返回200")
     void getHistory_success() throws Exception {
         List<GachaRecord> records = List.of(
-                TestDataFactory.createRecord(1L, "character", "四星角色A", 4, "character")
+                TestDataFactory.createRecord(1L, "limited-character", "四星角色A", 4, "character")
         );
         Map<String, Object> historyData = Map.of("records", records, "total", 1L, "page", 1, "size", 20);
         when(gachaService.getHistory(anyLong(), anyString(), anyInt(), anyInt())).thenReturn(historyData);
 
         mockMvc.perform(get("/api/gacha/history")
                         .header("Authorization", "Bearer " + testToken)
-                        .param("poolType", "character")
+                        .param("poolType", "limited-character")
                         .param("page", "1")
                         .param("size", "20"))
                 .andExpect(status().isOk())
@@ -161,7 +161,7 @@ class GachaControllerTest extends BaseTest {
 
         mockMvc.perform(get("/api/gacha/stats")
                         .header("Authorization", "Bearer " + testToken)
-                        .param("poolType", "character"))
+                        .param("poolType", "limited-character"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.stats.fiveStarCount").value(5))

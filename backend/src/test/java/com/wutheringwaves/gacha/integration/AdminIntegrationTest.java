@@ -1,7 +1,7 @@
 package com.wutheringwaves.gacha.integration;
 
 import com.wutheringwaves.gacha.base.BaseTest;
-import com.wutheringwaves.gacha.mapper.CharacterPityMapper;
+import com.wutheringwaves.gacha.mapper.GachaPityMapper;
 import com.wutheringwaves.gacha.mapper.GachaItemMapper;
 import com.wutheringwaves.gacha.mapper.GachaPoolMapper;
 import com.wutheringwaves.gacha.mapper.UserMapper;
@@ -41,7 +41,7 @@ class AdminIntegrationTest extends BaseTest {
     private GachaItemMapper gachaItemMapper;
 
     @Autowired
-    private CharacterPityMapper characterPityMapper;
+    private GachaPityMapper gachaPityMapper;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -75,12 +75,13 @@ class AdminIntegrationTest extends BaseTest {
         normalUserId = normalUser.getId();
 
         // 初始化保底计数
-        CharacterPity pity = new CharacterPity();
+        GachaPity pity = new GachaPity();
         pity.setUserId(normalUserId);
+        pity.setPoolType("limited-character");
         pity.setFiveStarCount(0);
         pity.setFourStarCount(0);
         pity.setGuaranteedFive(false);
-        characterPityMapper.insert(pity);
+        gachaPityMapper.insert(pity);
     }
 
     // ==================== 1. 管理员登录与权限控制 ====================
@@ -123,7 +124,7 @@ class AdminIntegrationTest extends BaseTest {
     void poolCRUD_createPool_shouldPersistToDatabase() {
         GachaPool newPool = new GachaPool();
         newPool.setName("集成测试卡池");
-        newPool.setPoolType("character");
+        newPool.setPoolType("limited-character");
         newPool.setDescription("用于集成测试");
         newPool.setFiveStarRate(new BigDecimal("0.80"));
         newPool.setFourStarRate(new BigDecimal("6.00"));
@@ -202,7 +203,7 @@ class AdminIntegrationTest extends BaseTest {
         // 创建一个高概率卡池
         GachaPool highRatePool = new GachaPool();
         highRatePool.setName("高概率测试池");
-        highRatePool.setPoolType("weapon");
+        highRatePool.setPoolType("limited-weapon");
         highRatePool.setFiveStarRate(new BigDecimal("50.00"));
         highRatePool.setFourStarRate(new BigDecimal("30.00"));
         highRatePool.setMaxPity(90);
@@ -214,7 +215,7 @@ class AdminIntegrationTest extends BaseTest {
         // 注意：抽卡逻辑从数据库读取卡池配置
         // 如果weapon池有多个active记录，getPoolConfig会取第一个
         // 这里验证的是卡池数据确实存储在数据库中
-        List<GachaPool> weaponPools = adminService.listPools("weapon", "active");
+        List<GachaPool> weaponPools = adminService.listPools("limited-weapon", "active");
         assertFalse(weaponPools.isEmpty());
     }
 
@@ -236,7 +237,7 @@ class AdminIntegrationTest extends BaseTest {
         assertEquals(5000, after.getStarlight());
 
         // 使用新星声抽卡
-        Map<String, Object> pullResult = gachaService.pull(normalUserId, "character", 10);
+        Map<String, Object> pullResult = gachaService.pull(normalUserId, "limited-character", 10);
         assertTrue((Boolean) pullResult.get("success"));
 
         // 验证星声正确扣除（十连 1500）
@@ -251,7 +252,7 @@ class AdminIntegrationTest extends BaseTest {
         adminService.updateUserResources(normalUserId, 100, null);
 
         // 尝试十连（需要1500）
-        Map<String, Object> pullResult = gachaService.pull(normalUserId, "character", 10);
+        Map<String, Object> pullResult = gachaService.pull(normalUserId, "limited-character", 10);
         assertFalse((Boolean) pullResult.get("success"));
         assertEquals("星声不足", pullResult.get("message"));
     }
@@ -290,7 +291,7 @@ class AdminIntegrationTest extends BaseTest {
         // 第一次调整：增加到3000
         adminService.updateUserResources(normalUserId, 3000, null);
         // 单抽一次（160）
-        gachaService.pull(normalUserId, "character", 1);
+        gachaService.pull(normalUserId, "limited-character", 1);
         // 第二次调整：增加2000（当前2840 + 2000 = 4840）
         adminService.updateUserResources(normalUserId, 2000, null);
 
@@ -308,7 +309,7 @@ class AdminIntegrationTest extends BaseTest {
     void statsDashboard_shouldReturnCorrectCounts() {
         // 产生抽卡数据
         adminService.updateUserResources(normalUserId, 10000, null);
-        gachaService.pull(normalUserId, "character", 10);
+        gachaService.pull(normalUserId, "limited-character", 10);
 
         Map<String, Object> stats = adminService.getDashboardStats();
 
@@ -330,7 +331,7 @@ class AdminIntegrationTest extends BaseTest {
     void statsDaily_shouldReturnDailyBreakdown() {
         // 产生抽卡数据
         adminService.updateUserResources(normalUserId, 10000, null);
-        gachaService.pull(normalUserId, "character", 5);
+        gachaService.pull(normalUserId, "limited-character", 5);
 
         List<Map<String, Object>> dailyStats = adminService.getDailyStats(7);
 
@@ -351,9 +352,9 @@ class AdminIntegrationTest extends BaseTest {
     void statsDaily_afterPulls_shouldCountRarities() {
         // 大量抽卡以确保有各稀有度的数据
         adminService.updateUserResources(normalUserId, 50000, null);
-        gachaService.pull(normalUserId, "character", 30);
+        gachaService.pull(normalUserId, "limited-character", 30);
 
-        Map<String, Object> stats = gachaService.getStats(normalUserId, "character");
+        Map<String, Object> stats = gachaService.getStats(normalUserId, "limited-character");
         int totalPulls = (int) stats.get("totalPulls");
         int fiveStarCount = (int) stats.get("fiveStarCount");
         int fourStarCount = (int) stats.get("fourStarCount");
@@ -368,9 +369,9 @@ class AdminIntegrationTest extends BaseTest {
     @Test
     @DisplayName("卡池查询 - 按类型筛选")
     void listPools_byType_shouldFilter() {
-        List<GachaPool> characterPools = adminService.listPools("character", null);
+        List<GachaPool> characterPools = adminService.listPools("limited-character", null);
         for (GachaPool pool : characterPools) {
-            assertEquals("character", pool.getPoolType());
+            assertEquals("limited-character", pool.getPoolType());
         }
     }
 
@@ -418,16 +419,16 @@ class AdminIntegrationTest extends BaseTest {
     void getUserRecords_shouldReturnRecords() {
         // 先产生抽卡记录
         adminService.updateUserResources(normalUserId, 10000, null);
-        gachaService.pull(normalUserId, "character", 10);
+        gachaService.pull(normalUserId, "limited-character", 10);
 
-        var page = adminService.getUserRecords(normalUserId, "character", 1, 20);
+        var page = adminService.getUserRecords(normalUserId, "limited-character", 1, 20);
         assertNotNull(page);
         assertEquals(10, page.getRecords().size());
 
         // 验证记录属于正确用户
         for (GachaRecord record : page.getRecords()) {
             assertEquals(normalUserId, record.getUserId());
-            assertEquals("character", record.getPoolType());
+            assertEquals("limited-character", record.getPoolType());
         }
     }
 

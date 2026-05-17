@@ -108,12 +108,8 @@ function renderHistoryTable(records) {
     }
 
     const poolNames = {
-        'character-1': '角色池1',
-        'character-2': '角色池2',
-        'character-3': '角色池3',
-        'weapon-1': '武器池1',
-        'weapon-2': '武器池2',
-        'weapon-3': '武器池3',
+        'limited-character': '限定角色池',
+        'limited-weapon': '限定武器池',
         'standard-character': '常驻角色',
         'standard-weapon': '常驻武器'
     };

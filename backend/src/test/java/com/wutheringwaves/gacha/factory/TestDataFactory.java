@@ -68,53 +68,34 @@ public class TestDataFactory {
 
     public static List<GachaItem> createCharacterPoolItems() {
         List<GachaItem> items = new ArrayList<>();
-        items.add(createLimitedItem(1001L, 5, "限定五星角色", "character", "character"));
-        items.add(createItem(1002L, 5, "常驻五星角色", "character", "character"));
-        items.add(createItem(2001L, 4, "四星角色A", "character", "character"));
-        items.add(createItem(2002L, 4, "四星角色B", "character", "character"));
-        items.add(createItem(2003L, 4, "四星武器A", "weapon", "character"));
-        items.add(createItem(3001L, 3, "三星武器A", "weapon", "character"));
-        items.add(createItem(3002L, 3, "三星武器B", "weapon", "character"));
-        items.add(createItem(3003L, 3, "三星武器C", "weapon", "character"));
+        items.add(createLimitedItem(1001L, 5, "限定五星角色", "character", "limited-character"));
+        items.add(createItem(1002L, 5, "常驻五星角色", "character", "limited-character"));
+        items.add(createItem(2001L, 4, "四星角色A", "character", "limited-character"));
+        items.add(createItem(2002L, 4, "四星角色B", "character", "limited-character"));
+        items.add(createItem(2003L, 4, "四星武器A", "weapon", "limited-character"));
+        items.add(createItem(3001L, 3, "三星武器A", "weapon", "limited-character"));
+        items.add(createItem(3002L, 3, "三星武器B", "weapon", "limited-character"));
+        items.add(createItem(3003L, 3, "三星武器C", "weapon", "limited-character"));
         return items;
     }
 
     public static List<GachaItem> createWeaponPoolItems() {
         List<GachaItem> items = new ArrayList<>();
-        items.add(createLimitedItem(1003L, 5, "限定五星武器", "weapon", "weapon"));
-        items.add(createItem(1004L, 5, "常驻五星武器", "weapon", "weapon"));
-        items.add(createItem(2004L, 4, "四星武器A", "weapon", "weapon"));
-        items.add(createItem(2005L, 4, "四星武器B", "weapon", "weapon"));
-        items.add(createItem(2006L, 4, "四星角色A", "character", "weapon"));
-        items.add(createItem(3004L, 3, "三星武器A", "weapon", "weapon"));
-        items.add(createItem(3005L, 3, "三星武器B", "weapon", "weapon"));
-        items.add(createItem(3006L, 3, "三星武器C", "weapon", "weapon"));
+        items.add(createLimitedItem(1003L, 5, "限定五星武器", "weapon", "limited-weapon"));
+        items.add(createItem(1004L, 5, "常驻五星武器", "weapon", "limited-weapon"));
+        items.add(createItem(2004L, 4, "四星武器A", "weapon", "limited-weapon"));
+        items.add(createItem(2005L, 4, "四星武器B", "weapon", "limited-weapon"));
+        items.add(createItem(2006L, 4, "四星角色A", "character", "limited-weapon"));
+        items.add(createItem(3004L, 3, "三星武器A", "weapon", "limited-weapon"));
+        items.add(createItem(3005L, 3, "三星武器B", "weapon", "limited-weapon"));
+        items.add(createItem(3006L, 3, "三星武器C", "weapon", "limited-weapon"));
         return items;
     }
 
-    public static CharacterPity createCharacterPity(Long userId, int fiveStarCount, int fourStarCount, boolean guaranteed) {
-        CharacterPity pity = new CharacterPity();
+    public static GachaPity createGachaPity(Long userId, String poolType, int fiveStarCount, int fourStarCount, boolean guaranteed) {
+        GachaPity pity = new GachaPity();
         pity.setUserId(userId);
-        pity.setFiveStarCount(fiveStarCount);
-        pity.setFourStarCount(fourStarCount);
-        pity.setGuaranteedFive(guaranteed);
-        pity.setUpdatedAt(LocalDateTime.now());
-        return pity;
-    }
-
-    public static WeaponPity createWeaponPity(Long userId, int fiveStarCount, int fourStarCount, boolean guaranteed) {
-        WeaponPity pity = new WeaponPity();
-        pity.setUserId(userId);
-        pity.setFiveStarCount(fiveStarCount);
-        pity.setFourStarCount(fourStarCount);
-        pity.setGuaranteedFive(guaranteed);
-        pity.setUpdatedAt(LocalDateTime.now());
-        return pity;
-    }
-
-    public static LimitedPity createLimitedPity(Long userId, int fiveStarCount, int fourStarCount, boolean guaranteed) {
-        LimitedPity pity = new LimitedPity();
-        pity.setUserId(userId);
+        pity.setPoolType(poolType);
         pity.setFiveStarCount(fiveStarCount);
         pity.setFourStarCount(fourStarCount);
         pity.setGuaranteedFive(guaranteed);

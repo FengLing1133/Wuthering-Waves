@@ -16,9 +16,7 @@ public class GachaService {
 
     private final GachaItemMapper gachaItemMapper;
     private final GachaRecordMapper gachaRecordMapper;
-    private final CharacterPityMapper characterPityMapper;
-    private final WeaponPityMapper weaponPityMapper;
-    private final LimitedPityMapper limitedPityMapper;
+    private final GachaPityMapper gachaPityMapper;
     private final GachaPoolMapper gachaPoolMapper;
     private final UserService userService;
 
@@ -28,7 +26,7 @@ public class GachaService {
 
         // 检查星声是否足够
         User user = userService.getUserById(userId);
-        int cost = count == 10 ? 1500 : 160;  // 十连 1500，单抽 160
+        int cost = count == 10 ? 1500 : 160;
         if (user.getStarlight() < cost) {
             result.put("success", false);
             result.put("message", "星声不足");
@@ -57,7 +55,7 @@ public class GachaService {
             if (rarity == 4) fourStarCount++;
         }
 
-        // 四星给星辉，五星给星辉
+        // 星辉返还
         int shardsEarned = fiveStarCount * 10 + fourStarCount * 2;
         if (shardsEarned > 0) {
             userService.addStarshards(userId, shardsEarned);
@@ -77,23 +75,17 @@ public class GachaService {
     }
 
     private Map<String, Object> doPull(Long userId, String poolType, List<GachaItem> items) {
-        // 获取保底信息
         int currentPity = getCurrentPity(userId, poolType);
         boolean guaranteed = isGuaranteed(userId, poolType);
 
-        // 判断出货稀有度
         int rarity = determineRarity(userId, poolType, currentPity, guaranteed);
 
-        // 获取卡池配置（用于UP物品判断）
         GachaPool poolConfig = getPoolConfig(poolType);
 
-        // 从对应稀有度中随机选择物品
         GachaItem selectedItem = selectItem(items, rarity, poolType, guaranteed, poolConfig);
 
-        // 更新保底计数
         updatePity(userId, poolType, rarity, selectedItem.getIsLimited());
 
-        // 记录抽卡结果
         GachaRecord record = new GachaRecord();
         record.setUserId(userId);
         record.setPoolType(poolType);
@@ -104,7 +96,6 @@ public class GachaService {
         record.setPityCount(currentPity + 1);
         gachaRecordMapper.insert(record);
 
-        // 返回结果
         Map<String, Object> result = new HashMap<>();
         result.put("name", selectedItem.getName());
         result.put("rarity", selectedItem.getRarity());
@@ -139,7 +130,7 @@ public class GachaService {
             return 5;
         }
 
-        // 软保底（从 softPityStart 开始概率递增）
+        // 软保底
         if (currentPity >= softPityStart - 1) {
             double fiveStarChance = fiveStarRate + (currentPity - softPityStart + 1) * softPityInc;
             if (rand < fiveStarChance) {
@@ -178,16 +169,14 @@ public class GachaService {
             throw new IllegalStateException("物品池为空，poolType=" + poolType + ", rarity=" + rarity);
         }
 
-        // 五星物品选择逻辑（仅限有限池和武器池，常驻池无UP机制）
-        if (rarity == 5 && (poolType.equals("character") || poolType.equals("weapon") || poolType.equals("limited"))) {
+        // 五星UP逻辑：仅限定池生效
+        if (rarity == 5 && poolType.startsWith("limited-")) {
             List<GachaItem> upItems = getUpItems(candidates, poolConfig);
 
             if (!upItems.isEmpty()) {
                 if (guaranteed) {
-                    // 大保底：必定出UP物品
                     return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
                 } else {
-                    // 小保底：50%概率出UP，50%概率出常驻
                     if (ThreadLocalRandom.current().nextDouble() < 0.5) {
                         return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
                     } else {
@@ -197,7 +186,6 @@ public class GachaService {
                         if (!standard.isEmpty()) {
                             return standard.get(ThreadLocalRandom.current().nextInt(standard.size()));
                         }
-                        // 如果没有常驻五星，回退到UP
                         return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
                     }
                 }
@@ -208,10 +196,8 @@ public class GachaService {
     }
 
     private List<GachaItem> getUpItems(List<GachaItem> candidates, GachaPool poolConfig) {
-        // 优先使用卡池配置的 up_items 字段
         if (poolConfig != null && poolConfig.getUpItems() != null && !poolConfig.getUpItems().isEmpty()) {
             try {
-                // 解析 JSON 数组，例如 ["绯雪","柚诺"]
                 String upItemsStr = poolConfig.getUpItems().trim();
                 if (upItemsStr.startsWith("[") && upItemsStr.endsWith("]")) {
                     upItemsStr = upItemsStr.substring(1, upItemsStr.length() - 1);
@@ -232,7 +218,6 @@ public class GachaService {
             } catch (Exception ignored) {
             }
         }
-        // 回退：使用 isLimited 标记
         return candidates.stream()
                 .filter(GachaItem::getIsLimited)
                 .toList();
@@ -240,196 +225,63 @@ public class GachaService {
 
     private List<GachaItem> getItemsByPool(String poolType) {
         LambdaQueryWrapper<GachaItem> wrapper = new LambdaQueryWrapper<>();
-        if (poolType.equals("limited")) {
-            wrapper.eq(GachaItem::getPoolType, "limited");
-        } else if (poolType.equals("weapon")) {
-            wrapper.eq(GachaItem::getPoolType, "weapon");
-        } else {
-            wrapper.eq(GachaItem::getPoolType, "character");
-        }
+        wrapper.eq(GachaItem::getPoolType, poolType);
         return gachaItemMapper.selectList(wrapper);
     }
 
+    // ========== 保底相关：统一查 gacha_pity 表 ==========
+
+    private GachaPity getOrCreatePity(Long userId, String poolType) {
+        LambdaQueryWrapper<GachaPity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(GachaPity::getUserId, userId);
+        wrapper.eq(GachaPity::getPoolType, poolType);
+        GachaPity pity = gachaPityMapper.selectOne(wrapper);
+        if (pity == null) {
+            pity = new GachaPity();
+            pity.setUserId(userId);
+            pity.setPoolType(poolType);
+            pity.setFiveStarCount(0);
+            pity.setFourStarCount(0);
+            pity.setGuaranteedFive(false);
+            gachaPityMapper.insert(pity);
+        }
+        return pity;
+    }
+
     private int getCurrentPity(Long userId, String poolType) {
-        return switch (poolType) {
-            case "character" -> {
-                CharacterPity pity = characterPityMapper.selectById(userId);
-                yield pity != null && pity.getFiveStarCount() != null ? pity.getFiveStarCount() : 0;
-            }
-            case "weapon" -> {
-                WeaponPity pity = weaponPityMapper.selectById(userId);
-                yield pity != null && pity.getFiveStarCount() != null ? pity.getFiveStarCount() : 0;
-            }
-            case "limited" -> {
-                LimitedPity pity = limitedPityMapper.selectById(userId);
-                yield pity != null && pity.getFiveStarCount() != null ? pity.getFiveStarCount() : 0;
-            }
-            default -> 0;
-        };
+        GachaPity pity = getOrCreatePity(userId, poolType);
+        return pity.getFiveStarCount() != null ? pity.getFiveStarCount() : 0;
     }
 
     private int getFourStarPity(Long userId, String poolType) {
-        return switch (poolType) {
-            case "character" -> {
-                CharacterPity pity = characterPityMapper.selectById(userId);
-                yield pity != null && pity.getFourStarCount() != null ? pity.getFourStarCount() : 0;
-            }
-            case "weapon" -> {
-                WeaponPity pity = weaponPityMapper.selectById(userId);
-                yield pity != null && pity.getFourStarCount() != null ? pity.getFourStarCount() : 0;
-            }
-            case "limited" -> {
-                LimitedPity pity = limitedPityMapper.selectById(userId);
-                yield pity != null && pity.getFourStarCount() != null ? pity.getFourStarCount() : 0;
-            }
-            default -> 0;
-        };
+        GachaPity pity = getOrCreatePity(userId, poolType);
+        return pity.getFourStarCount() != null ? pity.getFourStarCount() : 0;
     }
 
     private boolean isGuaranteed(Long userId, String poolType) {
-        return switch (poolType) {
-            case "character" -> {
-                CharacterPity pity = characterPityMapper.selectById(userId);
-                yield pity != null && Boolean.TRUE.equals(pity.getGuaranteedFive());
-            }
-            case "weapon" -> {
-                WeaponPity pity = weaponPityMapper.selectById(userId);
-                yield pity != null && Boolean.TRUE.equals(pity.getGuaranteedFive());
-            }
-            case "limited" -> {
-                LimitedPity pity = limitedPityMapper.selectById(userId);
-                yield pity != null && Boolean.TRUE.equals(pity.getGuaranteedFive());
-            }
-            default -> false;
-        };
+        GachaPity pity = getOrCreatePity(userId, poolType);
+        return Boolean.TRUE.equals(pity.getGuaranteedFive());
     }
 
     private void updatePity(Long userId, String poolType, int rarity, boolean isLimited) {
+        GachaPity pity = getOrCreatePity(userId, poolType);
+
         if (rarity == 5) {
-            // 五星重置保底
-            switch (poolType) {
-                case "character" -> {
-                    CharacterPity pity = characterPityMapper.selectById(userId);
-                    if (pity == null) {
-                        pity = new CharacterPity();
-                        pity.setUserId(userId);
-                        pity.setFiveStarCount(0);
-                        pity.setFourStarCount(0);
-                    }
-                    pity.setFiveStarCount(0);
-                    pity.setFourStarCount(pity.getFourStarCount() + 1);
-                    pity.setGuaranteedFive(!isLimited);
-                    characterPityMapper.insertOrUpdate(pity);
-                }
-                case "weapon" -> {
-                    WeaponPity pity = weaponPityMapper.selectById(userId);
-                    if (pity == null) {
-                        pity = new WeaponPity();
-                        pity.setUserId(userId);
-                        pity.setFiveStarCount(0);
-                        pity.setFourStarCount(0);
-                    }
-                    pity.setFiveStarCount(0);
-                    pity.setFourStarCount(pity.getFourStarCount() + 1);
-                    pity.setGuaranteedFive(!isLimited);
-                    weaponPityMapper.insertOrUpdate(pity);
-                }
-                case "limited" -> {
-                    LimitedPity pity = limitedPityMapper.selectById(userId);
-                    if (pity == null) {
-                        pity = new LimitedPity();
-                        pity.setUserId(userId);
-                        pity.setFiveStarCount(0);
-                        pity.setFourStarCount(0);
-                    }
-                    pity.setFiveStarCount(0);
-                    pity.setFourStarCount(pity.getFourStarCount() + 1);
-                    pity.setGuaranteedFive(!isLimited);
-                    limitedPityMapper.insertOrUpdate(pity);
-                }
-            }
+            pity.setFiveStarCount(0);
+            pity.setFourStarCount(pity.getFourStarCount() + 1);
+            pity.setGuaranteedFive(!isLimited);
         } else if (rarity == 4) {
-            // 四星重置
-            switch (poolType) {
-                case "character" -> {
-                    CharacterPity pity = characterPityMapper.selectById(userId);
-                    if (pity == null) {
-                        pity = new CharacterPity();
-                        pity.setUserId(userId);
-                        pity.setFiveStarCount(0);
-                        pity.setFourStarCount(0);
-                    }
-                    pity.setFiveStarCount(pity.getFiveStarCount() + 1);
-                    pity.setFourStarCount(0);
-                    characterPityMapper.insertOrUpdate(pity);
-                }
-                case "weapon" -> {
-                    WeaponPity pity = weaponPityMapper.selectById(userId);
-                    if (pity == null) {
-                        pity = new WeaponPity();
-                        pity.setUserId(userId);
-                        pity.setFiveStarCount(0);
-                        pity.setFourStarCount(0);
-                    }
-                    pity.setFiveStarCount(pity.getFiveStarCount() + 1);
-                    pity.setFourStarCount(0);
-                    weaponPityMapper.insertOrUpdate(pity);
-                }
-                case "limited" -> {
-                    LimitedPity pity = limitedPityMapper.selectById(userId);
-                    if (pity == null) {
-                        pity = new LimitedPity();
-                        pity.setUserId(userId);
-                        pity.setFiveStarCount(0);
-                        pity.setFourStarCount(0);
-                    }
-                    pity.setFiveStarCount(pity.getFiveStarCount() + 1);
-                    pity.setFourStarCount(0);
-                    limitedPityMapper.insertOrUpdate(pity);
-                }
-            }
+            pity.setFiveStarCount(pity.getFiveStarCount() + 1);
+            pity.setFourStarCount(0);
         } else {
-            // 三星递增计数
-            switch (poolType) {
-                case "character" -> {
-                    CharacterPity pity = characterPityMapper.selectById(userId);
-                    if (pity == null) {
-                        pity = new CharacterPity();
-                        pity.setUserId(userId);
-                        pity.setFiveStarCount(0);
-                        pity.setFourStarCount(0);
-                    }
-                    pity.setFiveStarCount(pity.getFiveStarCount() + 1);
-                    pity.setFourStarCount(pity.getFourStarCount() + 1);
-                    characterPityMapper.insertOrUpdate(pity);
-                }
-                case "weapon" -> {
-                    WeaponPity pity = weaponPityMapper.selectById(userId);
-                    if (pity == null) {
-                        pity = new WeaponPity();
-                        pity.setUserId(userId);
-                        pity.setFiveStarCount(0);
-                        pity.setFourStarCount(0);
-                    }
-                    pity.setFiveStarCount(pity.getFiveStarCount() + 1);
-                    pity.setFourStarCount(pity.getFourStarCount() + 1);
-                    weaponPityMapper.insertOrUpdate(pity);
-                }
-                case "limited" -> {
-                    LimitedPity pity = limitedPityMapper.selectById(userId);
-                    if (pity == null) {
-                        pity = new LimitedPity();
-                        pity.setUserId(userId);
-                        pity.setFiveStarCount(0);
-                        pity.setFourStarCount(0);
-                    }
-                    pity.setFiveStarCount(pity.getFiveStarCount() + 1);
-                    pity.setFourStarCount(pity.getFourStarCount() + 1);
-                    limitedPityMapper.insertOrUpdate(pity);
-                }
-            }
+            pity.setFiveStarCount(pity.getFiveStarCount() + 1);
+            pity.setFourStarCount(pity.getFourStarCount() + 1);
         }
+
+        gachaPityMapper.updateById(pity);
     }
+
+    // ========== 查询接口 ==========
 
     public Map<String, Object> getHistory(Long userId, String poolType, int page, int size) {
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<GachaRecord> pageParam =
@@ -477,7 +329,6 @@ public class GachaService {
             stats.put("fourStarRate", String.format("%.2f%%", fourStarCount * 100.0 / totalPulls));
         }
 
-        // 获取当前保底计数（仅在指定池子时返回）
         if (poolType != null && !poolType.isEmpty()) {
             int currentPity = getCurrentPity(userId, poolType);
             stats.put("currentPity", currentPity);

@@ -1,10 +1,10 @@
 package com.wutheringwaves.gacha.integration;
 
 import com.wutheringwaves.gacha.base.BaseTest;
-import com.wutheringwaves.gacha.mapper.CharacterPityMapper;
+import com.wutheringwaves.gacha.mapper.GachaPityMapper;
 import com.wutheringwaves.gacha.mapper.GachaRecordMapper;
 import com.wutheringwaves.gacha.mapper.UserMapper;
-import com.wutheringwaves.gacha.model.CharacterPity;
+import com.wutheringwaves.gacha.model.GachaPity;
 import com.wutheringwaves.gacha.model.GachaRecord;
 import com.wutheringwaves.gacha.model.User;
 import com.wutheringwaves.gacha.service.GachaService;
@@ -29,7 +29,7 @@ class GachaIntegrationTest extends BaseTest {
     private UserMapper userMapper;
 
     @Autowired
-    private CharacterPityMapper characterPityMapper;
+    private GachaPityMapper gachaPityMapper;
 
     @Autowired
     private GachaRecordMapper recordMapper;
@@ -52,12 +52,13 @@ class GachaIntegrationTest extends BaseTest {
         testUserId = user.getId();
 
         // 初始化保底计数
-        CharacterPity pity = new CharacterPity();
+        GachaPity pity = new GachaPity();
         pity.setUserId(testUserId);
+        pity.setPoolType("limited-character");
         pity.setFiveStarCount(0);
         pity.setFourStarCount(0);
         pity.setGuaranteedFive(false);
-        characterPityMapper.insert(pity);
+        gachaPityMapper.insert(pity);
     }
 
     @Test
@@ -66,7 +67,7 @@ class GachaIntegrationTest extends BaseTest {
         User user = userMapper.selectById(testUserId);
         int initialStarlight = user.getStarlight();
 
-        Map<String, Object> result = gachaService.pull(testUserId, "character", 1);
+        Map<String, Object> result = gachaService.pull(testUserId, "limited-character", 1);
 
         assertNotNull(result);
         assertTrue((Boolean) result.get("success"));
@@ -86,7 +87,7 @@ class GachaIntegrationTest extends BaseTest {
         User user = userMapper.selectById(testUserId);
         int initialStarlight = user.getStarlight();
 
-        Map<String, Object> result = gachaService.pull(testUserId, "character", 10);
+        Map<String, Object> result = gachaService.pull(testUserId, "limited-character", 10);
 
         assertNotNull(result);
         assertTrue((Boolean) result.get("success"));
@@ -104,14 +105,17 @@ class GachaIntegrationTest extends BaseTest {
     @DisplayName("硬保底验证 - 连续抽到保底触发")
     void pull_hardPity_fullFlow() {
         // 设置保底计数接近硬保底
-        CharacterPity pity = characterPityMapper.selectById(testUserId);
+        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<GachaPity> wrapper = new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+        wrapper.eq(GachaPity::getUserId, testUserId);
+        wrapper.eq(GachaPity::getPoolType, "limited-character");
+        GachaPity pity = gachaPityMapper.selectOne(wrapper);
         pity.setFiveStarCount(85);
-        characterPityMapper.updateById(pity);
+        gachaPityMapper.updateById(pity);
 
         // 连续抽卡直到触发保底
         boolean fiveStarObtained = false;
         for (int i = 0; i < 10; i++) {
-            Map<String, Object> result = gachaService.pull(testUserId, "character", 1);
+            Map<String, Object> result = gachaService.pull(testUserId, "limited-character", 1);
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> results = (List<Map<String, Object>>) result.get("results");
             Map<String, Object> firstResult = results.get(0);
@@ -133,8 +137,8 @@ class GachaIntegrationTest extends BaseTest {
         userMapper.updateById(user);
 
         // 执行两次单抽
-        gachaService.pull(testUserId, "character", 1);
-        gachaService.pull(testUserId, "character", 1);
+        gachaService.pull(testUserId, "limited-character", 1);
+        gachaService.pull(testUserId, "limited-character", 1);
 
         // 验证星声为0
         User updatedUser = userMapper.selectById(testUserId);
@@ -144,23 +148,23 @@ class GachaIntegrationTest extends BaseTest {
     @Test
     @DisplayName("历史记录验证 - 抽卡记录正确保存")
     void pull_recordHistory_fullFlow() {
-        gachaService.pull(testUserId, "character", 1);
+        gachaService.pull(testUserId, "limited-character", 1);
 
-        Map<String, Object> historyData = gachaService.getHistory(testUserId, "character", 1, 20);
+        Map<String, Object> historyData = gachaService.getHistory(testUserId, "limited-character", 1, 20);
         assertNotNull(historyData);
         List<GachaRecord> history = (List<GachaRecord>) historyData.get("records");
         assertNotNull(history);
         assertFalse(history.isEmpty());
         assertEquals(testUserId, history.get(0).getUserId());
-        assertEquals("character", history.get(0).getPoolType());
+        assertEquals("limited-character", history.get(0).getPoolType());
     }
 
     @Test
     @DisplayName("统计信息验证 - 统计数据正确计算")
     void getStats_fullFlow() {
-        gachaService.pull(testUserId, "character", 10);
+        gachaService.pull(testUserId, "limited-character", 10);
 
-        Map<String, Object> stats = gachaService.getStats(testUserId, "character");
+        Map<String, Object> stats = gachaService.getStats(testUserId, "limited-character");
 
         assertNotNull(stats);
         assertNotNull(stats.get("fiveStarCount"));

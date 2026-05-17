@@ -1,8 +1,6 @@
 -- 删除已有表（按外键依赖顺序）
 DROP TABLE IF EXISTS gacha_records;
-DROP TABLE IF EXISTS character_pity;
-DROP TABLE IF EXISTS weapon_pity;
-DROP TABLE IF EXISTS limited_pity;
+DROP TABLE IF EXISTS gacha_pity;
 DROP TABLE IF EXISTS gacha_items;
 DROP TABLE IF EXISTS gacha_pool;
 DROP TABLE IF EXISTS users;
@@ -25,7 +23,7 @@ CREATE TABLE gacha_items (
     name VARCHAR(100) NOT NULL,
     rarity INT NOT NULL,
     item_type VARCHAR(20) NOT NULL,
-    pool_type VARCHAR(20) NOT NULL,
+    pool_type VARCHAR(30) NOT NULL,
     is_limited BOOLEAN DEFAULT FALSE,
     image_url VARCHAR(255),
     description VARCHAR(500)
@@ -35,7 +33,7 @@ CREATE TABLE gacha_items (
 CREATE TABLE gacha_pool (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    pool_type VARCHAR(20) NOT NULL,
+    pool_type VARCHAR(30) NOT NULL,
     description VARCHAR(500),
     image_url VARCHAR(255),
     five_star_rate DECIMAL(5,2) DEFAULT 0.80,
@@ -49,38 +47,23 @@ CREATE TABLE gacha_pool (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 角色保底表
-CREATE TABLE character_pity (
-    user_id BIGINT PRIMARY KEY,
+-- 统一保底表
+CREATE TABLE gacha_pity (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    pool_type VARCHAR(30) NOT NULL,
     five_star_count INT DEFAULT 0,
     four_star_count INT DEFAULT 0,
     guaranteed_five BOOLEAN DEFAULT FALSE,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- 武器保底表
-CREATE TABLE weapon_pity (
-    user_id BIGINT PRIMARY KEY,
-    five_star_count INT DEFAULT 0,
-    four_star_count INT DEFAULT 0,
-    guaranteed_five BOOLEAN DEFAULT FALSE,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- 限定保底表
-CREATE TABLE limited_pity (
-    user_id BIGINT PRIMARY KEY,
-    five_star_count INT DEFAULT 0,
-    four_star_count INT DEFAULT 0,
-    guaranteed_five BOOLEAN DEFAULT FALSE,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id, pool_type)
 );
 
 -- 抽卡记录表
 CREATE TABLE gacha_records (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
-    pool_type VARCHAR(20) NOT NULL,
+    pool_type VARCHAR(30) NOT NULL,
     item_name VARCHAR(100) NOT NULL,
     item_rarity INT NOT NULL,
     item_type VARCHAR(20) NOT NULL,

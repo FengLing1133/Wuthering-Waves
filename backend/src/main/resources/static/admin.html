@@ -144,9 +144,10 @@
                 <div style="display:flex;gap:8px;align-items:center;">
                     <select id="poolFilter" class="search-input" style="width:150px;" onchange="loadPools()">
                         <option value="">全部类型</option>
-                        <option value="character">角色池</option>
-                        <option value="weapon">武器池</option>
-                        <option value="limited">限定池</option>
+                        <option value="limited-character">限定角色池</option>
+                        <option value="limited-weapon">限定武器池</option>
+                        <option value="standard-character">常驻角色池</option>
+                        <option value="standard-weapon">常驻武器池</option>
                     </select>
                     <select id="poolStatusFilter" class="search-input" style="width:150px;" onchange="loadPools()">
                         <option value="">全部状态</option>
@@ -205,9 +206,10 @@
             <label><span>卡池名称</span><input type="text" id="poolName" placeholder="如：角色活动唤取"></label>
             <label><span>卡池类型</span>
                 <select id="poolType">
-                    <option value="character">角色池</option>
-                    <option value="weapon">武器池</option>
-                    <option value="limited">限定池</option>
+                    <option value="limited-character">限定角色池</option>
+                    <option value="limited-weapon">限定武器池</option>
+                    <option value="standard-character">常驻角色池</option>
+                    <option value="standard-weapon">常驻武器池</option>
                 </select>
             </label>
             <label><span>卡池描述</span><textarea id="poolDesc" placeholder="卡池描述信息"></textarea></label>
@@ -373,7 +375,7 @@
                         <tr>
                             <td>${p.id}</td>
                             <td>${p.name}</td>
-                            <td>${{character:'角色池',weapon:'武器池',limited:'限定池'}[p.poolType]||p.poolType}</td>
+                            <td>${{'limited-character':'限定角色池','limited-weapon':'限定武器池','standard-character':'常驻角色池','standard-weapon':'常驻武器池'}[p.poolType]||p.poolType}</td>
                             <td>${p.fiveStarRate}%</td>
                             <td>${p.maxPity}</td>
                             <td>${p.upItems || '-'}</td>
@@ -395,7 +397,7 @@
             document.getElementById('poolModalTitle').textContent = pool ? '编辑卡池' : '新增卡池';
             document.getElementById('poolId').value = pool ? pool.id : '';
             document.getElementById('poolName').value = pool ? pool.name : '';
-            document.getElementById('poolType').value = pool ? pool.poolType : 'character';
+            document.getElementById('poolType').value = pool ? pool.poolType : 'limited-character';
             document.getElementById('poolDesc').value = pool ? (pool.description || '') : '';
             document.getElementById('poolFiveRate').value = pool ? pool.fiveStarRate : 0.8;
             document.getElementById('poolFourRate').value = pool ? pool.fourStarRate : 6.0;
@@ -544,7 +546,7 @@
                     document.getElementById('recordsTableBody').innerHTML = res.records.records.map(r => `
                         <tr>
                             <td>${r.createdAt ? r.createdAt.replace('T',' ').substring(0,19) : '-'}</td>
-                            <td>${{character:'角色池',weapon:'武器池',limited:'限定池'}[r.poolType]||r.poolType}</td>
+                            <td>${{'limited-character':'限定角色池','limited-weapon':'限定武器池','standard-character':'常驻角色池','standard-weapon':'常驻武器池'}[r.poolType]||r.poolType}</td>
                             <td>${r.itemName}</td>
                             <td><span class="badge-${r.itemRarity}star">${r.itemRarity}星</span></td>
                             <td>${r.pityCount || '-'}</td>

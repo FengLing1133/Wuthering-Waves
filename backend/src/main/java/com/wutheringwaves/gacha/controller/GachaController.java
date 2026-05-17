@@ -8,6 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/gacha")
@@ -17,11 +18,20 @@ public class GachaController {
     private final GachaService gachaService;
     private final JwtUtil jwtUtil;
 
+    private static final Set<String> VALID_POOL_TYPES = Set.of(
+            "limited-character", "limited-weapon", "standard-character", "standard-weapon"
+    );
+
     private String normalizePoolType(String poolType) {
         if (poolType == null) return null;
-        if (poolType.contains("character")) return "character";
-        if (poolType.contains("weapon")) return "weapon";
-        if (poolType.equals("limited")) return "limited";
+        String lower = poolType.toLowerCase();
+        // 常驻池优先匹配
+        if (lower.equals("standard-character") || lower.equals("standard_character")) return "standard-character";
+        if (lower.equals("standard-weapon") || lower.equals("standard_weapon")) return "standard-weapon";
+        // 限定角色池：character-1, character-2, limited-character 等
+        if (lower.contains("character")) return "limited-character";
+        // 限定武器池：weapon-1, weapon-2, limited-weapon 等
+        if (lower.contains("weapon")) return "limited-weapon";
         return poolType;
     }
 
@@ -40,7 +50,7 @@ public class GachaController {
 
         poolType = normalizePoolType(poolType);
 
-        if (!poolType.equals("character") && !poolType.equals("weapon") && !poolType.equals("limited")) {
+        if (!VALID_POOL_TYPES.contains(poolType)) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "无效的池子类型"));
         }
 
@@ -54,13 +64,13 @@ public class GachaController {
     @GetMapping("/history")
     public ResponseEntity<Map<String, Object>> getHistory(
             Authentication authentication,
-            @RequestParam(defaultValue = "character") String poolType,
+            @RequestParam(defaultValue = "limited-character") String poolType,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
 
         poolType = normalizePoolType(poolType);
 
-        if (!poolType.equals("character") && !poolType.equals("weapon") && !poolType.equals("limited")) {
+        if (!VALID_POOL_TYPES.contains(poolType)) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "无效的池子类型"));
         }
 
@@ -76,11 +86,11 @@ public class GachaController {
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getStats(
             Authentication authentication,
-            @RequestParam(defaultValue = "character") String poolType) {
+            @RequestParam(defaultValue = "limited-character") String poolType) {
 
         poolType = normalizePoolType(poolType);
 
-        if (!poolType.equals("character") && !poolType.equals("weapon") && !poolType.equals("limited")) {
+        if (!VALID_POOL_TYPES.contains(poolType)) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "无效的池子类型"));
         }
 

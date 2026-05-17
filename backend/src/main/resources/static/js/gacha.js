@@ -188,6 +188,12 @@ const Gacha = {
         document.getElementById('upElement').querySelector('.element-icon').textContent = config.upElement;
         document.getElementById('maxPityDisplay').textContent = config.maxPity;
 
+        // 常驻池隐藏UP角色信息
+        const upSection = document.getElementById('upCharacter');
+        if (upSection) {
+            upSection.style.display = pool.startsWith('standard-') ? 'none' : '';
+        }
+
         // 更新背景图
         const bgEl = document.getElementById('bannerBg');
         if (bgEl && config.background) {
