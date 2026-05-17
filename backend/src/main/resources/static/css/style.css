@@ -622,19 +622,21 @@ body {
     align-items: center;
 }
 
-/* 抽卡按钮 */
+/* 新风格抽卡按钮 */
 .pull-btn {
     display: flex;
     align-items: center;
-    gap: 12px;
-    height: 52px;
-    padding: 0 28px 0 16px;
-    border-radius: 26px;
+    gap: 10px;
+    height: 48px;
+    padding: 0 24px 0 12px;
+    border-radius: 24px;
     border: none;
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(230, 230, 230, 0.98) 100%);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .pull-btn::before {
@@ -644,8 +646,8 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    border-radius: 26px;
-    border: 1px solid rgba(212, 168, 67, 0.5);
+    border-radius: 24px;
+    border: 1px solid rgba(180, 180, 180, 0.3);
     pointer-events: none;
 }
 
@@ -656,55 +658,39 @@ body {
     left: 0;
     right: 0;
     height: 50%;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
-    border-radius: 26px 26px 0 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, transparent 100%);
+    border-radius: 24px 24px 0 0;
     pointer-events: none;
 }
 
 .pull-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 25px rgba(212, 168, 67, 0.35);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .pull-btn:active {
     transform: translateY(0);
 }
 
-.single-pull {
-    background: var(--btn-gradient);
-}
-
-.single-pull:hover {
-    background: var(--btn-hover-gradient);
-}
-
-.ten-pull {
-    background: var(--btn-gradient);
-}
-
-.ten-pull:hover {
-    background: var(--btn-hover-gradient);
-}
-
 .pull-btn-icon {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: radial-gradient(circle, #fff4b0 15%, #f0c840 50%, #b08820 100%);
-    box-shadow: 0 0 10px rgba(240, 200, 60, 0.5);
+    background: radial-gradient(circle, #7ad4ff 30%, #3a9aff 70%, #1a6adf 100%);
+    box-shadow: 0 0 8px rgba(100, 180, 255, 0.5);
     flex-shrink: 0;
 }
 
 .pull-btn-text {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 500;
-    color: var(--text-primary);
+    color: #333;
     letter-spacing: 1px;
 }
 
 .pull-btn-label {
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.7);
+    font-size: 11px;
+    color: #666;
     letter-spacing: 1px;
 }
 
