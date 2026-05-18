@@ -140,16 +140,13 @@ const API = {
         });
     },
 
-    // 上传图片
-    async uploadImage(file) {
-        const token = this.getToken();
-        const formData = new FormData();
-        formData.append('file', file);
-        const response = await fetch('/api/admin/upload', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData
+    // 将文件转为 base64 data URL
+    fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
         });
-        return response.json();
     }
 };

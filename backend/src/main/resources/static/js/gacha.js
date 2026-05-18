@@ -679,23 +679,41 @@ const Gacha = {
         const data = this.analysisData;
         if (!data || !data.poolGroupedItems) return;
 
-        const poolItems = data.poolGroupedItems[this.currentAnalysisPool] || [];
+        const poolType = this.currentAnalysisPool;
+        const poolItems = data.poolGroupedItems[poolType] || [];
         const container = document.getElementById('analysisPoolRecords');
 
+        // 获取当前卡池的垫抽数
+        const currentPity = (data.poolCurrentPity && data.poolCurrentPity[poolType]) || 0;
+
+        // 构建当前垫抽数提示
+        let pityHintHtml = '';
+        if (currentPity > 0) {
+            pityHintHtml = `<div class="analysis-pool-pity-hint">
+                当前已垫 <span class="highlight">${currentPity}</span> 抽
+            </div>`;
+        }
+
         if (poolItems.length === 0) {
-            container.innerHTML = '<div class="analysis-pool-empty">暂无五星记录</div>';
+            container.innerHTML = pityHintHtml +
+                '<div class="analysis-pool-empty">暂无五星记录</div>';
             return;
         }
 
-        // 按抽数排序，新的在上面
-        const sortedItems = [...poolItems].sort((a, b) => b.pityCount - a.pityCount);
+        // 按时间倒序排列（最新的在上面）
+        const sortedItems = [...poolItems].sort((a, b) => {
+            if (a.createdAt && b.createdAt) {
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            }
+            return 0;
+        });
 
-        container.innerHTML = sortedItems.map(item => {
+        const recordsHtml = sortedItems.map(item => {
             const imageUrl = item.imageUrl;
             const pityCount = item.pityCount || 0;
             const isLimited = item.isLimited;
             const barWidth = Math.min((pityCount / 80) * 100, 100);
-            const barColor = pityCount < 70 ? 'green' : 'yellow';
+            const barColor = pityCount < 60 ? 'green' : 'yellow';
 
             let iconHtml;
             if (imageUrl) {
@@ -715,9 +733,6 @@ const Gacha = {
 
             return `<div class="analysis-pool-record-item">
                 ${iconHtml}
-                <div class="analysis-pool-record-info">
-                    <div class="analysis-pool-record-name five-star">${item.name}</div>
-                </div>
                 <div class="analysis-pool-record-bar-container">
                     <div class="analysis-pool-record-bar ${barColor}" style="width: ${barWidth}%">
                         ${pityCount}抽
@@ -726,5 +741,7 @@ const Gacha = {
                 ${lostHtml}
             </div>`;
         }).join('');
+
+        container.innerHTML = pityHintHtml + recordsHtml;
     }
 };

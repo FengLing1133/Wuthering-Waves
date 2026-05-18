@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -304,6 +305,125 @@ class GachaServiceTest extends BaseTest {
                 "限定池应有非UP5星（50/50），实际UP=" + upCount + " 非UP=" + nonUpCount);
         assertTrue(upCount > 0,
                 "限定池应有UP5星，实际UP=" + upCount + " 非UP=" + nonUpCount);
+    }
+
+    @Test
+    @DisplayName("限定武器池四星50/50 - 应有非UP四星武器出现")
+    void pull_limitedWeaponPool_fourStarFiftyFifty() {
+        // 模拟数据库：分类3有20个四星武器，其中3个是UP
+        List<GachaItem> items = new ArrayList<>();
+        items.add(TestDataFactory.createItem(28L, 4, "永夜长明", "weapon", 3L));
+        items.add(TestDataFactory.createItem(30L, 4, "无眠烈火", "weapon", 3L));
+        items.add(TestDataFactory.createItem(32L, 4, "今州守望", "weapon", 3L));
+        items.add(TestDataFactory.createItem(29L, 4, "不归孤军", "weapon", 3L));
+        items.add(TestDataFactory.createItem(31L, 4, "袍泽之固", "weapon", 3L));
+        items.add(TestDataFactory.createItem(33L, 4, "异响空灵", "weapon", 3L));
+        items.add(TestDataFactory.createItem(34L, 4, "行进序曲", "weapon", 3L));
+        items.add(TestDataFactory.createItem(35L, 4, "华彩乐段", "weapon", 3L));
+        items.add(TestDataFactory.createItem(36L, 4, "呼啸重音", "weapon", 3L));
+        items.add(TestDataFactory.createItem(37L, 4, "奇幻变奏", "weapon", 3L));
+        items.add(TestDataFactory.createItem(38L, 4, "东落", "weapon", 3L));
+        items.add(TestDataFactory.createItem(39L, 4, "西升", "weapon", 3L));
+        items.add(TestDataFactory.createItem(40L, 4, "飞逝", "weapon", 3L));
+        items.add(TestDataFactory.createItem(41L, 4, "骇行", "weapon", 3L));
+        items.add(TestDataFactory.createItem(42L, 4, "异度", "weapon", 3L));
+        items.add(TestDataFactory.createItem(43L, 4, "凋亡频移", "weapon", 3L));
+        items.add(TestDataFactory.createItem(44L, 4, "永续坍缩", "weapon", 3L));
+        items.add(TestDataFactory.createItem(45L, 4, "悖论喷流", "weapon", 3L));
+        items.add(TestDataFactory.createItem(46L, 4, "尘云旋臂", "weapon", 3L));
+        items.add(TestDataFactory.createItem(47L, 4, "核熔星盘", "weapon", 3L));
+        // 加一些三星和五星
+        items.add(TestDataFactory.createItem(58L, 5, "苍鳞千嶂", "weapon", 6L));
+        items.add(TestDataFactory.createItem(53L, 5, "浩境粼光", "weapon", 5L));
+        items.add(TestDataFactory.createItem(1L, 3, "暗夜长刃", "weapon", 1L));
+
+        GachaPool pool = TestDataFactory.createPool("limited-weapon", "限定武器池");
+        pool.setId(4L);
+        pool.setFivestarUp(58L);
+        pool.setFourstarUp("28,30,32");
+
+        when(userService.getUserById(1L)).thenReturn(testUser);
+        when(gachaPoolMapper.selectById(anyLong())).thenReturn(pool);
+        when(gachaPityMapper.selectOne(any())).thenReturn(testPity);
+        when(poolCategoryMapper.selectList(any())).thenReturn(List.of(
+                TestDataFactory.createPoolCategory(4L, 1L),
+                TestDataFactory.createPoolCategory(4L, 3L),
+                TestDataFactory.createPoolCategory(4L, 5L),
+                TestDataFactory.createPoolCategory(4L, 6L)
+        ));
+        when(gachaItemMapper.selectList(any())).thenReturn(items);
+        when(gachaPityMapper.updateById(any(GachaPity.class))).thenReturn(1);
+        when(gachaRecordMapper.insert(any(GachaRecord.class))).thenReturn(1);
+
+        int upFourStar = 0;
+        int nonUpFourStar = 0;
+
+        for (int i = 0; i < 500; i++) {
+            testPity.setFourStarCount(9);
+            testPity.setGuaranteedFour(false);
+            Map<String, Object> result = gachaService.pull(1L, "limited-weapon", 4L, 1);
+            List<?> results = (List<?>) result.get("results");
+            Map<?, ?> firstResult = (Map<?, ?>) results.get(0);
+            if (4 == (int) firstResult.get("rarity")) {
+                if ((boolean) firstResult.get("isLimited")) {
+                    upFourStar++;
+                } else {
+                    nonUpFourStar++;
+                }
+            }
+        }
+
+        System.out.println("===== 限定武器池四星50/50测试 =====");
+        System.out.println("四星总数: " + (upFourStar + nonUpFourStar));
+        System.out.println("四星UP: " + upFourStar);
+        System.out.println("四星非UP: " + nonUpFourStar);
+
+        assertTrue(nonUpFourStar > 0,
+                "限定武器池应有非UP四星武器出现，实际UP=" + upFourStar + " 非UP=" + nonUpFourStar);
+    }
+
+    @Test
+    @DisplayName("限定武器池五星不歪 - 必出UP五星武器")
+    void pull_limitedWeaponPool_fiveStarNoMiss() {
+        List<GachaItem> items = TestDataFactory.createWeaponPoolItems();
+        GachaPool pool = TestDataFactory.createPool("limited-weapon", "限定武器池");
+        pool.setId(4L);
+        pool.setFivestarUp(1003L);
+        pool.setFourstarUp("2004,2005");
+        pool.setMaxPity(80);
+        testPity.setFiveStarCount(79);
+
+        when(userService.getUserById(1L)).thenReturn(testUser);
+        when(gachaPoolMapper.selectById(anyLong())).thenReturn(pool);
+        when(gachaPityMapper.selectOne(any())).thenReturn(testPity);
+        when(poolCategoryMapper.selectList(any())).thenReturn(TestDataFactory.createWeaponPoolCategories());
+        when(gachaItemMapper.selectList(any())).thenReturn(items);
+        when(gachaPityMapper.updateById(any(GachaPity.class))).thenReturn(1);
+        when(gachaRecordMapper.insert(any(GachaRecord.class))).thenReturn(1);
+
+        int upFiveStar = 0;
+        int nonUpFiveStar = 0;
+
+        for (int i = 0; i < 100; i++) {
+            testPity.setFiveStarCount(79);
+            Map<String, Object> result = gachaService.pull(1L, "limited-weapon", 4L, 1);
+            List<?> results = (List<?>) result.get("results");
+            Map<?, ?> firstResult = (Map<?, ?>) results.get(0);
+            if (5 == (int) firstResult.get("rarity")) {
+                if ((boolean) firstResult.get("isLimited")) {
+                    upFiveStar++;
+                } else {
+                    nonUpFiveStar++;
+                }
+            }
+        }
+
+        System.out.println("===== 限定武器池五星不歪测试 =====");
+        System.out.println("五星UP: " + upFiveStar);
+        System.out.println("五星非UP: " + nonUpFiveStar);
+
+        assertEquals(0, nonUpFiveStar, "限定武器池五星不应歪，但出现了非UP五星");
+        assertTrue(upFiveStar > 0, "应至少出1个UP五星");
     }
 
     @Test

@@ -194,7 +194,7 @@ body {
     width: 210px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 50px;
     padding: 8px 4px;
     overflow-y: auto;
     overflow-x: hidden;
@@ -205,6 +205,12 @@ body {
 
 .banner-sidebar::-webkit-scrollbar {
     display: none;
+}
+
+#bannerSlots {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .banner-slot {
@@ -1660,38 +1666,22 @@ body {
     font-weight: 500;
 }
 
-.analysis-pool-record-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.analysis-pool-record-name {
-    font-size: 14px;
-    font-weight: 500;
-    color: #2a2520;
-    margin-bottom: 4px;
-}
-
-.analysis-pool-record-name.five-star {
-    color: #c49a30;
-}
-
 .analysis-pool-record-bar-container {
     flex: 1;
-    max-width: 300px;
-    margin: 0 16px;
+    min-width: 0;
 }
 
 .analysis-pool-record-bar {
     height: 24px;
     border-radius: 4px;
-    display: flex;
-    align-items: center;
+    display: block;
+    line-height: 24px;
     padding-left: 10px;
     font-size: 12px;
     font-weight: 500;
     color: #fff;
     transition: width 0.3s ease;
+    text-align: left;
 }
 
 .analysis-pool-record-bar.green {
@@ -1717,6 +1707,21 @@ body {
     padding: 2px 8px;
     background: rgba(255, 74, 106, 0.1);
     border-radius: 4px;
+}
+
+.analysis-pool-pity-hint {
+    text-align: center;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    font-size: 14px;
+    color: #ccc;
+}
+
+.analysis-pool-pity-hint .highlight {
+    color: #ffd700;
+    font-weight: bold;
 }
 
 .analysis-pool-empty {
