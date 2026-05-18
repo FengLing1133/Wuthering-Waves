@@ -231,6 +231,82 @@ class GachaServiceTest extends BaseTest {
     }
 
     @Test
+    @DisplayName("1000抽统计 - 保底系统累积验证（含软保底和硬保底）")
+    void pull_1000Pulls_pityAccumulation() {
+        testPity.setFiveStarCount(0);
+        testPity.setGuaranteedFive(false);
+        setupDefaultMocks();
+
+        int totalFiveStar = 0;
+        int beforeSoftPity = 0; // 保底计数 < 64 时出的5星
+        int atSoftPity = 0;     // 软保底期间（64-78）出的5星
+        int atHardPity = 0;     // 硬保底（79）出的5星
+
+        for (int i = 0; i < 1000; i++) {
+            Map<String, Object> result = gachaService.pull(1L, "limited-character", 1L, 1);
+            List<?> results = (List<?>) result.get("results");
+            Map<?, ?> firstResult = (Map<?, ?>) results.get(0);
+            if (5 == (int) firstResult.get("rarity")) {
+                totalFiveStar++;
+                int pity = (int) firstResult.get("pityCount");
+                if (pity <= 64) beforeSoftPity++;
+                else if (pity < 80) atSoftPity++;
+                else atHardPity++;
+            }
+        }
+
+        System.out.println("===== 1000抽保底累积测试 =====");
+        System.out.println("5星总数: " + totalFiveStar);
+        System.out.println("5星率: " + String.format("%.2f%%", totalFiveStar / 10.0));
+        System.out.println("基础概率出5星（<=64抽）: " + beforeSoftPity);
+        System.out.println("软保底出5星（65-79抽）: " + atSoftPity);
+        System.out.println("硬保底出5星（80抽）: " + atHardPity);
+
+        assertTrue(totalFiveStar >= 12,
+                "1000抽保底机制至少应出12个5星，实际: " + totalFiveStar);
+    }
+
+    @Test
+    @DisplayName("1000抽统计 - 验证限定池50/50歪机制（含保底累积）")
+    void pull_1000Pulls_limitedPoolFiftyFifty() {
+        testPity.setFiveStarCount(0);
+        testPity.setGuaranteedFive(false);
+        setupDefaultMocks();
+
+        int upCount = 0;
+        int nonUpCount = 0;
+
+        for (int i = 0; i < 1000; i++) {
+            Map<String, Object> result = gachaService.pull(1L, "limited-character", 1L, 1);
+            List<?> results = (List<?>) result.get("results");
+            Map<?, ?> firstResult = (Map<?, ?>) results.get(0);
+            if (5 == (int) firstResult.get("rarity")) {
+                if ((boolean) firstResult.get("isLimited")) {
+                    upCount++;
+                } else {
+                    nonUpCount++;
+                }
+            }
+        }
+
+        int totalFiveStar = upCount + nonUpCount;
+        System.out.println("===== 1000抽50/50测试 =====");
+        System.out.println("5星总数: " + totalFiveStar);
+        System.out.println("UP 5星: " + upCount);
+        System.out.println("非UP 5星: " + nonUpCount);
+        if (totalFiveStar > 0) {
+            System.out.println("UP占比: " + String.format("%.1f%%", upCount * 100.0 / totalFiveStar));
+        }
+
+        assertTrue(totalFiveStar >= 12,
+                "1000抽保底机制至少应出12个5星，实际: " + totalFiveStar);
+        assertTrue(nonUpCount > 0,
+                "限定池应有非UP5星（50/50），实际UP=" + upCount + " 非UP=" + nonUpCount);
+        assertTrue(upCount > 0,
+                "限定池应有UP5星，实际UP=" + upCount + " 非UP=" + nonUpCount);
+    }
+
+    @Test
     @DisplayName("软保底概率递增验证 - 第81抽概率显著提高")
     void pull_softPityTriggered() {
         testPity.setFiveStarCount(80);

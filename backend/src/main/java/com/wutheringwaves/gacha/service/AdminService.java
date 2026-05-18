@@ -2,8 +2,18 @@ package com.wutheringwaves.gacha.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.wutheringwaves.gacha.mapper.*;
-import com.wutheringwaves.gacha.model.*;
+import com.wutheringwaves.gacha.mapper.GachaItemMapper;
+import com.wutheringwaves.gacha.mapper.GachaPoolMapper;
+import com.wutheringwaves.gacha.mapper.GachaRecordMapper;
+import com.wutheringwaves.gacha.mapper.UserMapper;
+import com.wutheringwaves.gacha.mapper.PoolCategoryMapper;
+import com.wutheringwaves.gacha.mapper.ItemCategoryMapper;
+import com.wutheringwaves.gacha.model.GachaItem;
+import com.wutheringwaves.gacha.model.GachaPool;
+import com.wutheringwaves.gacha.model.GachaRecord;
+import com.wutheringwaves.gacha.model.User;
+import com.wutheringwaves.gacha.model.PoolCategory;
+import com.wutheringwaves.gacha.model.ItemCategory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,8 +32,6 @@ public class AdminService {
     private final GachaItemMapper gachaItemMapper;
     private final GachaRecordMapper gachaRecordMapper;
     private final UserMapper userMapper;
-    private final FourStarAvatarMapper fourStarAvatarMapper;
-    private final PoolFourStarMapper poolFourStarMapper;
     private final PoolCategoryMapper poolCategoryMapper;
     private final ItemCategoryMapper itemCategoryMapper;
 
@@ -77,10 +85,6 @@ public class AdminService {
         LambdaQueryWrapper<PoolCategory> pcWrapper = new LambdaQueryWrapper<>();
         pcWrapper.eq(PoolCategory::getPoolId, id);
         poolCategoryMapper.delete(pcWrapper);
-        // 删除 pool_four_star 关联
-        LambdaQueryWrapper<PoolFourStar> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(PoolFourStar::getPoolId, id);
-        poolFourStarMapper.delete(wrapper);
         gachaPoolMapper.deleteById(id);
         return true;
     }
@@ -90,61 +94,6 @@ public class AdminService {
     public List<ItemCategory> listCategories() {
         return itemCategoryMapper.selectList(
                 new LambdaQueryWrapper<ItemCategory>().orderByAsc(ItemCategory::getSortOrder));
-    }
-
-    // ========== 四星头像管理 ==========
-
-    public List<FourStarAvatar> listAvatars() {
-        return fourStarAvatarMapper.selectList(null);
-    }
-
-    public FourStarAvatar createAvatar(FourStarAvatar avatar) {
-        fourStarAvatarMapper.insert(avatar);
-        return avatar;
-    }
-
-    @Transactional
-    public boolean deleteAvatar(Long id) {
-        LambdaQueryWrapper<PoolFourStar> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(PoolFourStar::getAvatarId, id);
-        poolFourStarMapper.delete(wrapper);
-        return fourStarAvatarMapper.deleteById(id) > 0;
-    }
-
-    public List<FourStarAvatar> getPoolFourStarAvatars(Long poolId) {
-        LambdaQueryWrapper<PoolFourStar> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(PoolFourStar::getPoolId, poolId);
-        wrapper.orderByAsc(PoolFourStar::getSortOrder);
-        List<PoolFourStar> relations = poolFourStarMapper.selectList(wrapper);
-
-        List<FourStarAvatar> avatars = new ArrayList<>();
-        for (PoolFourStar rel : relations) {
-            FourStarAvatar avatar = fourStarAvatarMapper.selectById(rel.getAvatarId());
-            if (avatar != null) {
-                avatars.add(avatar);
-            }
-        }
-        return avatars;
-    }
-
-    @Transactional
-    public boolean updatePoolFourStars(Long poolId, List<Long> avatarIds) {
-        if (avatarIds != null && avatarIds.size() > 3) {
-            return false;
-        }
-        LambdaQueryWrapper<PoolFourStar> deleteWrapper = new LambdaQueryWrapper<>();
-        deleteWrapper.eq(PoolFourStar::getPoolId, poolId);
-        poolFourStarMapper.delete(deleteWrapper);
-        if (avatarIds != null) {
-            for (int i = 0; i < avatarIds.size(); i++) {
-                PoolFourStar rel = new PoolFourStar();
-                rel.setPoolId(poolId);
-                rel.setAvatarId(avatarIds.get(i));
-                rel.setSortOrder(i);
-                poolFourStarMapper.insert(rel);
-            }
-        }
-        return true;
     }
 
     // ========== 卡池物品管理（基于分类） ==========
@@ -170,6 +119,25 @@ public class AdminService {
             for (Long id : parseFourstarUp(pool.getFourstarUp())) {
                 GachaItem item = gachaItemMapper.selectById(id);
                 if (item != null) result.add(itemToMap(item));
+            }
+        }
+        return result;
+    }
+
+    public List<Map<String, Object>> getPoolFourStarItems(Long poolId) {
+        GachaPool pool = gachaPoolMapper.selectById(poolId);
+        if (pool == null || pool.getFourstarUp() == null || pool.getFourstarUp().isBlank()) {
+            return Collections.emptyList();
+        }
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Long id : parseFourstarUp(pool.getFourstarUp())) {
+            GachaItem item = gachaItemMapper.selectById(id);
+            if (item != null) {
+                Map<String, Object> m = new HashMap<>();
+                m.put("id", item.getId());
+                m.put("name", item.getName());
+                m.put("imageUrl", item.getImageUrl());
+                result.add(m);
             }
         }
         return result;
