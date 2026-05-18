@@ -85,7 +85,7 @@ public class GachaService {
 
         int rarity = determineRarity(userId, poolType, pool.getId(), currentPity);
 
-        boolean isLimitedPool = poolType.startsWith("limited-");
+        boolean isLimitedPool = poolType.startsWith("limited-") || "special-activity".equals(poolType);
 
         GachaItem selectedItem = selectItem(items, pool, rarity, poolType,
                 guaranteedFive, guaranteedFour, isLimitedPool);
