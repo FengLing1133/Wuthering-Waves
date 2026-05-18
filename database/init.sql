@@ -258,8 +258,8 @@ CREATE TABLE IF NOT EXISTS pool_category (
 );
 
 -- ========== 特殊卡池配置示例 ==========
-INSERT INTO gacha_pool (name, pool_type, description, five_star_rate, four_star_rate, max_pity, soft_pity_start, soft_pity_increment, status, sidebar_visible, sidebar_order, allow_lose)
-SELECT '特殊活动唤取', 'special-activity', '特殊活动卡池', 0.80, 6.00, 80, 65, 6.00, 'active', TRUE, 5, TRUE
+INSERT INTO gacha_pool (name, pool_type, description, five_star_rate, four_star_rate, max_pity, soft_pity_start, soft_pity_increment, status, sidebar_visible, sidebar_order, allow_lose, fivestar_up)
+SELECT '特殊活动唤取', 'special-activity', '特殊活动卡池', 0.80, 6.00, 80, 65, 6.00, 'active', TRUE, 5, TRUE, 121
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM gacha_pool WHERE pool_type = 'special-activity');
 
@@ -270,6 +270,8 @@ INSERT IGNORE INTO pool_category (pool_id, category_id) VALUES
 (@new_pool_id, 1),  -- 三星武器
 (@new_pool_id, 2),  -- 四星角色
 (@new_pool_id, 3),  -- 四星武器
+(@new_pool_id, 4),  -- 五星常驻角色（歪的候选）
+(@new_pool_id, 5),  -- 五星常驻武器（歪的候选）
 (@new_pool_id, 8),  -- 五星特殊角色
 (@new_pool_id, 9);  -- 五星特殊武器
 
