@@ -142,37 +142,46 @@
         </div>
     </div>
 
-    <!-- 抽卡记录页面 -->
-    <div id="historyView" class="history-view hidden">
-        <div class="history-header">
-            <h2>抽卡记录</h2>
-            <div class="history-filters">
-                <select id="historyPoolFilter">
-                    <option value="limited-character">限定角色池</option>
-                    <option value="limited-weapon">限定武器池</option>
-                    <option value="standard-character">常驻角色</option>
-                    <option value="standard-weapon">常驻武器</option>
-                </select>
-                <button class="close-history-btn" id="closeHistoryBtn" title="关闭">✕</button>
+    <!-- 抽卡记录弹窗 -->
+    <div id="historyModal" class="history-modal hidden">
+        <div class="history-modal-overlay" id="historyModalOverlay"></div>
+        <div class="history-modal-content">
+            <div class="history-modal-header">
+                <h2>唤取记录</h2>
+                <button class="history-modal-close" id="closeHistoryBtn">×</button>
+            </div>
+            <div class="history-modal-body">
+                <div class="history-filter-row">
+                    <label class="history-filter-label">唤取类型</label>
+                    <div class="history-select-wrapper">
+                        <select id="historyPoolFilter" class="history-select">
+                            <option value="limited-character">角色活动唤取</option>
+                            <option value="limited-weapon">武器活动唤取</option>
+                            <option value="standard-character">角色常驻唤取</option>
+                            <option value="standard-weapon">武器常驻唤取</option>
+                        </select>
+                        <span class="history-select-arrow">▾</span>
+                    </div>
+                </div>
+                <div class="history-table-wrapper">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>类型</th>
+                                <th>名称</th>
+                                <th>数量</th>
+                                <th>唤取时间</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody"></tbody>
+                    </table>
+                </div>
+                <div class="history-pagination" id="historyPagination"></div>
+                <div class="history-footer-tip">
+                    唤取记录存在30分钟左右的延迟。若未查询到结果，请漂泊者稍后再试。唤取记录有效期为6个月，显示时间为北京时间（UTC+8）。
+                </div>
             </div>
         </div>
-        <div class="history-stats" id="historyStats"></div>
-        <div class="history-table-container">
-            <table class="history-table">
-                <thead>
-                    <tr>
-                        <th>时间</th>
-                        <th>池子</th>
-                        <th>名称</th>
-                        <th>稀有度</th>
-                        <th>类型</th>
-                        <th>保底计数</th>
-                    </tr>
-                </thead>
-                <tbody id="historyTableBody"></tbody>
-            </table>
-        </div>
-        <div class="history-pagination" id="historyPagination"></div>
     </div>
 
     <!-- 武器选择弹窗 -->
@@ -184,6 +193,79 @@
                 <button class="close-btn" id="closeWeaponSelectBtn">×</button>
             </div>
             <div class="weapon-select-grid" id="weaponSelectGrid"></div>
+        </div>
+    </div>
+
+    <!-- 抽卡分析弹窗 -->
+    <div id="analysisModal" class="analysis-modal hidden">
+        <div class="analysis-modal-overlay" id="analysisModalOverlay"></div>
+        <div class="analysis-modal-content">
+            <div class="analysis-modal-header">
+                <h2>抽卡分析</h2>
+                <button class="analysis-modal-close" id="closeAnalysisBtn">×</button>
+            </div>
+            <div class="analysis-modal-body">
+                <!-- 称号区域 -->
+                <div class="analysis-title-section">
+                    <div class="analysis-title" id="analysisTitle">万里挑一至尊欧皇</div>
+                    <div class="analysis-title-desc" id="analysisTitleDesc">你的运气简直逆天！</div>
+                </div>
+
+                <!-- 基础统计 -->
+                <div class="analysis-basic-stats">
+                    <div class="analysis-stat-item">
+                        <div class="analysis-stat-value" id="analysisTotalPulls">0</div>
+                        <div class="analysis-stat-label">总抽卡数</div>
+                    </div>
+                    <div class="analysis-stat-item">
+                        <div class="analysis-stat-value highlight" id="analysisAvgPity">0</div>
+                        <div class="analysis-stat-label">平均出金</div>
+                    </div>
+                </div>
+
+                <!-- 详细统计 -->
+                <div class="analysis-detail-stats">
+                    <div class="analysis-detail-item">
+                        <div class="analysis-detail-label">小保底不歪</div>
+                        <div class="analysis-detail-value" id="analysisNotLostRate">0%</div>
+                    </div>
+                    <div class="analysis-detail-item">
+                        <div class="analysis-detail-label">总五星数</div>
+                        <div class="analysis-detail-value" id="analysisTotalFiveStar">0</div>
+                    </div>
+                    <div class="analysis-detail-item">
+                        <div class="analysis-detail-label">每UP角色需</div>
+                        <div class="analysis-detail-value" id="analysisAvgCharacterPity">0抽</div>
+                    </div>
+                    <div class="analysis-detail-item">
+                        <div class="analysis-detail-label">每UP武器需</div>
+                        <div class="analysis-detail-value" id="analysisAvgWeaponPity">0抽</div>
+                    </div>
+                </div>
+
+                <!-- 五星物品总结 -->
+                <div class="analysis-summary-section">
+                    <div class="analysis-summary-title">
+                        共获得限定五星 <span class="highlight" id="analysisLimitedCount">0</span> 个，常驻五星 <span class="highlight" id="analysisStandardCount">0</span> 个，具体如下：
+                    </div>
+                    <div class="analysis-five-star-list" id="analysisFiveStarList">
+                        <!-- 动态生成五星物品图标 -->
+                    </div>
+                </div>
+
+                <!-- 卡池类型筛选 -->
+                <div class="analysis-pool-tabs">
+                    <button class="analysis-pool-tab active" data-pool="limited-character">角色唤取</button>
+                    <button class="analysis-pool-tab" data-pool="limited-weapon">武器唤取</button>
+                    <button class="analysis-pool-tab" data-pool="standard-character">常驻角色</button>
+                    <button class="analysis-pool-tab" data-pool="standard-weapon">常驻武器</button>
+                </div>
+
+                <!-- 卡池五星记录 -->
+                <div class="analysis-pool-records" id="analysisPoolRecords">
+                    <!-- 动态生成卡池五星记录 -->
+                </div>
+            </div>
         </div>
     </div>
 

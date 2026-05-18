@@ -187,13 +187,29 @@ public class GachaService {
                     return false;
                 })
                 .toList();
-        List<GachaItem> nonUpItems = candidates.stream()
-                .filter(item -> {
-                    if (rarity == 5) return fivestarUp == null || !item.getId().equals(fivestarUp);
-                    if (rarity == 4) return !fourstarUpIds.contains(item.getId());
-                    return true;
-                })
-                .toList();
+
+        // 限定池歪只能歪到常驻分类，不能歪到其他限定物品
+        List<GachaItem> nonUpItems;
+        if (isLimitedPool) {
+            Set<Long> standardCategoryIds = getStandardCategoryIds(rarity);
+            nonUpItems = candidates.stream()
+                    .filter(item -> {
+                        boolean isNotUp;
+                        if (rarity == 5) isNotUp = fivestarUp == null || !item.getId().equals(fivestarUp);
+                        else if (rarity == 4) isNotUp = !fourstarUpIds.contains(item.getId());
+                        else isNotUp = true;
+                        return isNotUp && standardCategoryIds.contains(item.getCategoryId());
+                    })
+                    .toList();
+        } else {
+            nonUpItems = candidates.stream()
+                    .filter(item -> {
+                        if (rarity == 5) return fivestarUp == null || !item.getId().equals(fivestarUp);
+                        if (rarity == 4) return !fourstarUpIds.contains(item.getId());
+                        return true;
+                    })
+                    .toList();
+        }
 
         if (!isLimitedPool || upItems.isEmpty()) {
             return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
@@ -273,6 +289,17 @@ public class GachaService {
                 .filter(s -> !s.isEmpty())
                 .map(Long::parseLong)
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * 获取常驻分类ID集合（限定池歪的时候只能歪到这些分类）
+     * 五星：4=五星常驻角色，5=五星常驻武器
+     * 四星：2=四星角色，3=四星武器
+     */
+    private Set<Long> getStandardCategoryIds(int rarity) {
+        if (rarity == 5) return Set.of(4L, 5L);
+        if (rarity == 4) return Set.of(2L, 3L);
+        return Set.of(1L); // 三星武器
     }
 
     // ========== 保底相关 ==========
@@ -388,5 +415,196 @@ public class GachaService {
         }
 
         return stats;
+    }
+
+    /**
+     * 获取抽卡分析数据
+     */
+    public Map<String, Object> getAnalysis(Long userId) {
+        Map<String, Object> analysis = new HashMap<>();
+
+        // 查询所有抽卡记录
+        LambdaQueryWrapper<GachaRecord> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(GachaRecord::getUserId, userId);
+        wrapper.orderByAsc(GachaRecord::getCreatedAt);
+        List<GachaRecord> allRecords = gachaRecordMapper.selectList(wrapper);
+
+        int totalPulls = allRecords.size();
+        analysis.put("totalPulls", totalPulls);
+
+        if (totalPulls == 0) {
+            analysis.put("title", "初入江湖");
+            analysis.put("titleDesc", "还没有抽卡记录");
+            analysis.put("avgFiveStarPity", 0);
+            analysis.put("totalFiveStar", 0);
+            analysis.put("limitedFiveStar", 0);
+            analysis.put("standardFiveStar", 0);
+            analysis.put("notLostRate", "0%");
+            analysis.put("fiveStarItems", new ArrayList<>());
+            analysis.put("poolStats", new HashMap<>());
+            return analysis;
+        }
+
+        // 筛选五星记录
+        List<GachaRecord> fiveStarRecords = allRecords.stream()
+                .filter(r -> r.getItemRarity() == 5)
+                .toList();
+
+        int totalFiveStar = fiveStarRecords.size();
+        analysis.put("totalFiveStar", totalFiveStar);
+
+        // 计算平均出金抽数
+        double avgFiveStarPity = fiveStarRecords.stream()
+                .mapToInt(GachaRecord::getPityCount)
+                .average()
+                .orElse(0);
+        analysis.put("avgFiveStarPity", Math.round(avgFiveStarPity * 10) / 10.0);
+
+        // 限定五星和常驻五星统计
+        int limitedFiveStar = (int) fiveStarRecords.stream()
+                .filter(r -> "limited-character".equals(r.getPoolType()) || "limited-weapon".equals(r.getPoolType()))
+                .filter(GachaRecord::getIsLimited)
+                .count();
+        int standardFiveStar = totalFiveStar - limitedFiveStar;
+        analysis.put("limitedFiveStar", limitedFiveStar);
+        analysis.put("standardFiveStar", standardFiveStar);
+
+        // 计算小保底不歪概率（限定池中未歪的次数 / 限定池五星总数）
+        long limitedPoolFiveStars = fiveStarRecords.stream()
+                .filter(r -> "limited-character".equals(r.getPoolType()) || "limited-weapon".equals(r.getPoolType()))
+                .count();
+        long notLostCount = fiveStarRecords.stream()
+                .filter(r -> "limited-character".equals(r.getPoolType()) || "limited-weapon".equals(r.getPoolType()))
+                .filter(GachaRecord::getIsLimited)
+                .count();
+        double notLostRate = limitedPoolFiveStars > 0 ? (notLostCount * 100.0 / limitedPoolFiveStars) : 0;
+        analysis.put("notLostRate", String.format("%.1f%%", notLostRate));
+
+        // 计算每UP角色/武器平均抽数
+        Map<String, Object> poolStats = new HashMap<>();
+
+        // 角色池统计
+        List<GachaRecord> characterPoolRecords = fiveStarRecords.stream()
+                .filter(r -> "limited-character".equals(r.getPoolType()))
+                .toList();
+        if (!characterPoolRecords.isEmpty()) {
+            double avgCharacterPity = characterPoolRecords.stream()
+                    .mapToInt(GachaRecord::getPityCount)
+                    .average()
+                    .orElse(0);
+            poolStats.put("avgCharacterPity", Math.round(avgCharacterPity * 10) / 10.0);
+        } else {
+            poolStats.put("avgCharacterPity", 0);
+        }
+
+        // 武器池统计
+        List<GachaRecord> weaponPoolRecords = fiveStarRecords.stream()
+                .filter(r -> "limited-weapon".equals(r.getPoolType()))
+                .toList();
+        if (!weaponPoolRecords.isEmpty()) {
+            double avgWeaponPity = weaponPoolRecords.stream()
+                    .mapToInt(GachaRecord::getPityCount)
+                    .average()
+                    .orElse(0);
+            poolStats.put("avgWeaponPity", Math.round(avgWeaponPity * 10) / 10.0);
+        } else {
+            poolStats.put("avgWeaponPity", 0);
+        }
+
+        analysis.put("poolStats", poolStats);
+
+        // 获取所有五星物品信息（带图标）
+        List<Map<String, Object>> fiveStarItems = new ArrayList<>();
+        Map<String, Integer> itemCountMap = new HashMap<>();
+
+        for (GachaRecord record : fiveStarRecords) {
+            String itemName = record.getItemName();
+            itemCountMap.merge(itemName, 1, Integer::sum);
+        }
+
+        // 查询物品信息
+        LambdaQueryWrapper<GachaItem> itemWrapper = new LambdaQueryWrapper<>();
+        itemWrapper.in(GachaItem::getRarity, 5);
+        List<GachaItem> allFiveStarItems = gachaItemMapper.selectList(itemWrapper);
+
+        // 按记录时间倒序分组（最新的在前）
+        Map<String, GachaRecord> latestRecords = new HashMap<>();
+        for (GachaRecord record : fiveStarRecords) {
+            latestRecords.putIfAbsent(record.getItemName(), record);
+        }
+
+        // 构建五星物品列表（按记录时间倒序）
+        Set<String> addedItems = new HashSet<>();
+        for (GachaRecord record : fiveStarRecords) {
+            String itemName = record.getItemName();
+            if (addedItems.contains(itemName)) continue;
+            addedItems.add(itemName);
+
+            Map<String, Object> itemInfo = new HashMap<>();
+            itemInfo.put("name", itemName);
+            itemInfo.put("count", itemCountMap.get(itemName));
+            itemInfo.put("pityCount", record.getPityCount());
+            itemInfo.put("isLimited", record.getIsLimited());
+            itemInfo.put("poolType", record.getPoolType());
+            itemInfo.put("itemType", record.getItemType());
+
+            // 查找图标
+            String imageUrl = null;
+            for (GachaItem item : allFiveStarItems) {
+                if (item.getName().equals(itemName)) {
+                    imageUrl = item.getImageUrl();
+                    break;
+                }
+            }
+            itemInfo.put("imageUrl", imageUrl);
+
+            fiveStarItems.add(itemInfo);
+        }
+
+        analysis.put("fiveStarItems", fiveStarItems);
+
+        // 按卡池类型分组统计
+        Map<String, List<Map<String, Object>>> poolGroupedItems = new HashMap<>();
+        String[] poolTypes = {"limited-character", "limited-weapon", "standard-character", "standard-weapon"};
+        String[] poolNames = {"角色唤取", "武器唤取", "常驻角色", "常驻武器"};
+
+        for (int i = 0; i < poolTypes.length; i++) {
+            String poolType = poolTypes[i];
+            List<Map<String, Object>> poolItems = fiveStarItems.stream()
+                    .filter(item -> poolType.equals(item.get("poolType")))
+                    .toList();
+            poolGroupedItems.put(poolTypes[i], poolItems);
+        }
+        analysis.put("poolGroupedItems", poolGroupedItems);
+
+        // 根据平均出金抽数计算称号
+        String title;
+        String titleDesc;
+        if (avgFiveStarPity <= 30) {
+            title = "万里挑一至尊欧皇";
+            titleDesc = "你的运气简直逆天！";
+        } else if (avgFiveStarPity <= 40) {
+            title = "天选之子";
+            titleDesc = "欧皇附体，运气极佳！";
+        } else if (avgFiveStarPity <= 50) {
+            title = "运气极佳";
+            titleDesc = "你的运气很不错哦！";
+        } else if (avgFiveStarPity <= 60) {
+            title = "中规中矩";
+            titleDesc = "运气一般般，继续努力！";
+        } else if (avgFiveStarPity <= 70) {
+            title = "有点非酋";
+            titleDesc = "运气不太好，下次一定！";
+        } else if (avgFiveStarPity <= 80) {
+            title = "非酋本酋";
+            titleDesc = "你的运气需要提升了！";
+        } else {
+            title = "究极非酋";
+            titleDesc = "你就是传说中的非酋之王！";
+        }
+        analysis.put("title", title);
+        analysis.put("titleDesc", titleDesc);
+
+        return analysis;
     }
 }

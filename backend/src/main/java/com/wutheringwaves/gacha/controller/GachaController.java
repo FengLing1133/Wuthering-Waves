@@ -147,8 +147,8 @@ public class GachaController {
             poolData.put("endTime", pool.getEndTime());
             poolData.put("sidebarOrder", pool.getSidebarOrder());
 
-            // 关联的四星头像
-            poolData.put("fourStarAvatars", adminService.getPoolFourStarAvatars(pool.getId()));
+            // 关联的四星UP物品
+            poolData.put("fourStarAvatars", adminService.getPoolFourStarItems(pool.getId()));
 
             visiblePools.add(poolData);
         }
@@ -185,7 +185,7 @@ public class GachaController {
         poolData.put("softPityIncrement", pool.getSoftPityIncrement());
         poolData.put("startTime", pool.getStartTime());
         poolData.put("endTime", pool.getEndTime());
-        poolData.put("fourStarAvatars", adminService.getPoolFourStarAvatars(pool.getId()));
+        poolData.put("fourStarAvatars", adminService.getPoolFourStarItems(pool.getId()));
 
         return ResponseEntity.ok(Map.of("success", true, "pool", poolData));
     }
@@ -250,5 +250,14 @@ public class GachaController {
 
         userService.updateSelectedWeaponUp(userId, weaponId);
         return ResponseEntity.ok(Map.of("success", true, "message", "UP武器已更新"));
+    }
+
+    // ========== 抽卡分析 ==========
+
+    @GetMapping("/analysis")
+    public ResponseEntity<Map<String, Object>> getAnalysis(Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        Map<String, Object> analysis = gachaService.getAnalysis(userId);
+        return ResponseEntity.ok(Map.of("success", true, "analysis", analysis));
     }
 }

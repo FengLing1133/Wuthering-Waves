@@ -190,7 +190,7 @@ body {
     position: fixed;
     top: 50px;
     left: 0;
-    bottom: 0;
+    bottom: 100px;
     width: 210px;
     display: flex;
     flex-direction: column;
@@ -262,6 +262,7 @@ body {
     right: 0;
     bottom: 0;
     overflow: hidden;
+    z-index: 1;
 }
 
 /* 卡池背景图（全屏） */
@@ -1084,4 +1085,643 @@ body {
     .history-stats {
         grid-template-columns: repeat(2, 1fr);
     }
+}
+
+/* ========== 历史记录弹窗 ========== */
+.history-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.history-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+}
+
+.history-modal-content {
+    position: relative;
+    width: 700px;
+    max-width: 90vw;
+    max-height: 80vh;
+    background: linear-gradient(180deg, rgba(245, 240, 230, 0.98) 0%, rgba(240, 235, 225, 0.95) 100%);
+    border-radius: 8px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(200, 180, 150, 0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.history-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid rgba(180, 160, 130, 0.3);
+}
+
+.history-modal-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #2a2520;
+    letter-spacing: 2px;
+    margin: 0;
+}
+
+.history-modal-close {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    color: #666;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.history-modal-close:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: #333;
+}
+
+.history-modal-body {
+    padding: 20px 24px 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.history-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.history-filter-label {
+    font-size: 14px;
+    color: #4a4540;
+    font-weight: 500;
+    min-width: 70px;
+}
+
+.history-select-wrapper {
+    position: relative;
+    flex: 1;
+    max-width: 300px;
+}
+
+.history-select {
+    width: 100%;
+    padding: 10px 36px 10px 14px;
+    font-size: 14px;
+    color: #2a2520;
+    background: #fff;
+    border: 1px solid rgba(180, 160, 130, 0.4);
+    border-radius: 6px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.history-select:hover {
+    border-color: rgba(150, 130, 100, 0.6);
+}
+
+.history-select:focus {
+    border-color: #8a7a5a;
+    box-shadow: 0 0 0 2px rgba(138, 122, 90, 0.15);
+}
+
+.history-select-arrow {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888;
+    font-size: 12px;
+    pointer-events: none;
+}
+
+.history-table-wrapper {
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid rgba(180, 160, 130, 0.3);
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.history-table th,
+.history-table td {
+    padding: 14px 16px;
+    text-align: left;
+    font-size: 14px;
+}
+
+.history-table th {
+    background: rgba(245, 240, 232, 0.9);
+    color: #5a5550;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(180, 160, 130, 0.3);
+}
+
+.history-table td {
+    color: #3a3530;
+    border-bottom: 1px solid rgba(200, 190, 170, 0.3);
+}
+
+.history-table tr:last-child td {
+    border-bottom: none;
+}
+
+.history-table tr:hover td {
+    background: rgba(245, 242, 238, 0.8);
+}
+
+.history-table .item-type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.history-table .item-type-badge.character {
+    background: rgba(74, 158, 255, 0.15);
+    color: #3a7a2a;
+}
+
+.history-table .item-type-badge.weapon {
+    background: rgba(154, 106, 255, 0.15);
+    color: #6a5a8a;
+}
+
+.history-table .item-name {
+    color: #2a2520;
+    font-weight: 500;
+}
+
+.history-table .item-name.five-star {
+    color: #c49a30;
+}
+
+.history-table .item-name.four-star {
+    color: #7a5ab0;
+}
+
+.history-table .time-cell {
+    color: #6a6560;
+    font-size: 13px;
+}
+
+.history-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.page-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid rgba(180, 160, 130, 0.4);
+    border-radius: 4px;
+    color: #5a5550;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+    border-color: #8a7a5a;
+    background: rgba(138, 122, 90, 0.1);
+}
+
+.page-btn.active {
+    background: #4a9eff;
+    border-color: #4a9eff;
+    color: #fff;
+}
+
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.page-btn.nav-btn {
+    font-size: 12px;
+}
+
+.page-info {
+    color: #6a6560;
+    font-size: 13px;
+    margin: 0 8px;
+}
+
+.history-footer-tip {
+    text-align: center;
+    font-size: 12px;
+    color: #8a8580;
+    line-height: 1.6;
+    padding-top: 8px;
+}
+
+.history-empty-tip {
+    text-align: center;
+    padding: 40px 20px;
+    color: #8a8580;
+    font-size: 14px;
+}
+
+/* ========== 抽卡分析弹窗 ========== */
+.analysis-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.analysis-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+}
+
+.analysis-modal-content {
+    position: relative;
+    width: 800px;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: linear-gradient(180deg, rgba(245, 240, 230, 0.98) 0%, rgba(240, 235, 225, 0.95) 100%);
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(200, 180, 150, 0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.analysis-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid rgba(180, 160, 130, 0.3);
+}
+
+.analysis-modal-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #2a2520;
+    letter-spacing: 2px;
+    margin: 0;
+}
+
+.analysis-modal-close {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    color: #666;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.analysis-modal-close:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: #333;
+}
+
+.analysis-modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* 称号区域 */
+.analysis-title-section {
+    text-align: center;
+    padding: 20px 0;
+    margin-bottom: 24px;
+    background: linear-gradient(135deg, rgba(212, 168, 67, 0.1), rgba(240, 208, 96, 0.05));
+    border-radius: 8px;
+    border: 1px solid rgba(212, 168, 67, 0.2);
+}
+
+.analysis-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: #c49a30;
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+    text-shadow: 0 2px 10px rgba(196, 154, 48, 0.3);
+}
+
+.analysis-title-desc {
+    font-size: 14px;
+    color: #6a6560;
+}
+
+/* 基础统计 */
+.analysis-basic-stats {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    margin-bottom: 24px;
+}
+
+.analysis-stat-item {
+    text-align: center;
+}
+
+.analysis-stat-value {
+    font-size: 36px;
+    font-weight: 600;
+    color: #2a2520;
+    margin-bottom: 4px;
+}
+
+.analysis-stat-value.highlight {
+    color: #c49a30;
+}
+
+.analysis-stat-label {
+    font-size: 14px;
+    color: #6a6560;
+}
+
+/* 详细统计 */
+.analysis-detail-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid rgba(180, 160, 130, 0.2);
+}
+
+.analysis-detail-item {
+    text-align: center;
+}
+
+.analysis-detail-label {
+    font-size: 13px;
+    color: #6a6560;
+    margin-bottom: 6px;
+}
+
+.analysis-detail-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2a2520;
+}
+
+/* 五星物品总结 */
+.analysis-summary-section {
+    margin-bottom: 24px;
+}
+
+.analysis-summary-title {
+    font-size: 14px;
+    color: #4a4540;
+    margin-bottom: 16px;
+}
+
+.analysis-summary-title .highlight {
+    color: #c49a30;
+    font-weight: 600;
+}
+
+.analysis-five-star-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid rgba(180, 160, 130, 0.2);
+}
+
+.analysis-five-star-item {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid #c49a30;
+    box-shadow: 0 2px 8px rgba(196, 154, 48, 0.3);
+}
+
+.analysis-five-star-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.analysis-five-star-item .count-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: rgba(196, 154, 48, 0.9);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 4px;
+    min-width: 16px;
+    text-align: center;
+}
+
+.analysis-five-star-item.no-image {
+    background: linear-gradient(135deg, #f0d060, #c49a30);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* 卡池类型筛选 */
+.analysis-pool-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(180, 160, 130, 0.3);
+    padding-bottom: 12px;
+}
+
+.analysis-pool-tab {
+    flex: 1;
+    padding: 10px 16px;
+    background: transparent;
+    border: 1px solid rgba(180, 160, 130, 0.3);
+    border-radius: 6px;
+    color: #6a6560;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.analysis-pool-tab:hover {
+    background: rgba(196, 154, 48, 0.1);
+    border-color: rgba(196, 154, 48, 0.3);
+}
+
+.analysis-pool-tab.active {
+    background: #c49a30;
+    border-color: #c49a30;
+    color: #fff;
+}
+
+/* 卡池五星记录 */
+.analysis-pool-records {
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid rgba(180, 160, 130, 0.2);
+    overflow: hidden;
+}
+
+.analysis-pool-record-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(180, 160, 130, 0.15);
+}
+
+.analysis-pool-record-item:last-child {
+    border-bottom: none;
+}
+
+.analysis-pool-record-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-right: 12px;
+    border: 2px solid #c49a30;
+    flex-shrink: 0;
+}
+
+.analysis-pool-record-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.analysis-pool-record-icon.no-image {
+    background: linear-gradient(135deg, #f0d060, #c49a30);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.analysis-pool-record-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.analysis-pool-record-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #2a2520;
+    margin-bottom: 4px;
+}
+
+.analysis-pool-record-name.five-star {
+    color: #c49a30;
+}
+
+.analysis-pool-record-bar-container {
+    flex: 1;
+    max-width: 300px;
+    margin: 0 16px;
+}
+
+.analysis-pool-record-bar {
+    height: 24px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #fff;
+    transition: width 0.3s ease;
+}
+
+.analysis-pool-record-bar.green {
+    background: linear-gradient(90deg, #4caf50, #66bb6a);
+}
+
+.analysis-pool-record-bar.yellow {
+    background: linear-gradient(90deg, #ffc107, #ffca28);
+}
+
+.analysis-pool-record-pity {
+    font-size: 13px;
+    color: #6a6560;
+    min-width: 40px;
+    text-align: right;
+}
+
+.analysis-pool-record-lost {
+    font-size: 12px;
+    color: #ff4a6a;
+    font-weight: 500;
+    margin-left: 12px;
+    padding: 2px 8px;
+    background: rgba(255, 74, 106, 0.1);
+    border-radius: 4px;
+}
+
+.analysis-pool-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #8a8580;
+    font-size: 14px;
 }

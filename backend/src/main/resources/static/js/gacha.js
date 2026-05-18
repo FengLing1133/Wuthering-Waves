@@ -4,6 +4,14 @@ const Gacha = {
     currentPoolData: null,
     isPulling: false,
     poolList: [],
+    // 历史记录状态
+    historyCurrentPage: 1,
+    historyPageSize: 5,
+    historyTotalPages: 1,
+    historyPoolType: 'limited-character',
+    // 抽卡分析状态
+    analysisData: null,
+    currentAnalysisPool: 'limited-character',
 
     // 初始化
     async init() {
@@ -66,9 +74,6 @@ const Gacha = {
         document.querySelectorAll('.banner-slot').forEach(slot => {
             slot.classList.toggle('active', parseInt(slot.dataset.poolId) === poolId);
         });
-
-        // 隐藏历史记录，显示主界面
-        document.getElementById('historyView').classList.add('hidden');
 
         // 获取卡池详情
         try {
@@ -137,7 +142,7 @@ const Gacha = {
             rateUpSection.style.display = '';
             rateUpList.innerHTML = pool.fourStarAvatars.map(avatar => `
                 <div class="rate-up-item">
-                    <div class="rate-up-avatar" style="background-image: url('${avatar.avatarUrl}'); background-size: cover; background-position: center top;"></div>
+                    <div class="rate-up-avatar" style="background-image: url('${avatar.imageUrl}'); background-size: cover; background-position: center top;"></div>
                 </div>
             `).join('');
         }
@@ -198,6 +203,11 @@ const Gacha = {
             this.showHistory();
         });
 
+        // 背包按钮（抽卡分析）
+        document.querySelector('.top-icon-btn[title="背包"]').addEventListener('click', () => {
+            this.showAnalysis();
+        });
+
         // 更换UP武器按钮
         document.getElementById('changeUpBtn').addEventListener('click', () => {
             this.showWeaponSelectModal();
@@ -206,6 +216,43 @@ const Gacha = {
         // 关闭武器选择弹窗
         document.getElementById('closeWeaponSelectBtn').addEventListener('click', () => {
             document.getElementById('weaponSelectModal').classList.add('hidden');
+        });
+
+        // 关闭历史记录弹窗
+        document.getElementById('closeHistoryBtn').addEventListener('click', () => {
+            this.hideHistory();
+        });
+
+        // 点击遮罩关闭历史记录弹窗
+        document.getElementById('historyModalOverlay').addEventListener('click', () => {
+            this.hideHistory();
+        });
+
+        // 历史记录池类型筛选
+        document.getElementById('historyPoolFilter').addEventListener('change', (e) => {
+            this.historyPoolType = e.target.value;
+            this.historyCurrentPage = 1;
+            this.loadHistory();
+        });
+
+        // 关闭抽卡分析弹窗
+        document.getElementById('closeAnalysisBtn').addEventListener('click', () => {
+            this.hideAnalysis();
+        });
+
+        // 点击遮罩关闭抽卡分析弹窗
+        document.getElementById('analysisModalOverlay').addEventListener('click', () => {
+            this.hideAnalysis();
+        });
+
+        // 抽卡分析卡池类型切换
+        document.querySelectorAll('.analysis-pool-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.analysis-pool-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                this.currentAnalysisPool = tab.dataset.pool;
+                this.renderAnalysisPoolRecords();
+            });
         });
     },
 
@@ -373,9 +420,113 @@ const Gacha = {
         document.getElementById('resultView').classList.add('hidden');
     },
 
-    // 显示历史记录
+    // 显示历史记录弹窗
     showHistory() {
-        document.getElementById('historyView').classList.remove('hidden');
+        this.historyCurrentPage = 1;
+        this.loadHistory();
+        document.getElementById('historyModal').classList.remove('hidden');
+    },
+
+    // 隐藏历史记录弹窗
+    hideHistory() {
+        document.getElementById('historyModal').classList.add('hidden');
+    },
+
+    // 加载历史记录
+    async loadHistory() {
+        try {
+            const result = await API.getHistory(this.historyPoolType, this.historyCurrentPage, this.historyPageSize);
+            if (result.success) {
+                this.renderHistoryTable(result.records);
+                this.renderHistoryPagination(result.total);
+            }
+        } catch (error) {
+            console.error('加载历史记录失败:', error);
+        }
+    },
+
+    // 渲染历史记录表格
+    renderHistoryTable(records) {
+        const tbody = document.getElementById('historyTableBody');
+        if (!records || records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="history-empty-tip">暂无唤取记录</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = records.map(record => {
+            const typeText = record.itemType === 'character' ? '角色' : '武器';
+            const typeClass = record.itemType === 'character' ? 'character' : 'weapon';
+            const rarityClass = record.itemRarity === 5 ? 'five-star' : record.itemRarity === 4 ? 'four-star' : '';
+            const time = this.formatHistoryTime(record.createdAt);
+
+            return `<tr>
+                <td><span class="item-type-badge ${typeClass}">${typeText}</span></td>
+                <td><span class="item-name ${rarityClass}">${record.itemName}</span></td>
+                <td>1</td>
+                <td class="time-cell">${time}</td>
+            </tr>`;
+        }).join('');
+    },
+
+    // 格式化历史记录时间
+    formatHistoryTime(timeStr) {
+        if (!timeStr) return '--';
+        const date = new Date(timeStr);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    },
+
+    // 渲染分页
+    renderHistoryPagination(total) {
+        const container = document.getElementById('historyPagination');
+        this.historyTotalPages = Math.ceil(total / this.historyPageSize) || 1;
+
+        if (this.historyTotalPages <= 1) {
+            container.innerHTML = `<span class="page-info">1 / 1</span>`;
+            return;
+        }
+
+        let html = '';
+
+        // 上一页按钮
+        html += `<button class="page-btn nav-btn" ${this.historyCurrentPage <= 1 ? 'disabled' : ''} data-page="${this.historyCurrentPage - 1}">«</button>`;
+
+        // 页码按钮
+        const maxVisible = 5;
+        let startPage = Math.max(1, this.historyCurrentPage - Math.floor(maxVisible / 2));
+        let endPage = Math.min(this.historyTotalPages, startPage + maxVisible - 1);
+
+        if (endPage - startPage + 1 < maxVisible) {
+            startPage = Math.max(1, endPage - maxVisible + 1);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<button class="page-btn ${i === this.historyCurrentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+        }
+
+        // 下一页按钮
+        html += `<button class="page-btn nav-btn" ${this.historyCurrentPage >= this.historyTotalPages ? 'disabled' : ''} data-page="${this.historyCurrentPage + 1}">»</button>`;
+
+        // 页码信息
+        html += `<span class="page-info">${this.historyCurrentPage} / ${this.historyTotalPages}</span>`;
+
+        container.innerHTML = html;
+
+        // 绑定分页点击事件
+        container.querySelectorAll('.page-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const page = parseInt(btn.dataset.page);
+                if (page >= 1 && page <= this.historyTotalPages) {
+                    this.historyCurrentPage = page;
+                    this.loadHistory();
+                }
+            });
+        });
     },
 
     // 更新货币显示
@@ -443,5 +594,137 @@ const Gacha = {
             console.error('获取武器列表失败:', error);
             alert('获取武器列表失败');
         }
+    },
+
+    // ========== 抽卡分析 ==========
+
+    // 显示抽卡分析弹窗
+    async showAnalysis() {
+        document.getElementById('analysisModal').classList.remove('hidden');
+        await this.loadAnalysisData();
+    },
+
+    // 隐藏抽卡分析弹窗
+    hideAnalysis() {
+        document.getElementById('analysisModal').classList.add('hidden');
+    },
+
+    // 加载抽卡分析数据
+    async loadAnalysisData() {
+        try {
+            const result = await API.getAnalysis();
+            if (result.success) {
+                this.analysisData = result.analysis;
+                this.renderAnalysis();
+            }
+        } catch (error) {
+            console.error('加载抽卡分析数据失败:', error);
+        }
+    },
+
+    // 渲染抽卡分析
+    renderAnalysis() {
+        const data = this.analysisData;
+        if (!data) return;
+
+        // 渲染称号
+        document.getElementById('analysisTitle').textContent = data.title || '初入江湖';
+        document.getElementById('analysisTitleDesc').textContent = data.titleDesc || '';
+
+        // 渲染基础统计
+        document.getElementById('analysisTotalPulls').textContent = data.totalPulls || 0;
+        document.getElementById('analysisAvgPity').textContent = (data.avgFiveStarPity || 0) + '抽';
+
+        // 渲染详细统计
+        document.getElementById('analysisNotLostRate').textContent = data.notLostRate || '0%';
+        document.getElementById('analysisTotalFiveStar').textContent = data.totalFiveStar || 0;
+
+        const poolStats = data.poolStats || {};
+        document.getElementById('analysisAvgCharacterPity').textContent = (poolStats.avgCharacterPity || 0) + '抽';
+        document.getElementById('analysisAvgWeaponPity').textContent = (poolStats.avgWeaponPity || 0) + '抽';
+
+        // 渲染五星物品总结
+        document.getElementById('analysisLimitedCount').textContent = data.limitedFiveStar || 0;
+        document.getElementById('analysisStandardCount').textContent = data.standardFiveStar || 0;
+        this.renderFiveStarItems(data.fiveStarItems || []);
+
+        // 渲染卡池记录
+        this.renderAnalysisPoolRecords();
+    },
+
+    // 渲染五星物品图标列表
+    renderFiveStarItems(items) {
+        const container = document.getElementById('analysisFiveStarList');
+        container.innerHTML = items.map(item => {
+            const imageUrl = item.imageUrl;
+            const count = item.count || 1;
+            const showCount = count > 1;
+
+            if (imageUrl) {
+                return `<div class="analysis-five-star-item">
+                    <img src="${imageUrl}" alt="${item.name}">
+                    ${showCount ? `<div class="count-badge">${count}</div>` : ''}
+                </div>`;
+            } else {
+                return `<div class="analysis-five-star-item no-image">
+                    <span>${item.name.substring(0, 2)}</span>
+                    ${showCount ? `<div class="count-badge">${count}</div>` : ''}
+                </div>`;
+            }
+        }).join('');
+    },
+
+    // 渲染卡池五星记录
+    renderAnalysisPoolRecords() {
+        const data = this.analysisData;
+        if (!data || !data.poolGroupedItems) return;
+
+        const poolItems = data.poolGroupedItems[this.currentAnalysisPool] || [];
+        const container = document.getElementById('analysisPoolRecords');
+
+        if (poolItems.length === 0) {
+            container.innerHTML = '<div class="analysis-pool-empty">暂无五星记录</div>';
+            return;
+        }
+
+        // 按抽数排序，新的在上面
+        const sortedItems = [...poolItems].sort((a, b) => b.pityCount - a.pityCount);
+
+        container.innerHTML = sortedItems.map(item => {
+            const imageUrl = item.imageUrl;
+            const pityCount = item.pityCount || 0;
+            const isLimited = item.isLimited;
+            const barWidth = Math.min((pityCount / 80) * 100, 100);
+            const barColor = pityCount < 70 ? 'green' : 'yellow';
+
+            let iconHtml;
+            if (imageUrl) {
+                iconHtml = `<div class="analysis-pool-record-icon">
+                    <img src="${imageUrl}" alt="${item.name}">
+                </div>`;
+            } else {
+                iconHtml = `<div class="analysis-pool-record-icon no-image">
+                    <span>${item.name.substring(0, 2)}</span>
+                </div>`;
+            }
+
+            let lostHtml = '';
+            if (item.poolType && item.poolType.startsWith('limited-') && !isLimited) {
+                lostHtml = '<span class="analysis-pool-record-lost">歪</span>';
+            }
+
+            return `<div class="analysis-pool-record-item">
+                ${iconHtml}
+                <div class="analysis-pool-record-info">
+                    <div class="analysis-pool-record-name five-star">${item.name}</div>
+                </div>
+                <div class="analysis-pool-record-bar-container">
+                    <div class="analysis-pool-record-bar ${barColor}" style="width: ${barWidth}%">
+                        ${pityCount}抽
+                    </div>
+                </div>
+                ${lostHtml}
+            </div>`;
+        }).join('');
     }
 };

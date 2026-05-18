@@ -2,8 +2,6 @@
 DROP TABLE IF EXISTS gacha_records;
 DROP TABLE IF EXISTS gacha_pity;
 DROP TABLE IF EXISTS pool_category;
-DROP TABLE IF EXISTS pool_four_star;
-DROP TABLE IF EXISTS four_star_avatars;
 DROP TABLE IF EXISTS gacha_items;
 DROP TABLE IF EXISTS item_category;
 DROP TABLE IF EXISTS gacha_pool;
@@ -72,23 +70,6 @@ CREATE TABLE pool_category (
     pool_id BIGINT NOT NULL,
     category_id BIGINT NOT NULL,
     UNIQUE (pool_id, category_id)
-);
-
--- 四星角色头像表
-CREATE TABLE IF NOT EXISTS four_star_avatars (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    avatar_url VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- 卡池-四星头像关联表
-CREATE TABLE IF NOT EXISTS pool_four_star (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    pool_id BIGINT NOT NULL,
-    avatar_id BIGINT NOT NULL,
-    sort_order INT DEFAULT 0,
-    UNIQUE (pool_id, avatar_id)
 );
 
 -- 统一保底表

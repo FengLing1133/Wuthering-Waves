@@ -81,7 +81,9 @@ public class TestDataFactory {
     public static List<GachaItem> createCharacterPoolItems() {
         List<GachaItem> items = new ArrayList<>();
         items.add(createItem(1001L, 5, "限定五星角色", "character", 7L));
-        items.add(createItem(1002L, 5, "常驻五星角色", "character", 4L));
+        items.add(createItem(1002L, 5, "常驻五星角色A", "character", 4L));
+        items.add(createItem(1003L, 5, "常驻五星角色B", "character", 4L));
+        items.add(createItem(1004L, 5, "常驻五星角色C", "character", 4L));
         items.add(createItem(2001L, 4, "四星角色A", "character", 2L));
         items.add(createItem(2002L, 4, "四星角色B", "character", 2L));
         items.add(createItem(2003L, 4, "四星武器A", "weapon", 3L));

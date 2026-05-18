@@ -219,8 +219,8 @@
             <label><span>卡池描述</span><textarea id="poolDesc" placeholder="卡池描述信息"></textarea></label>
             <label><span>五星基础概率 (%)</span><input type="number" id="poolFiveRate" step="0.01" value="0.8"></label>
             <label><span>四星基础概率 (%)</span><input type="number" id="poolFourRate" step="0.01" value="6.0"></label>
-            <label><span>硬保底抽数</span><input type="number" id="poolMaxPity" value="90"></label>
-            <label><span>软保底起始抽数</span><input type="number" id="poolSoftPity" value="75"></label>
+            <label><span>硬保底抽数</span><input type="number" id="poolMaxPity" value="80"></label>
+            <label><span>软保底起始抽数</span><input type="number" id="poolSoftPity" value="55"></label>
             <label><span>软保底每抽递增 (%)</span><input type="number" id="poolSoftInc" step="0.01" value="6.0"></label>
 
             <!-- 卡池物品配置（分类选择 + UP指定） -->
@@ -282,18 +282,6 @@
                 </div>
             </label>
 
-            <!-- 四星头像选择 -->
-            <label>
-                <span>概率提升四星头像（最多选择3个）</span>
-                <div id="avatarSelectGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;margin-top:8px;max-height:200px;overflow-y:auto;padding:8px;background:var(--bg-primary);border-radius:6px;border:1px solid var(--border-subtle);">
-                    <div style="color:var(--text-dim);font-size:13px;grid-column:1/-1;">加载中...</div>
-                </div>
-                <div id="selectedAvatars" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;"></div>
-            </label>
-            <div style="margin-bottom:12px;">
-                <button class="btn btn-sm btn-primary" onclick="openNewAvatarModal()" type="button">+ 新增头像</button>
-            </div>
-
             <div class="modal-actions">
                 <button class="btn" style="background:rgba(255,255,255,0.1);color:var(--text-secondary);" onclick="closePoolModal()">取消</button>
                 <button class="btn btn-gold" onclick="savePool()">保存</button>
@@ -336,26 +324,6 @@
             </div>
             <div class="modal-actions">
                 <button class="btn" style="background:rgba(255,255,255,0.1);color:var(--text-secondary);" onclick="closeRecordsModal()">关闭</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 新增四星头像弹窗 -->
-    <div class="modal-overlay" id="newAvatarModal">
-        <div class="modal" style="width:400px;">
-            <h2>新增四星头像</h2>
-            <label><span>角色名称</span><input type="text" id="newAvatarName" placeholder="如：白芷"></label>
-            <label>
-                <span>头像图片</span>
-                <div class="upload-area" onclick="document.getElementById('newAvatarImageInput').click()">
-                    <input type="file" id="newAvatarImageInput" accept="image/*" onchange="previewNewAvatar(this)">
-                    <p style="color:var(--text-dim);font-size:13px;">点击上传头像</p>
-                    <img id="newAvatarPreview" class="upload-preview" style="display:none;">
-                </div>
-            </label>
-            <div class="modal-actions">
-                <button class="btn" style="background:rgba(255,255,255,0.1);color:var(--text-secondary);" onclick="closeNewAvatarModal()">取消</button>
-                <button class="btn btn-gold" onclick="saveNewAvatar()">保存</button>
             </div>
         </div>
     </div>
@@ -602,114 +570,6 @@
 
         function closeRecordsModal() { document.getElementById('recordsModal').classList.remove('active'); }
 
-        // ========== 四星头像管理 ==========
-        let allAvatars = [];
-        let selectedAvatarIds = [];
-
-        async function loadAvatars() {
-            try {
-                const res = await API.getAvatars();
-                if (res.success) {
-                    allAvatars = res.avatars;
-                    renderAvatarGrid();
-                }
-            } catch (e) { console.error('加载头像失败:', e); }
-        }
-
-        function renderAvatarGrid() {
-            const grid = document.getElementById('avatarSelectGrid');
-            if (allAvatars.length === 0) {
-                grid.innerHTML = '<div style="color:var(--text-dim);font-size:13px;grid-column:1/-1;">暂无头像，请先新增</div>';
-                return;
-            }
-            grid.innerHTML = allAvatars.map(a => {
-                const isSelected = selectedAvatarIds.includes(a.id);
-                return `<div class="avatar-select-item" data-id="${a.id}" onclick="toggleAvatar(${a.id})"
-                    style="cursor:pointer;border:2px solid ${isSelected ? 'var(--accent-gold)' : 'var(--border-subtle)'};border-radius:8px;padding:4px;text-align:center;transition:all 0.2s;${isSelected ? 'background:rgba(255,215,0,0.1);' : ''}">
-                    <img src="${a.avatarUrl}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><rect width=%2260%22 height=%2260%22 fill=%22%23333%22/><text x=%2230%22 y=%2235%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2212%22>?</text></svg>'">
-                    <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.name}</div>
-                </div>`;
-            }).join('');
-        }
-
-        function toggleAvatar(id) {
-            const idx = selectedAvatarIds.indexOf(id);
-            if (idx >= 0) {
-                selectedAvatarIds.splice(idx, 1);
-            } else {
-                if (selectedAvatarIds.length >= 3) {
-                    alert('最多选择3个四星头像');
-                    return;
-                }
-                selectedAvatarIds.push(id);
-            }
-            renderAvatarGrid();
-            renderSelectedAvatars();
-        }
-
-        function renderSelectedAvatars() {
-            const container = document.getElementById('selectedAvatars');
-            container.innerHTML = selectedAvatarIds.map(id => {
-                const avatar = allAvatars.find(a => a.id === id);
-                if (!avatar) return '';
-                return `<div style="display:flex;align-items:center;gap:4px;background:var(--bg-card);padding:4px 8px;border-radius:6px;border:1px solid var(--border-active);">
-                    <img src="${avatar.avatarUrl}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">
-                    <span style="font-size:12px;">${avatar.name}</span>
-                    <span onclick="toggleAvatar(${id})" style="cursor:pointer;color:var(--accent-red);margin-left:4px;">×</span>
-                </div>`;
-            }).join('');
-        }
-
-        function openNewAvatarModal() {
-            document.getElementById('newAvatarModal').classList.add('active');
-            document.getElementById('newAvatarName').value = '';
-            document.getElementById('newAvatarPreview').style.display = 'none';
-            document.getElementById('newAvatarImageInput').value = '';
-        }
-
-        function closeNewAvatarModal() {
-            document.getElementById('newAvatarModal').classList.remove('active');
-        }
-
-        function previewNewAvatar(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    const preview = document.getElementById('newAvatarPreview');
-                    preview.src = e.target.result;
-                    preview.style.display = 'block';
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-
-        async function saveNewAvatar() {
-            const name = document.getElementById('newAvatarName').value.trim();
-            if (!name) { alert('请输入角色名称'); return; }
-
-            const fileInput = document.getElementById('newAvatarImageInput');
-            let avatarUrl = '';
-
-            try {
-                if (fileInput.files.length > 0) {
-                    const uploadRes = await API.uploadImage(fileInput.files[0]);
-                    if (uploadRes.success) avatarUrl = uploadRes.imageUrl;
-                    else { alert('图片上传失败'); return; }
-                } else {
-                    alert('请选择头像图片');
-                    return;
-                }
-
-                const res = await API.createAvatar(name, avatarUrl);
-                if (res.success) {
-                    closeNewAvatarModal();
-                    await loadAvatars();
-                } else {
-                    alert(res.message || '创建失败');
-                }
-            } catch (e) { alert('操作失败'); console.error(e); }
-        }
-
         // ========== 卡池物品管理（分类模式） ==========
         let allItems = [];
         let allCategories = [];
@@ -816,8 +676,8 @@
             document.getElementById('poolDesc').value = pool ? (pool.description || '') : '';
             document.getElementById('poolFiveRate').value = pool ? pool.fiveStarRate : 0.8;
             document.getElementById('poolFourRate').value = pool ? pool.fourStarRate : 6.0;
-            document.getElementById('poolMaxPity').value = pool ? pool.maxPity : 90;
-            document.getElementById('poolSoftPity').value = pool ? pool.softPityStart : 75;
+            document.getElementById('poolMaxPity').value = pool ? pool.maxPity : 80;
+            document.getElementById('poolSoftPity').value = pool ? pool.softPityStart : 55;
             document.getElementById('poolSoftInc').value = pool ? pool.softPityIncrement : 6.0;
 
             // 新字段：时间（使用 flatpickr）
@@ -844,15 +704,6 @@
             else { thumbPreview.style.display = 'none'; }
             document.getElementById('thumbDeleteBtn').style.display = uploadedThumbUrl ? 'block' : 'none';
 
-            // 四星头像选择
-            selectedAvatarIds = [];
-            loadAvatars();
-            if (pool && pool.id) {
-                loadPoolFourStars(pool.id);
-            } else {
-                renderSelectedAvatars();
-            }
-
             // 物品选择（分类模式）
             selectedCategoryIds = [];
             Promise.all([loadAllItems(), loadCategories()]).then(() => {
@@ -866,17 +717,6 @@
                     updateUpSelectors();
                 }
             });
-        }
-
-        async function loadPoolFourStars(poolId) {
-            try {
-                const res = await API.getPoolFourStars(poolId);
-                if (res.success) {
-                    selectedAvatarIds = res.avatars.map(a => a.id);
-                    renderAvatarGrid();
-                    renderSelectedAvatars();
-                }
-            } catch (e) { console.error(e); }
         }
 
         // 侧栏复选框联动
@@ -970,10 +810,8 @@
                 const res = await API.request(url, { method, body: JSON.stringify(data) });
                 if (res.success) {
                     const poolId = res.pool ? res.pool.id : id;
-                    // 保存四星头像关联
+                    // 保存分类和UP配置
                     if (poolId) {
-                        await API.updatePoolFourStars(poolId, selectedAvatarIds);
-                        // 保存分类和UP配置
                         const fivestarUp = document.getElementById('fivestarUpSelect').value || null;
                         const fourSelect = document.getElementById('fourstarUpSelect');
                         const fourstarUpIds = Array.from(fourSelect.selectedOptions).map(o => parseInt(o.value));

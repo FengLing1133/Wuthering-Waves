@@ -126,45 +126,17 @@ const API = {
         });
     },
 
+    // 获取抽卡分析数据
+    async getAnalysis() {
+        return this.request('/gacha/analysis');
+    },
+
     // ========== 管理员接口 ==========
-
-    // 获取所有四星头像
-    async getAvatars() {
-        return this.request('/admin/avatars');
-    },
-
-    // 创建四星头像
-    async createAvatar(name, avatarUrl) {
-        return this.request('/admin/avatars', {
-            method: 'POST',
-            body: JSON.stringify({ name, avatarUrl })
-        });
-    },
-
-    // 删除四星头像
-    async deleteAvatar(id) {
-        return this.request(`/admin/avatars/${id}`, {
-            method: 'DELETE'
-        });
-    },
 
     // 删除卡池
     async deletePool(id) {
         return this.request(`/admin/pools/${id}`, {
             method: 'DELETE'
-        });
-    },
-
-    // 获取卡池关联的四星头像
-    async getPoolFourStars(poolId) {
-        return this.request(`/admin/pools/${poolId}/four-stars`);
-    },
-
-    // 更新卡池关联的四星头像
-    async updatePoolFourStars(poolId, avatarIds) {
-        return this.request(`/admin/pools/${poolId}/four-stars`, {
-            method: 'PUT',
-            body: JSON.stringify({ avatarIds })
         });
     },
 
