@@ -256,10 +256,12 @@ INSERT INTO gacha_pool (name, pool_type, description, five_star_rate, four_star_
 ('特殊活动唤取', 'special-activity', '特殊活动卡池', 0.80, 6.00, 80, 65, 6.00, 'active', TRUE, 5, TRUE);
 
 -- 特殊活动卡池关联分类
+SET @new_pool_id = LAST_INSERT_ID();
+
 INSERT INTO pool_category (pool_id, category_id) VALUES
-(LAST_INSERT_ID(), 1),  -- 三星武器
-(LAST_INSERT_ID(), 2),  -- 四星角色
-(LAST_INSERT_ID(), 3),  -- 四星武器
-(LAST_INSERT_ID(), 8),  -- 五星特殊角色
-(LAST_INSERT_ID(), 9);  -- 五星特殊武器
+(@new_pool_id, 1),  -- 三星武器
+(@new_pool_id, 2),  -- 四星角色
+(@new_pool_id, 3),  -- 四星武器
+(@new_pool_id, 8),  -- 五星特殊角色
+(@new_pool_id, 9);  -- 五星特殊武器
 
