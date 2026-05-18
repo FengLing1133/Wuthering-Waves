@@ -110,6 +110,7 @@ public class GachaService {
         result.put("type", selectedItem.getItemType());
         result.put("isLimited", isUp);
         result.put("pityCount", currentPity + 1);
+        result.put("imageUrl", selectedItem.getImageUrl());
 
         return result;
     }
@@ -218,6 +219,15 @@ public class GachaService {
         // 限定武器池五星不歪：直接出UP
         if ("limited-weapon".equals(poolType) && rarity == 5 && !upItems.isEmpty()) {
             return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
+        }
+
+        // 特殊卡池：根据 allowLose 配置决定是否歪
+        if ("special-activity".equals(poolType) && rarity == 5 && !upItems.isEmpty()) {
+            if (pool.getAllowLose() != null && !pool.getAllowLose()) {
+                // 100%出UP，不歪
+                return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
+            }
+            // 允许歪，走原有逻辑（50%概率，歪了大保底）
         }
 
         if (rarity == 5) {
