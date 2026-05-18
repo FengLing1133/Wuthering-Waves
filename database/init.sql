@@ -25,7 +25,7 @@ ON DUPLICATE KEY UPDATE role = 'admin';
 CREATE TABLE IF NOT EXISTS gacha_records (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
-    pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon',
+    pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon/special-activity',
     item_name VARCHAR(100) NOT NULL COMMENT '物品名称',
     item_rarity INT NOT NULL COMMENT '稀有度：3/4/5',
     item_type VARCHAR(20) NOT NULL COMMENT '类型：character/weapon',
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS gacha_records (
 CREATE TABLE IF NOT EXISTS gacha_pity (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
-    pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon',
+    pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon/special-activity',
     five_star_count INT DEFAULT 0 COMMENT '距离五星保底累计抽数',
     four_star_count INT DEFAULT 0 COMMENT '距离四星保底累计抽数',
     guaranteed_five BOOLEAN DEFAULT FALSE COMMENT '五星大保底（下次五星必出UP）',
@@ -218,7 +218,7 @@ INSERT INTO gacha_items (id, name, rarity, item_type, category_id, image_url) VA
 CREATE TABLE IF NOT EXISTS gacha_pool (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL COMMENT '卡池名称',
-    pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon',
+    pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon/special-activity',
     description TEXT COMMENT '卡池描述',
     five_star_rate DECIMAL(5,2) DEFAULT 0.80 COMMENT '五星基础概率(%)',
     four_star_rate DECIMAL(5,2) DEFAULT 6.00 COMMENT '四星基础概率(%)',
@@ -254,4 +254,12 @@ CREATE TABLE IF NOT EXISTS pool_category (
 -- ========== 特殊卡池配置示例 ==========
 INSERT INTO gacha_pool (name, pool_type, description, five_star_rate, four_star_rate, max_pity, soft_pity_start, soft_pity_increment, status, sidebar_visible, sidebar_order, allow_lose) VALUES
 ('特殊活动唤取', 'special-activity', '特殊活动卡池', 0.80, 6.00, 80, 65, 6.00, 'active', TRUE, 5, TRUE);
+
+-- 特殊活动卡池关联分类
+INSERT INTO pool_category (pool_id, category_id) VALUES
+(LAST_INSERT_ID(), 1),  -- 三星武器
+(LAST_INSERT_ID(), 2),  -- 四星角色
+(LAST_INSERT_ID(), 3),  -- 四星武器
+(LAST_INSERT_ID(), 8),  -- 五星特殊角色
+(LAST_INSERT_ID(), 9);  -- 五星特殊武器
 
