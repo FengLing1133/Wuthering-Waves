@@ -574,7 +574,7 @@ public class GachaService {
 
         // 按卡池类型分组（不按名称去重，每条五星记录独立显示）
         Map<String, List<Map<String, Object>>> poolGroupedItems = new HashMap<>();
-        String[] poolTypes = {"limited-character", "limited-weapon", "standard-character", "standard-weapon"};
+        String[] poolTypes = {"limited-character", "limited-weapon", "standard-character", "standard-weapon", "special-activity"};
 
         Map<String, String> imageUrlMap = new HashMap<>();
         for (GachaItem item : allFiveStarItems) {

@@ -29,7 +29,7 @@ public class GachaController {
     private final JwtUtil jwtUtil;
 
     private static final Set<String> VALID_POOL_TYPES = Set.of(
-            "limited-character", "limited-weapon", "standard-character", "standard-weapon"
+            "limited-character", "limited-weapon", "standard-character", "standard-weapon", "special-activity"
     );
 
     private String normalizePoolType(String poolType) {
