@@ -220,7 +220,7 @@
             <label><span>五星基础概率 (%)</span><input type="number" id="poolFiveRate" step="0.01" value="0.8"></label>
             <label><span>四星基础概率 (%)</span><input type="number" id="poolFourRate" step="0.01" value="6.0"></label>
             <label><span>硬保底抽数</span><input type="number" id="poolMaxPity" value="80"></label>
-            <label><span>软保底起始抽数</span><input type="number" id="poolSoftPity" value="55"></label>
+            <label><span>软保底起始抽数</span><input type="number" id="poolSoftPity" value="65"></label>
             <label><span>软保底每抽递增 (%)</span><input type="number" id="poolSoftInc" step="0.01" value="6.0"></label>
 
             <!-- 卡池物品配置（分类选择 + UP指定） -->
@@ -261,7 +261,7 @@
             <label id="sidebarOrderLabel" style="display:none;"><span>侧栏排序（越小越靠前）</span><input type="number" id="poolSidebarOrder" value="0" min="0"></label>
 
             <!-- 背景大图 -->
-            <label>
+            <div>
                 <span>主背景大图</span>
                 <div class="upload-area" onclick="document.getElementById('poolBgImageInput').click()">
                     <input type="file" id="poolBgImageInput" accept="image/*" onchange="previewBgImage(this)">
@@ -269,10 +269,10 @@
                     <p style="color:var(--text-dim);font-size:13px;">点击上传背景大图</p>
                     <img id="poolBgImagePreview" class="upload-preview" style="display:none;">
                 </div>
-            </label>
+            </div>
 
             <!-- 侧栏缩略图 -->
-            <label>
+            <div>
                 <span>侧栏缩略图</span>
                 <div class="upload-area" onclick="document.getElementById('poolThumbInput').click()">
                     <input type="file" id="poolThumbInput" accept="image/*" onchange="previewThumb(this)">
@@ -280,7 +280,7 @@
                     <p style="color:var(--text-dim);font-size:13px;">点击上传缩略图</p>
                     <img id="poolThumbPreview" class="upload-preview" style="display:none;">
                 </div>
-            </label>
+            </div>
 
             <div class="modal-actions">
                 <button class="btn" style="background:rgba(255,255,255,0.1);color:var(--text-secondary);" onclick="closePoolModal()">取消</button>
@@ -677,7 +677,7 @@
             document.getElementById('poolFiveRate').value = pool ? pool.fiveStarRate : 0.8;
             document.getElementById('poolFourRate').value = pool ? pool.fourStarRate : 6.0;
             document.getElementById('poolMaxPity').value = pool ? pool.maxPity : 80;
-            document.getElementById('poolSoftPity').value = pool ? pool.softPityStart : 55;
+            document.getElementById('poolSoftPity').value = pool ? pool.softPityStart : 65;
             document.getElementById('poolSoftInc').value = pool ? pool.softPityIncrement : 6.0;
 
             // 新字段：时间（使用 flatpickr）
@@ -734,8 +734,9 @@
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = e => {
+                    uploadedBgImageUrl = e.target.result;
                     const preview = document.getElementById('poolBgImagePreview');
-                    preview.src = e.target.result;
+                    preview.src = uploadedBgImageUrl;
                     preview.style.display = 'block';
                     document.getElementById('bgDeleteBtn').style.display = 'block';
                 };
@@ -747,8 +748,9 @@
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = e => {
+                    uploadedThumbUrl = e.target.result;
                     const preview = document.getElementById('poolThumbPreview');
-                    preview.src = e.target.result;
+                    preview.src = uploadedThumbUrl;
                     preview.style.display = 'block';
                     document.getElementById('thumbDeleteBtn').style.display = 'block';
                 };
@@ -791,20 +793,6 @@
             };
 
             try {
-                // 上传背景大图
-                const bgInput = document.getElementById('poolBgImageInput');
-                if (bgInput.files.length > 0) {
-                    const uploadRes = await API.uploadImage(bgInput.files[0]);
-                    if (uploadRes.success) data.bgImageUrl = uploadRes.imageUrl;
-                }
-
-                // 上传缩略图
-                const thumbInput = document.getElementById('poolThumbInput');
-                if (thumbInput.files.length > 0) {
-                    const uploadRes = await API.uploadImage(thumbInput.files[0]);
-                    if (uploadRes.success) data.thumbnailUrl = uploadRes.imageUrl;
-                }
-
                 const url = id ? `/admin/pools/${id}` : '/admin/pools';
                 const method = id ? 'PUT' : 'POST';
                 const res = await API.request(url, { method, body: JSON.stringify(data) });

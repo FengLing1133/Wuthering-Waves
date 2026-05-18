@@ -6,16 +6,9 @@ import com.wutheringwaves.gacha.model.GachaItem;
 import com.wutheringwaves.gacha.model.GachaPool;
 import com.wutheringwaves.gacha.service.AdminService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 @RestController
@@ -25,9 +18,6 @@ public class AdminController {
 
     private final AdminService adminService;
     private final GachaItemMapper gachaItemMapper;
-
-    @Value("${file.upload-dir:uploads}")
-    private String uploadDir;
 
     // ========== 卡池管理 ==========
 
@@ -200,46 +190,5 @@ public class AdminController {
                 "success", true,
                 "dailyStats", adminService.getDailyStats(days)
         ));
-    }
-
-    // ========== 图片上传 ==========
-
-    @PostMapping("/upload")
-    public ResponseEntity<Map<String, Object>> uploadImage(@RequestParam("file") MultipartFile file) {
-        if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "文件不能为空"));
-        }
-
-        try {
-            // 确保上传目录存在
-            Path uploadPath = Paths.get(uploadDir).toAbsolutePath();
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-
-            // 生成唯一文件名
-            String originalFilename = file.getOriginalFilename();
-            String extension = originalFilename != null && originalFilename.contains(".")
-                    ? originalFilename.substring(originalFilename.lastIndexOf("."))
-                    : ".png";
-            String filename = UUID.randomUUID().toString() + extension;
-
-            // 保存文件
-            Path filePath = uploadPath.resolve(filename);
-            file.transferTo(filePath.toFile());
-
-            String imageUrl = "/" + uploadDir + "/" + filename;
-
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "imageUrl", imageUrl,
-                    "filename", filename
-            ));
-        } catch (IOException e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "上传失败：" + e.getMessage()
-            ));
-        }
     }
 }

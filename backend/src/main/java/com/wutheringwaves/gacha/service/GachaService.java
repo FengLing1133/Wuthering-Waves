@@ -215,9 +215,8 @@ public class GachaService {
             return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
         }
 
-        // 武器池不歪：直接出UP
-        boolean isWeaponPool = poolType.contains("weapon");
-        if (isWeaponPool && !upItems.isEmpty()) {
+        // 限定武器池五星不歪：直接出UP
+        if ("limited-weapon".equals(poolType) && rarity == 5 && !upItems.isEmpty()) {
             return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
         }
 
@@ -563,19 +562,40 @@ public class GachaService {
 
         analysis.put("fiveStarItems", fiveStarItems);
 
-        // 按卡池类型分组统计
+        // 按卡池类型分组（不按名称去重，每条五星记录独立显示）
         Map<String, List<Map<String, Object>>> poolGroupedItems = new HashMap<>();
         String[] poolTypes = {"limited-character", "limited-weapon", "standard-character", "standard-weapon"};
-        String[] poolNames = {"角色唤取", "武器唤取", "常驻角色", "常驻武器"};
 
-        for (int i = 0; i < poolTypes.length; i++) {
-            String poolType = poolTypes[i];
-            List<Map<String, Object>> poolItems = fiveStarItems.stream()
-                    .filter(item -> poolType.equals(item.get("poolType")))
-                    .toList();
-            poolGroupedItems.put(poolTypes[i], poolItems);
+        Map<String, String> imageUrlMap = new HashMap<>();
+        for (GachaItem item : allFiveStarItems) {
+            imageUrlMap.put(item.getName(), item.getImageUrl());
+        }
+
+        for (String poolType : poolTypes) {
+            List<Map<String, Object>> poolItems = new ArrayList<>();
+            for (GachaRecord record : fiveStarRecords) {
+                if (!poolType.equals(record.getPoolType())) continue;
+                Map<String, Object> itemInfo = new HashMap<>();
+                itemInfo.put("name", record.getItemName());
+                itemInfo.put("pityCount", record.getPityCount());
+                itemInfo.put("isLimited", record.getIsLimited());
+                itemInfo.put("poolType", record.getPoolType());
+                itemInfo.put("itemType", record.getItemType());
+                itemInfo.put("imageUrl", imageUrlMap.get(record.getItemName()));
+                itemInfo.put("createdAt", record.getCreatedAt() != null
+                        ? record.getCreatedAt().format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null);
+                poolItems.add(itemInfo);
+            }
+            poolGroupedItems.put(poolType, poolItems);
         }
         analysis.put("poolGroupedItems", poolGroupedItems);
+
+        // 计算每个卡池的当前垫抽数
+        Map<String, Integer> poolCurrentPity = new HashMap<>();
+        for (String poolType : poolTypes) {
+            poolCurrentPity.put(poolType, getCurrentPity(userId, poolType));
+        }
+        analysis.put("poolCurrentPity", poolCurrentPity);
 
         // 根据平均出金抽数计算称号
         String title;
