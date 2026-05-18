@@ -4,6 +4,8 @@ const Gacha = {
     currentPoolData: null,
     isPulling: false,
     poolList: [],
+    _skipRequested: false,
+    _videoCache: {},
     // 历史记录状态
     historyCurrentPage: 1,
     historyPageSize: 5,
@@ -17,7 +19,20 @@ const Gacha = {
     async init() {
         this.bindEvents();
         this.createSnowflakes();
+        this.preloadVideos();
         await this.loadPools();
+    },
+
+    // 预加载视频为 Blob URL 缓存
+    preloadVideos() {
+        [3, 4, 5].forEach(rarity => {
+            fetch(`/videos/${rarity}star.mp4`)
+                .then(res => res.blob())
+                .then(blob => {
+                    this._videoCache[rarity] = URL.createObjectURL(blob);
+                })
+                .catch(err => console.warn(`视频 ${rarity}star.mp4 预加载失败:`, err));
+        });
     },
 
     // 从API加载卡池列表
@@ -48,7 +63,12 @@ const Gacha = {
                 ? `background-image: url('${pool.thumbnailUrl}'); background-size: cover; background-position: center;`
                 : 'background: linear-gradient(135deg, #1a2a4a, #0d1b2e);';
             const isActive = index === 0 ? 'active' : '';
-            const tag = pool.poolType && pool.poolType.startsWith('standard-') ? '常驻' : '活动';
+            let tag = '活动';
+            if (pool.poolType && pool.poolType.startsWith('standard-')) {
+                tag = '常驻';
+            } else if (pool.poolType === 'special-activity') {
+                tag = '特殊';
+            }
             return `<div class="banner-slot ${isActive}" data-pool-id="${pool.id}">
                 <div class="banner-thumb">
                     <div class="banner-thumb-img" style="${thumbStyle}"></div>
@@ -98,6 +118,7 @@ const Gacha = {
             case 'standard-weapon': subtitle = '武器常驻唤取'; break;
             case 'standard-character': subtitle = '角色常驻唤取'; break;
             case 'limited-weapon': subtitle = '武器活动唤取'; break;
+            case 'special-activity': subtitle = '特殊活动唤取'; break;
             default: subtitle = '角色活动唤取';
         }
         document.getElementById('bannerSubtitle').textContent = subtitle;
@@ -332,24 +353,34 @@ const Gacha = {
         if (this.isPulling) return;
 
         this.isPulling = true;
-        this.showPullAnimation();
+        this._skipRequested = false;
 
         try {
             const poolType = this.getCurrentPoolType();
             const result = await API.pull(poolType, count, this.currentPool);
 
-            await this.sleep(2000);
-            this.hidePullAnimation();
-
             if (result.success) {
                 this.updateCurrency(result.starlight);
-                this.showResult(result.results);
                 this.updatePityCount();
+
+                const results = result.results;
+                // 确定播放视频的星级（单抽按物品星级，十连按最高星级）
+                const maxRarity = Math.max(...results.map(r => r.rarity));
+                await this.playGachaVideo(maxRarity);
+
+                if (count === 1) {
+                    // 单抽：显示物品展示页
+                    await this.showItemShowcase(results[0]);
+                } else {
+                    // 十连：逐个展示物品，最后汇总
+                    await this.showTenPullAnimation(results);
+                }
             } else {
                 alert(result.message || '抽卡失败');
             }
         } catch (error) {
-            this.hidePullAnimation();
+            this.hideVideoOverlay();
+            this.hideSkipBtn();
             alert('网络错误，请稍后重试');
         } finally {
             this.isPulling = false;
@@ -369,9 +400,80 @@ const Gacha = {
         animation.classList.add('hidden');
     },
 
+    // 播放抽卡视频
+    playGachaVideo(rarity) {
+        return new Promise((resolve) => {
+            const video = document.getElementById('gachaVideo');
+            const animation = document.getElementById('pullAnimation');
+
+            // 设置视频源（优先使用缓存的 Blob URL）
+            const cachedUrl = this._videoCache[rarity];
+            if (cachedUrl) {
+                video.src = cachedUrl;
+            } else {
+                video.src = `/videos/${rarity}star.mp4`;
+            }
+
+            // 显示动画层和视频
+            animation.classList.remove('hidden');
+            video.classList.remove('hidden');
+            this.showSkipBtn();
+
+            // 跳过按钮：暂停视频，标记跳过，关闭遮罩
+            const onSkip = () => {
+                video.pause();
+                this._skipRequested = true;
+                this.hideVideoOverlay();
+                resolve();
+            };
+            document.getElementById('skipBtn').onclick = onSkip;
+
+            // 视频播放结束
+            video.onended = () => {
+                this.hideVideoOverlay();
+                resolve();
+            };
+
+            // 视频加载失败时直接跳过
+            video.onerror = () => {
+                this.hideVideoOverlay();
+                resolve();
+            };
+
+            // 开始播放
+            video.play().catch(() => {
+                this.hideVideoOverlay();
+                resolve();
+            });
+        });
+    },
+
+    // 隐藏视频遮罩
+    hideVideoOverlay() {
+        const video = document.getElementById('gachaVideo');
+        const animation = document.getElementById('pullAnimation');
+        video.pause();
+        video.currentTime = 0;
+        video.classList.add('hidden');
+        animation.classList.add('hidden');
+        this.hideSkipBtn();
+    },
+
+    // 显示跳过按钮
+    showSkipBtn() {
+        document.getElementById('skipBtn').classList.remove('hidden');
+    },
+
+    // 隐藏跳过按钮
+    hideSkipBtn() {
+        document.getElementById('skipBtn').classList.add('hidden');
+    },
+
     // 创建流星效果
     createMeteors() {
         const content = document.querySelector('.animation-content');
+        // 清理上一次未移除的流星元素
+        content.querySelectorAll('.meteor').forEach(m => m.remove());
         for (let i = 0; i < 5; i++) {
             const meteor = document.createElement('div');
             meteor.className = 'meteor';
@@ -381,6 +483,138 @@ const Gacha = {
             content.appendChild(meteor);
             setTimeout(() => meteor.remove(), 1500);
         }
+    },
+
+    // 显示单个物品展示页面
+    showItemShowcase(item) {
+        return new Promise((resolve) => {
+            const showcase = document.getElementById('itemShowcase');
+            const icon = document.getElementById('showcaseIcon');
+            const name = document.getElementById('showcaseName');
+            const stars = document.getElementById('showcaseStars');
+            const bg = showcase.querySelector('.showcase-bg');
+
+            // 设置背景颜色主题
+            bg.className = `showcase-bg rarity-${item.rarity}`;
+
+            // 设置物品图标
+            if (item.imageUrl) {
+                icon.style.backgroundImage = `url('${item.imageUrl}')`;
+            } else {
+                // 没有图片时显示默认图标
+                icon.style.backgroundImage = 'none';
+                icon.innerHTML = `<div style="font-size: 60px; color: var(--text-dim);">${item.type === 'character' ? '👤' : '⚔️'}</div>`;
+            }
+
+            // 设置物品名称
+            name.textContent = item.name;
+
+            // 设置星级
+            let starsText = '';
+            for (let i = 0; i < item.rarity; i++) {
+                starsText += '★';
+            }
+            stars.textContent = starsText;
+            stars.className = `showcase-item-stars rarity-${item.rarity}`;
+
+            // 显示展示页面
+            showcase.classList.remove('hidden');
+
+            const skipBtn = showcase.querySelector('.showcase-skip-btn');
+
+            const cleanup = () => {
+                showcase.classList.add('hidden');
+                showcase.removeEventListener('click', clickHandler);
+                skipBtn.removeEventListener('click', skipHandler);
+                resolve();
+            };
+
+            // 跳过按钮（阻止事件冒泡到 showcase）
+            const skipHandler = (e) => {
+                e.stopPropagation();
+                this._skipRequested = true;
+                cleanup();
+            };
+            skipBtn.addEventListener('click', skipHandler);
+
+            // 点击任意位置继续
+            const clickHandler = () => {
+                cleanup();
+            };
+            showcase.addEventListener('click', clickHandler);
+        });
+    },
+
+    // 显示十连抽动画
+    async showTenPullAnimation(results) {
+        // 按稀有度排序，高星在前
+        const sortedResults = [...results].sort((a, b) => b.rarity - a.rarity);
+
+        // 依次展示每个物品，跳过时直接退出循环
+        for (const item of sortedResults) {
+            if (this._skipRequested) break;
+            await this.showItemShowcase(item);
+            if (!this._skipRequested) {
+                await this.sleep(300); // 物品之间的间隔
+            }
+        }
+
+        // 显示汇总页面
+        await this.showTenPullSummary(results);
+    },
+
+    // 显示十连抽汇总页面
+    showTenPullSummary(results) {
+        return new Promise((resolve) => {
+            const summary = document.getElementById('tenPullSummary');
+            const cardsContainer = document.getElementById('summaryCards');
+            const closeBtn = document.getElementById('closeSummaryBtn');
+
+            cardsContainer.innerHTML = '';
+
+            // 按稀有度排序，高星在前
+            const sortedResults = [...results].sort((a, b) => b.rarity - a.rarity);
+
+            sortedResults.forEach(item => {
+                const card = document.createElement('div');
+                card.className = `summary-card rarity-${item.rarity}`;
+
+                let starsText = '';
+                for (let i = 0; i < item.rarity; i++) {
+                    starsText += '★';
+                }
+
+                const iconStyle = item.imageUrl
+                    ? `background-image: url('${item.imageUrl}');`
+                    : 'background: var(--bg-card);';
+
+                card.innerHTML = `
+                    <div class="summary-card-icon" style="${iconStyle}"></div>
+                    <div class="summary-card-info">
+                        <div class="summary-card-name">${item.name}</div>
+                        <div class="summary-card-stars rarity-${item.rarity}">${starsText}</div>
+                    </div>
+                `;
+
+                cardsContainer.appendChild(card);
+            });
+
+            // 显示汇总页面和跳过按钮
+            summary.classList.remove('hidden');
+            this.showSkipBtn();
+
+            const cleanup = () => {
+                summary.classList.add('hidden');
+                this.hideSkipBtn();
+                resolve();
+            };
+
+            // 跳过按钮
+            document.getElementById('skipBtn').onclick = cleanup;
+
+            // 确认按钮
+            closeBtn.onclick = cleanup;
+        });
     },
 
     // 显示抽卡结果
