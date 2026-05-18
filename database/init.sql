@@ -212,7 +212,13 @@ INSERT INTO gacha_items (id, name, rarity, item_type, category_id, image_url) VA
 (117, '爱弥斯', 5, 'character', 7, '/images/avatars/aimisi.png'),
 (118, '陆·赫斯', 5, 'character', 7, '/images/avatars/luhesi.png'),
 (119, '西格莉卡', 5, 'character', 7, '/images/avatars/xigelika.png'),
-(120, '绯雪', 5, 'character', 7, '/images/avatars/feixue.png');
+(120, '绯雪', 5, 'character', 7, '/images/avatars/feixue.png'),
+-- ===== 五星特殊角色 (category_id=8) =====
+(121, '特殊角色A', 5, 'character', 8, '/images/avatars/special_char_a.png'),
+(122, '特殊角色B', 5, 'character', 8, '/images/avatars/special_char_b.png'),
+-- ===== 五星特殊武器 (category_id=9) =====
+(123, '特殊武器A', 5, 'weapon', 9, '/images/weapons/special_weapon_a.png'),
+(124, '特殊武器B', 5, 'weapon', 9, '/images/weapons/special_weapon_b.png');
 
 -- ========== 卡池配置表（含UP物品信息） ==========
 CREATE TABLE IF NOT EXISTS gacha_pool (
@@ -252,13 +258,15 @@ CREATE TABLE IF NOT EXISTS pool_category (
 );
 
 -- ========== 特殊卡池配置示例 ==========
-INSERT INTO gacha_pool (name, pool_type, description, five_star_rate, four_star_rate, max_pity, soft_pity_start, soft_pity_increment, status, sidebar_visible, sidebar_order, allow_lose) VALUES
-('特殊活动唤取', 'special-activity', '特殊活动卡池', 0.80, 6.00, 80, 65, 6.00, 'active', TRUE, 5, TRUE);
+INSERT INTO gacha_pool (name, pool_type, description, five_star_rate, four_star_rate, max_pity, soft_pity_start, soft_pity_increment, status, sidebar_visible, sidebar_order, allow_lose)
+SELECT '特殊活动唤取', 'special-activity', '特殊活动卡池', 0.80, 6.00, 80, 65, 6.00, 'active', TRUE, 5, TRUE
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM gacha_pool WHERE pool_type = 'special-activity');
 
--- 特殊活动卡池关联分类
-SET @new_pool_id = LAST_INSERT_ID();
+-- 特殊活动卡池关联分类（幂等：先查 pool_id，再 IGNORE 插入）
+SET @new_pool_id = (SELECT id FROM gacha_pool WHERE pool_type = 'special-activity' LIMIT 1);
 
-INSERT INTO pool_category (pool_id, category_id) VALUES
+INSERT IGNORE INTO pool_category (pool_id, category_id) VALUES
 (@new_pool_id, 1),  -- 三星武器
 (@new_pool_id, 2),  -- 四星角色
 (@new_pool_id, 3),  -- 四星武器
