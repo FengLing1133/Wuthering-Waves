@@ -69,7 +69,9 @@ INSERT INTO item_category (id, name, rarity, item_type, description, sort_order)
 (4, '五星常驻角色', 5, 'character', '常驻池可出的五星角色', 4),
 (5, '五星常驻武器', 5, 'weapon', '常驻池可出的五星武器', 5),
 (6, '五星限定武器', 5, 'weapon', '限定池专精五星武器', 6),
-(7, '五星限定角色', 5, 'character', '限定UP五星角色', 7);
+(7, '五星限定角色', 5, 'character', '限定UP五星角色', 7),
+(8, '五星特殊角色', 5, 'character', '特殊卡池限定五星角色', 8),
+(9, '五星特殊武器', 5, 'weapon', '特殊卡池限定五星武器', 9);
 
 -- ========== 统一抽卡物品表 ==========
 CREATE TABLE IF NOT EXISTS gacha_items (
@@ -232,6 +234,7 @@ CREATE TABLE IF NOT EXISTS gacha_pool (
     thumbnail_url MEDIUMTEXT COMMENT '侧栏缩略图（base64 data URL）',
     fivestar_up BIGINT COMMENT '五星UP物品ID（单个）',
     fourstar_up VARCHAR(200) COMMENT '四星UP物品ID列表，逗号分隔',
+    allow_lose BOOLEAN DEFAULT TRUE COMMENT '是否允许歪（false=100%出UP）',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_pool_type (pool_type),
@@ -247,4 +250,8 @@ CREATE TABLE IF NOT EXISTS pool_category (
     FOREIGN KEY (category_id) REFERENCES item_category(id) ON DELETE CASCADE,
     UNIQUE KEY uk_pool_category (pool_id, category_id)
 );
+
+-- ========== 特殊卡池配置示例 ==========
+INSERT INTO gacha_pool (name, pool_type, description, five_star_rate, four_star_rate, max_pity, soft_pity_start, soft_pity_increment, status, sidebar_visible, sidebar_order, allow_lose) VALUES
+('特殊活动唤取', 'special-activity', '特殊活动卡池', 0.80, 6.00, 80, 65, 6.00, 'active', TRUE, 5, TRUE);
 
