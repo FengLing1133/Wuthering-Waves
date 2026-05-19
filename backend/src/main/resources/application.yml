@@ -17,3 +17,7 @@ mybatis-plus:
 jwt:
   secret: ${JWT_SECRET:wuthering-waves-gacha-secret-key-2024-very-long-secret}
   expiration: 86400000
+
+app:
+  upload:
+    dir: uploads
