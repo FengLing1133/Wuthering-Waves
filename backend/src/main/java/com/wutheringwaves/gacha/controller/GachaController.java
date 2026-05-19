@@ -29,7 +29,7 @@ public class GachaController {
     private final JwtUtil jwtUtil;
 
     private static final Set<String> VALID_POOL_TYPES = Set.of(
-            "limited-character", "limited-weapon", "standard-character", "standard-weapon"
+            "limited-character", "limited-weapon", "standard-character", "standard-weapon", "special-character", "special-weapon"
     );
 
     private String normalizePoolType(String poolType) {
@@ -38,6 +38,9 @@ public class GachaController {
         // 常驻池优先匹配
         if (lower.equals("standard-character") || lower.equals("standard_character")) return "standard-character";
         if (lower.equals("standard-weapon") || lower.equals("standard_weapon")) return "standard-weapon";
+        // 特殊卡池优先匹配（必须在 contains 匹配之前）
+        if (lower.equals("special-character") || lower.equals("special_character")) return "special-character";
+        if (lower.equals("special-weapon") || lower.equals("special_weapon")) return "special-weapon";
         // 限定角色池：character-1, character-2, limited-character 等
         if (lower.contains("character")) return "limited-character";
         // 限定武器池：weapon-1, weapon-2, limited-weapon 等

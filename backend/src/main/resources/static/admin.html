@@ -6,80 +6,116 @@
     <title>鸣潮抽卡系统 - 管理后台</title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/light.css">
     <style>
-        body { overflow: auto; }
+        /* 浅色系主题 - 参考抽卡分析弹窗配色 */
+        :root {
+            --bg-primary: #f5f0e6;
+            --bg-secondary: #fff;
+            --bg-card: #fff;
+            --bg-glass: rgba(245, 240, 230, 0.95);
+            --text-primary: #2a2520;
+            --text-secondary: #6a6560;
+            --text-dim: #8a8580;
+            --border-subtle: rgba(180, 160, 130, 0.3);
+            --border-active: rgba(180, 160, 130, 0.6);
+            --accent-gold: #c49a30;
+            --accent-gold-bright: #d4a843;
+            --accent-blue: #4a9eff;
+            --accent-blue-dim: #2a6abf;
+            --accent-purple: #7a5ab0;
+            --accent-red: #e74c3c;
+            --btn-gradient: linear-gradient(135deg, #c49a30, #d4a843);
+            --btn-hover-gradient: linear-gradient(135deg, #d4a843, #e0b850);
+        }
+
+        body {
+            overflow: auto;
+            background: linear-gradient(180deg, rgba(245, 240, 230, 0.98) 0%, rgba(240, 235, 225, 0.95) 100%);
+            color: #2a2520;
+        }
+
         .admin-container { padding: 60px 20px 20px; max-width: 1400px; margin: 0 auto; }
 
+        /* 顶部栏 */
+        .top-bar {
+            background: rgba(245, 240, 230, 0.95);
+            border-bottom: 1px solid rgba(180, 160, 130, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        .top-bar-title { color: #2a2520; }
+
         /* Tab 导航 */
-        .tab-nav { display: flex; gap: 4px; margin-bottom: 20px; background: var(--bg-secondary); border-radius: 8px; padding: 4px; }
-        .tab-btn { flex: 1; padding: 12px 20px; border: none; background: transparent; color: var(--text-secondary); font-size: 14px; cursor: pointer; border-radius: 6px; transition: all 0.3s; }
-        .tab-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
-        .tab-btn.active { background: var(--bg-card); color: var(--accent-gold); border: 1px solid var(--border-active); }
+        .tab-nav { display: flex; gap: 4px; margin-bottom: 20px; background: rgba(180, 160, 130, 0.1); border-radius: 8px; padding: 4px; }
+        .tab-btn { flex: 1; padding: 12px 20px; border: none; background: transparent; color: #6a6560; font-size: 14px; cursor: pointer; border-radius: 6px; transition: all 0.3s; }
+        .tab-btn:hover { color: #2a2520; background: rgba(180, 160, 130, 0.15); }
+        .tab-btn.active { background: #fff; color: #c49a30; border: 1px solid rgba(180, 160, 130, 0.4); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
         /* 统计卡片 */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-        .stat-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 20px; }
-        .stat-card h3 { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; font-weight: normal; }
-        .stat-card .value { font-size: 28px; font-weight: bold; color: var(--accent-gold); }
-        .stat-card .sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+        .stat-card { background: #fff; border: 1px solid rgba(180, 160, 130, 0.2); border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .stat-card h3 { font-size: 13px; color: #6a6560; margin-bottom: 8px; font-weight: normal; }
+        .stat-card .value { font-size: 28px; font-weight: bold; color: #c49a30; }
+        .stat-card .sub { font-size: 12px; color: #8a8580; margin-top: 4px; }
 
         /* 表格 */
-        .data-table { width: 100%; border-collapse: collapse; background: var(--bg-card); border-radius: 12px; overflow: hidden; }
-        .data-table th, .data-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border-subtle); }
-        .data-table th { background: rgba(255,255,255,0.05); color: var(--text-secondary); font-weight: normal; font-size: 13px; }
-        .data-table td { font-size: 14px; }
-        .data-table tr:hover { background: rgba(255,255,255,0.03); }
+        .data-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid rgba(180, 160, 130, 0.2); }
+        .data-table th, .data-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid rgba(180, 160, 130, 0.15); }
+        .data-table th { background: rgba(245, 240, 232, 0.9); color: #5a5550; font-weight: 500; font-size: 13px; }
+        .data-table td { font-size: 14px; color: #3a3530; }
+        .data-table tr:hover { background: rgba(245, 242, 238, 0.8); }
+        .data-table tr:last-child td { border-bottom: none; }
 
         /* 按钮 */
         .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
-        .btn-primary { background: var(--accent-blue); color: white; }
-        .btn-primary:hover { background: var(--accent-blue-dim); }
-        .btn-gold { background: var(--btn-gradient); color: var(--text-primary); border: 1px solid var(--border-active); }
-        .btn-gold:hover { background: var(--btn-hover-gradient); }
-        .btn-danger { background: var(--accent-red); color: white; }
+        .btn-primary { background: #4a9eff; color: white; }
+        .btn-primary:hover { background: #2a6abf; }
+        .btn-gold { background: linear-gradient(135deg, #c49a30, #d4a843); color: #fff; border: 1px solid rgba(196, 154, 48, 0.6); }
+        .btn-gold:hover { background: linear-gradient(135deg, #d4a843, #e0b850); }
+        .btn-danger { background: #e74c3c; color: white; }
         .btn-danger:hover { opacity: 0.8; }
         .btn-sm { padding: 4px 10px; font-size: 12px; }
         .btn-group { display: flex; gap: 8px; }
 
         /* 搜索栏 */
         .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
-        .search-input { padding: 8px 14px; border: 1px solid var(--border-subtle); background: var(--bg-secondary); color: var(--text-primary); border-radius: 6px; font-size: 14px; width: 250px; }
-        .search-input:focus { outline: none; border-color: var(--accent-blue); }
+        .search-input { padding: 8px 14px; border: 1px solid rgba(180, 160, 130, 0.4); background: #fff; color: #2a2520; border-radius: 6px; font-size: 14px; width: 250px; }
+        .search-input:focus { outline: none; border-color: #8a7a5a; box-shadow: 0 0 0 2px rgba(138, 122, 90, 0.15); }
 
         /* 弹窗 */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; display: none; justify-content: center; align-items: center; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; display: none; justify-content: center; align-items: center; }
         .modal-overlay.active { display: flex; }
-        .modal { background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 24px; width: 500px; max-width: 90vw; max-height: 85vh; overflow-y: auto; }
-        .modal h2 { font-size: 18px; margin-bottom: 20px; color: var(--accent-gold); }
+        .modal { background: linear-gradient(180deg, rgba(245, 240, 230, 0.98) 0%, rgba(240, 235, 225, 0.95) 100%); border: 1px solid rgba(180, 160, 130, 0.3); border-radius: 16px; padding: 24px; width: 500px; max-width: 90vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .modal h2 { font-size: 18px; margin-bottom: 20px; color: #c49a30; }
         .modal label { display: block; margin-bottom: 12px; }
-        .modal label span { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
-        .modal input, .modal select, .modal textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--border-subtle); background: var(--bg-primary); color: var(--text-primary); border-radius: 6px; font-size: 14px; }
+        .modal label span { display: block; font-size: 13px; color: #6a6560; margin-bottom: 4px; }
+        .modal input, .modal select, .modal textarea { width: 100%; padding: 8px 12px; border: 1px solid rgba(180, 160, 130, 0.4); background: #fff; color: #2a2520; border-radius: 6px; font-size: 14px; }
+        .modal input:focus, .modal select:focus, .modal textarea:focus { outline: none; border-color: #8a7a5a; box-shadow: 0 0 0 2px rgba(138, 122, 90, 0.15); }
         .modal textarea { min-height: 80px; resize: vertical; }
         .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 
         /* 状态标签 */
         .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
-        .badge-active { background: rgba(74,255,74,0.15); color: #4aff4a; }
-        .badge-inactive { background: rgba(255,74,106,0.15); color: var(--accent-red); }
-        .badge-5star { color: var(--accent-gold); }
-        .badge-4star { color: var(--accent-purple); }
-        .badge-3star { color: var(--accent-blue); }
+        .badge-active { background: rgba(76, 175, 80, 0.15); color: #3a7a2a; }
+        .badge-inactive { background: rgba(231, 76, 60, 0.15); color: #c0392b; }
+        .badge-5star { color: #c49a30; }
+        .badge-4star { color: #7a5ab0; }
+        .badge-3star { color: #4a9eff; }
 
         /* 图表区域 */
-        .chart-container { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        .chart-container h3 { font-size: 15px; color: var(--text-secondary); margin-bottom: 16px; }
+        .chart-container { background: #fff; border: 1px solid rgba(180, 160, 130, 0.2); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .chart-container h3 { font-size: 15px; color: #6a6560; margin-bottom: 16px; }
         .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 200px; padding-top: 20px; }
         .bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .bar { width: 100%; background: linear-gradient(180deg, var(--accent-blue), var(--accent-blue-dim)); border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.3s; }
-        .bar-label { font-size: 11px; color: var(--text-dim); }
-        .bar-value { font-size: 11px; color: var(--text-secondary); }
+        .bar { width: 100%; background: linear-gradient(180deg, #4a9eff, #2a6abf); border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.3s; }
+        .bar-label { font-size: 11px; color: #8a8580; }
+        .bar-value { font-size: 11px; color: #6a6560; }
 
         /* 图片上传 */
-        .upload-area { position: relative; border: 2px dashed var(--border-subtle); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s; }
-        .upload-area:hover { border-color: var(--accent-blue); background: rgba(74,158,255,0.05); }
+        .upload-area { position: relative; border: 2px dashed rgba(180, 160, 130, 0.4); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .upload-area:hover { border-color: #4a9eff; background: rgba(74,158,255,0.05); }
         .upload-area input { display: none; }
         .upload-preview { max-width: 200px; max-height: 120px; margin-top: 10px; border-radius: 8px; }
         .upload-delete-btn { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%; background: #e74c3c; color: white; border: none; cursor: pointer; font-size: 14px; line-height: 24px; text-align: center; display: none; z-index: 1; }
@@ -87,9 +123,13 @@
 
         /* 分页 */
         .pagination { display: flex; justify-content: center; gap: 4px; margin-top: 16px; }
-        .page-btn { padding: 6px 12px; border: 1px solid var(--border-subtle); background: transparent; color: var(--text-secondary); border-radius: 4px; cursor: pointer; }
-        .page-btn.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
+        .page-btn { padding: 6px 12px; border: 1px solid rgba(180, 160, 130, 0.4); background: #fff; color: #5a5550; border-radius: 4px; cursor: pointer; }
+        .page-btn:hover:not(:disabled) { border-color: #8a7a5a; background: rgba(138, 122, 90, 0.1); }
+        .page-btn.active { background: #4a9eff; color: white; border-color: #4a9eff; }
         .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .page-info { color: #6a6560; font-size: 13px; margin: 0 8px; }
+        .page-jump-input { width: 70px; padding: 5px 8px; border: 1px solid rgba(180,160,130,0.4); border-radius: 4px; font-size: 13px; text-align: center; margin-left: 8px; }
+        .page-jump-input:focus { outline: none; border-color: #4a9eff; }
 
         /* 日报表表格 */
         .daily-table { margin-top: 16px; }
@@ -101,7 +141,7 @@
         <div class="top-bar-title">鸣潮抽卡系统 - 管理后台</div>
         <div class="top-bar-right" style="display:flex;align-items:center;gap:16px;">
             <span id="adminName" style="color:var(--text-secondary);font-size:14px;"></span>
-            <button class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:var(--text-secondary);" onclick="logout()">退出登录</button>
+            <button class="btn btn-sm" style="background:rgba(180,160,130,0.15);color:#6a6560;" onclick="logout()">退出登录</button>
         </div>
     </div>
 
@@ -110,6 +150,7 @@
         <div class="tab-nav">
             <button class="tab-btn active" onclick="switchTab('dashboard')">数据报表</button>
             <button class="tab-btn" onclick="switchTab('pools')">卡池管理</button>
+            <button class="tab-btn" onclick="switchTab('items')">物品管理</button>
             <button class="tab-btn" onclick="switchTab('users')">用户管理</button>
         </div>
 
@@ -152,6 +193,8 @@
                         <option value="limited-weapon">限定武器池</option>
                         <option value="standard-character">常驻角色池</option>
                         <option value="standard-weapon">常驻武器池</option>
+                        <option value="special-character">特殊角色池</option>
+                        <option value="special-weapon">特殊武器池</option>
                     </select>
                     <select id="poolStatusFilter" class="search-input" style="width:150px;" onchange="loadPools()">
                         <option value="">全部状态</option>
@@ -177,6 +220,47 @@
                 </thead>
                 <tbody id="poolsTableBody"></tbody>
             </table>
+        </div>
+
+        <!-- 物品管理 Tab -->
+        <div id="tab-items" class="tab-content">
+            <div class="toolbar">
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <select id="itemRarityFilter" class="search-input" style="width:120px;" onchange="updateCategoryFilter()">
+                        <option value="">全部稀有度</option>
+                        <option value="3">3星</option>
+                        <option value="4">4星</option>
+                        <option value="5">5星</option>
+                    </select>
+                    <select id="itemTypeFilter" class="search-input" style="width:120px;" onchange="updateCategoryFilter()">
+                        <option value="">全部类型</option>
+                        <option value="character">角色</option>
+                        <option value="weapon">武器</option>
+                    </select>
+                    <select id="itemCategoryFilter" class="search-input" style="width:150px;" onchange="loadItems()">
+                        <option value="">全部分类</option>
+                    </select>
+                    <input type="text" class="search-input" id="itemSearch" placeholder="搜索物品名称..." onkeydown="if(event.key==='Enter')loadItems()" style="width:200px;">
+                    <button class="btn btn-primary" onclick="loadItems()">搜索</button>
+                </div>
+                <button class="btn btn-gold" onclick="openItemModal()">+ 新增物品</button>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>图片</th>
+                        <th>名称</th>
+                        <th>稀有度</th>
+                        <th>类型</th>
+                        <th>分类</th>
+                        <th>描述</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="itemsTableBody"></tbody>
+            </table>
+            <div class="pagination" id="itemsPagination"></div>
         </div>
 
         <!-- 用户管理 Tab -->
@@ -214,13 +298,15 @@
                     <option value="limited-weapon">限定武器池</option>
                     <option value="standard-character">常驻角色池</option>
                     <option value="standard-weapon">常驻武器池</option>
+                    <option value="special-character">特殊角色池</option>
+                    <option value="special-weapon">特殊武器池</option>
                 </select>
             </label>
             <label><span>卡池描述</span><textarea id="poolDesc" placeholder="卡池描述信息"></textarea></label>
             <label><span>五星基础概率 (%)</span><input type="number" id="poolFiveRate" step="0.01" value="0.8"></label>
             <label><span>四星基础概率 (%)</span><input type="number" id="poolFourRate" step="0.01" value="6.0"></label>
             <label><span>硬保底抽数</span><input type="number" id="poolMaxPity" value="80"></label>
-            <label><span>软保底起始抽数</span><input type="number" id="poolSoftPity" value="65"></label>
+            <label><span>软保底起始抽数</span><input type="number" id="poolSoftPity" value="60"></label>
             <label><span>软保底每抽递增 (%)</span><input type="number" id="poolSoftInc" step="0.01" value="6.0"></label>
 
             <!-- 卡池物品配置（分类选择 + UP指定） -->
@@ -283,7 +369,7 @@
             </div>
 
             <div class="modal-actions">
-                <button class="btn" style="background:rgba(255,255,255,0.1);color:var(--text-secondary);" onclick="closePoolModal()">取消</button>
+                <button class="btn" style="background:rgba(180,160,130,0.15);color:#6a6560;" onclick="closePoolModal()">取消</button>
                 <button class="btn btn-gold" onclick="savePool()">保存</button>
             </div>
         </div>
@@ -297,7 +383,7 @@
             <p style="color:var(--text-secondary);margin-bottom:16px;">用户：<span id="resUsername"></span></p>
             <label><span>星声数量</span><input type="number" id="resStarlight" min="0"></label>
             <div class="modal-actions">
-                <button class="btn" style="background:rgba(255,255,255,0.1);color:var(--text-secondary);" onclick="closeResourceModal()">取消</button>
+                <button class="btn" style="background:rgba(180,160,130,0.15);color:#6a6560;" onclick="closeResourceModal()">取消</button>
                 <button class="btn btn-gold" onclick="saveResources()">保存</button>
             </div>
         </div>
@@ -323,7 +409,47 @@
                 </table>
             </div>
             <div class="modal-actions">
-                <button class="btn" style="background:rgba(255,255,255,0.1);color:var(--text-secondary);" onclick="closeRecordsModal()">关闭</button>
+                <button class="btn" style="background:rgba(180,160,130,0.15);color:#6a6560;" onclick="closeRecordsModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 物品编辑弹窗 -->
+    <div class="modal-overlay" id="itemModal">
+        <div class="modal">
+            <h2 id="itemModalTitle">新增物品</h2>
+            <input type="hidden" id="itemId">
+            <label><span>物品名称</span><input type="text" id="itemName" placeholder="输入物品名称"></label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <label><span>稀有度</span>
+                    <select id="itemRarity" onchange="updateModalCategoryOptions()">
+                        <option value="3">3星</option>
+                        <option value="4">4星</option>
+                        <option value="5" selected>5星</option>
+                    </select>
+                </label>
+                <label><span>类型</span>
+                    <select id="itemType" onchange="updateModalCategoryOptions()">
+                        <option value="character">角色</option>
+                        <option value="weapon">武器</option>
+                    </select>
+                </label>
+            </div>
+            <label><span>分类</span>
+                <select id="itemCategoryId"></select>
+            </label>
+            <label><span>图片路径</span><input type="text" id="itemImageUrl" placeholder="如：/images/avatars/jiyan.png" oninput="previewItemImageUrl(this.value)"></label>
+            <div class="upload-area" onclick="document.getElementById('itemImageFileInput').click()" style="margin-bottom:12px;">
+                <input type="file" id="itemImageFileInput" accept="image/*" onchange="uploadItemImage(this)">
+                <p style="color:#8a8580;font-size:13px;">点击上传物品图片（自动填入路径）</p>
+            </div>
+            <div id="itemImagePreviewArea" style="text-align:center;margin-bottom:12px;display:none;">
+                <img id="itemImagePreview" style="max-width:120px;max-height:120px;border-radius:8px;border:1px solid rgba(180,160,130,0.3);">
+            </div>
+            <label><span>描述</span><textarea id="itemDescription" placeholder="物品描述（可选）"></textarea></label>
+            <div class="modal-actions">
+                <button class="btn" style="background:rgba(180,160,130,0.15);color:#6a6560;" onclick="closeItemModal()">取消</button>
+                <button class="btn btn-gold" onclick="saveItem()">保存</button>
             </div>
         </div>
     </div>
@@ -361,6 +487,7 @@
 
             if (name === 'dashboard') loadDashboard();
             if (name === 'pools') loadPools();
+            if (name === 'items') loadItems();
             if (name === 'users') loadUsers();
         }
 
@@ -443,7 +570,7 @@
                         <tr>
                             <td>${p.id}</td>
                             <td>${p.name}</td>
-                            <td>${{'limited-character':'限定角色池','limited-weapon':'限定武器池','standard-character':'常驻角色池','standard-weapon':'常驻武器池'}[p.poolType]||p.poolType}</td>
+                            <td>${{'limited-character':'限定角色池','limited-weapon':'限定武器池','standard-character':'常驻角色池','standard-weapon':'常驻武器池','special-character':'特殊角色池','special-weapon':'特殊武器池'}[p.poolType]||p.poolType}</td>
                             <td>${p.fiveStarRate}%</td>
                             <td>${p.maxPity}</td>
                             <td>${p.upItems && p.upItems.length > 0 ? p.upItems.map(i => i.name).join(', ') : '-'}</td>
@@ -520,11 +647,18 @@
 
         function renderPagination(page) {
             const totalPages = Math.ceil(page.total / page.size);
-            let html = `<button class="page-btn" ${userPage<=1?'disabled':''} onclick="userPage--;loadUsers()">上一页</button>`;
-            for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+            if (totalPages <= 1) { document.getElementById('usersPagination').innerHTML = ''; return; }
+            let html = `<button class="page-btn" ${userPage<=1?'disabled':''} onclick="userPage--;loadUsers()">&laquo;</button>`;
+            const maxVisible = 5;
+            let startPage = Math.max(1, userPage - Math.floor(maxVisible / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+            if (endPage - startPage + 1 < maxVisible) startPage = Math.max(1, endPage - maxVisible + 1);
+            for (let i = startPage; i <= endPage; i++) {
                 html += `<button class="page-btn ${i===userPage?'active':''}" onclick="userPage=${i};loadUsers()">${i}</button>`;
             }
-            html += `<button class="page-btn" ${userPage>=totalPages?'disabled':''} onclick="userPage++;loadUsers()">下一页</button>`;
+            html += `<button class="page-btn" ${userPage>=totalPages?'disabled':''} onclick="userPage++;loadUsers()">&raquo;</button>`;
+            html += `<span class="page-info">${userPage} / ${totalPages}</span>`;
+            html += `<input type="number" class="page-jump-input" min="1" max="${totalPages}" placeholder="页码" onkeydown="if(event.key==='Enter'){userPage=Math.max(1,Math.min(${totalPages},parseInt(this.value)||1));loadUsers()}">`;
             document.getElementById('usersPagination').innerHTML = html;
         }
 
@@ -558,7 +692,7 @@
                     document.getElementById('recordsTableBody').innerHTML = res.records.records.map(r => `
                         <tr>
                             <td>${r.createdAt ? r.createdAt.replace('T',' ').substring(0,19) : '-'}</td>
-                            <td>${{'limited-character':'限定角色池','limited-weapon':'限定武器池','standard-character':'常驻角色池','standard-weapon':'常驻武器池'}[r.poolType]||r.poolType}</td>
+                            <td>${{'limited-character':'限定角色池','limited-weapon':'限定武器池','standard-character':'常驻角色池','standard-weapon':'常驻武器池','special-character':'特殊角色池','special-weapon':'特殊武器池'}[r.poolType]||r.poolType}</td>
                             <td>${r.itemName}</td>
                             <td><span class="badge-${r.itemRarity}star">${r.itemRarity}星</span></td>
                             <td>${r.pityCount || '-'}</td>
@@ -569,6 +703,201 @@
         }
 
         function closeRecordsModal() { document.getElementById('recordsModal').classList.remove('active'); }
+
+        // ========== 物品管理 ==========
+        let itemPage = 1;
+
+        async function loadItems() {
+            // 确保分类数据已加载
+            if (allCategories.length === 0) await loadCategories();
+
+            const rarity = document.getElementById('itemRarityFilter').value;
+            const itemType = document.getElementById('itemTypeFilter').value;
+            const categoryId = document.getElementById('itemCategoryFilter').value;
+            const keyword = document.getElementById('itemSearch').value;
+
+            let url = `/admin/items?page=${itemPage}&size=20`;
+            if (rarity) url += `&rarity=${rarity}`;
+            if (itemType) url += `&itemType=${itemType}`;
+            if (categoryId) url += `&categoryId=${categoryId}`;
+            if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+
+            try {
+                const res = await API.request(url);
+                if (res.success) {
+                    const page = res.items;
+                    if (!page.records || page.records.length === 0) {
+                        document.getElementById('itemsTableBody').innerHTML =
+                            '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);">暂无数据</td></tr>';
+                        document.getElementById('itemsPagination').innerHTML = '';
+                        return;
+                    }
+                    document.getElementById('itemsTableBody').innerHTML = page.records.map(item => {
+                        const cat = allCategories.find(c => c.id === item.categoryId);
+                        const catName = cat ? cat.name : '-';
+                        const rarityClass = `badge-${item.rarity}star`;
+                        const typeLabel = item.itemType === 'character' ? '角色' : '武器';
+                        const imgHtml = item.imageUrl
+                            ? `<img src="${item.imageUrl}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;">`
+                            : '<span style="color:var(--text-dim);font-size:12px;">无</span>';
+                        const desc = item.description
+                            ? (item.description.length > 30 ? item.description.substring(0, 30) + '...' : item.description)
+                            : '-';
+                        return `<tr>
+                            <td>${item.id}</td>
+                            <td>${imgHtml}</td>
+                            <td>${item.name}</td>
+                            <td><span class="${rarityClass}">${item.rarity}星</span></td>
+                            <td>${typeLabel}</td>
+                            <td>${catName}</td>
+                            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${item.description || ''}">${desc}</td>
+                            <td class="btn-group">
+                                <button class="btn btn-sm btn-primary" onclick="editItem(${item.id})">编辑</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id},'${item.name.replace(/'/g, "\\'")}')">删除</button>
+                            </td>
+                        </tr>`;
+                    }).join('');
+                    renderItemsPagination(page);
+                }
+            } catch (e) { console.error('加载物品失败:', e); }
+        }
+
+        function renderItemsPagination(page) {
+            const totalPages = Math.ceil(page.total / page.size);
+            if (totalPages <= 1) { document.getElementById('itemsPagination').innerHTML = ''; return; }
+            let html = `<button class="page-btn" ${itemPage<=1?'disabled':''} onclick="itemPage--;loadItems()">&laquo;</button>`;
+            const maxVisible = 5;
+            let startPage = Math.max(1, itemPage - Math.floor(maxVisible / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+            if (endPage - startPage + 1 < maxVisible) startPage = Math.max(1, endPage - maxVisible + 1);
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="page-btn ${i===itemPage?'active':''}" onclick="itemPage=${i};loadItems()">${i}</button>`;
+            }
+            html += `<button class="page-btn" ${itemPage>=totalPages?'disabled':''} onclick="itemPage++;loadItems()">&raquo;</button>`;
+            html += `<span class="page-info">${itemPage} / ${totalPages}</span>`;
+            html += `<input type="number" class="page-jump-input" min="1" max="${totalPages}" placeholder="页码" onkeydown="if(event.key==='Enter'){itemPage=Math.max(1,Math.min(${totalPages},parseInt(this.value)||1));loadItems()}">`;
+            document.getElementById('itemsPagination').innerHTML = html;
+        }
+
+        function updateCategoryFilter() {
+            const rarity = document.getElementById('itemRarityFilter').value;
+            const itemType = document.getElementById('itemTypeFilter').value;
+            const select = document.getElementById('itemCategoryFilter');
+            const currentValue = select.value;
+            let filtered = allCategories;
+            if (rarity) filtered = filtered.filter(c => c.rarity === parseInt(rarity));
+            if (itemType) filtered = filtered.filter(c => c.itemType === itemType);
+            select.innerHTML = '<option value="">全部分类</option>' +
+                filtered.map(c => `<option value="${c.id}" ${String(c.id)===currentValue?'selected':''}>${c.name}</option>`).join('');
+            loadItems();
+        }
+
+        function updateModalCategoryOptions() {
+            const rarity = parseInt(document.getElementById('itemRarity').value);
+            const itemType = document.getElementById('itemType').value;
+            const select = document.getElementById('itemCategoryId');
+            const currentValue = select.value;
+            const filtered = allCategories.filter(c => c.rarity === rarity && c.itemType === itemType);
+            select.innerHTML = filtered.map(c =>
+                `<option value="${c.id}" ${String(c.id)===currentValue?'selected':''}>${c.name}</option>`
+            ).join('');
+        }
+
+        function openItemModal(item = null) {
+            document.getElementById('itemModal').classList.add('active');
+            document.getElementById('itemModalTitle').textContent = item ? '编辑物品' : '新增物品';
+            document.getElementById('itemId').value = item ? item.id : '';
+            document.getElementById('itemName').value = item ? item.name : '';
+            document.getElementById('itemRarity').value = item ? item.rarity : 5;
+            document.getElementById('itemType').value = item ? item.itemType : 'character';
+            document.getElementById('itemImageUrl').value = item ? (item.imageUrl || '') : '';
+            document.getElementById('itemDescription').value = item ? (item.description || '') : '';
+
+            // 加载分类后设置选中值
+            Promise.resolve(allCategories.length === 0 ? loadCategories() : null).then(() => {
+                updateModalCategoryOptions();
+                if (item && item.categoryId) {
+                    document.getElementById('itemCategoryId').value = item.categoryId;
+                }
+            });
+
+            // 图片预览
+            previewItemImageUrl(item ? (item.imageUrl || '') : '');
+        }
+
+        function closeItemModal() { document.getElementById('itemModal').classList.remove('active'); }
+
+        async function editItem(id) {
+            try {
+                const res = await API.request(`/admin/items/${id}`);
+                if (res.success) openItemModal(res.item);
+            } catch (e) { console.error(e); }
+        }
+
+        async function saveItem() {
+            const id = document.getElementById('itemId').value;
+            const data = {
+                name: document.getElementById('itemName').value,
+                rarity: parseInt(document.getElementById('itemRarity').value),
+                itemType: document.getElementById('itemType').value,
+                categoryId: parseInt(document.getElementById('itemCategoryId').value),
+                imageUrl: document.getElementById('itemImageUrl').value || null,
+                description: document.getElementById('itemDescription').value || null
+            };
+            if (!data.name) { alert('请输入物品名称'); return; }
+            if (!data.categoryId) { alert('请选择分类'); return; }
+            try {
+                const url = id ? `/admin/items/${id}` : '/admin/items';
+                const method = id ? 'PUT' : 'POST';
+                const res = await API.request(url, { method, body: JSON.stringify(data) });
+                if (res.success) { closeItemModal(); loadItems(); }
+                else alert(res.message || '保存失败');
+            } catch (e) { alert('保存失败'); console.error(e); }
+        }
+
+        async function deleteItem(id, name) {
+            if (!confirm(`确定要永久删除物品「${name}」吗？\n如果该物品被卡池引用为UP物品，则无法删除。`)) return;
+            try {
+                const res = await API.request(`/admin/items/${id}`, { method: 'DELETE' });
+                if (res.success) loadItems();
+                else alert(res.message || '删除失败');
+            } catch (e) { alert('删除失败'); console.error(e); }
+        }
+
+        function previewItemImageUrl(url) {
+            const preview = document.getElementById('itemImagePreview');
+            const area = document.getElementById('itemImagePreviewArea');
+            if (url && url.trim()) {
+                preview.src = url;
+                area.style.display = 'block';
+            } else {
+                area.style.display = 'none';
+            }
+        }
+
+        async function uploadItemImage(input) {
+            if (!input.files || !input.files[0]) return;
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+            try {
+                const token = localStorage.getItem('token');
+                const resp = await fetch('/api/admin/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    document.getElementById('itemImageUrl').value = result.url;
+                    previewItemImageUrl(result.url);
+                } else {
+                    alert(result.message || '上传失败');
+                }
+            } catch (e) {
+                alert('上传失败');
+                console.error(e);
+            }
+        }
 
         // ========== 卡池物品管理（分类模式） ==========
         let allItems = [];
@@ -829,6 +1158,12 @@
 
         // 初始加载
         loadDashboard();
+        loadCategories().then(() => {
+            // 初始化物品管理分类过滤器
+            const select = document.getElementById('itemCategoryFilter');
+            select.innerHTML = '<option value="">全部分类</option>' +
+                allCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        });
     </script>
 </body>
 </html>

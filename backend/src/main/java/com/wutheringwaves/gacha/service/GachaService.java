@@ -85,7 +85,7 @@ public class GachaService {
 
         int rarity = determineRarity(userId, poolType, pool.getId(), currentPity);
 
-        boolean isLimitedPool = poolType.startsWith("limited-");
+        boolean isLimitedPool = poolType.startsWith("limited-") || poolType.startsWith("special-");
 
         GachaItem selectedItem = selectItem(items, pool, rarity, poolType,
                 guaranteedFive, guaranteedFour, isLimitedPool);
@@ -110,6 +110,7 @@ public class GachaService {
         result.put("type", selectedItem.getItemType());
         result.put("isLimited", isUp);
         result.put("pityCount", currentPity + 1);
+        result.put("imageUrl", selectedItem.getImageUrl());
 
         return result;
     }
@@ -127,7 +128,7 @@ public class GachaService {
         int maxPity = poolConfig != null ? poolConfig.getMaxPity() : 80;
         double fiveStarRate = poolConfig != null ? poolConfig.getFiveStarRate().doubleValue() : 0.8;
         double fourStarRate = poolConfig != null ? poolConfig.getFourStarRate().doubleValue() : 6.0;
-        int softPityStart = poolConfig != null ? poolConfig.getSoftPityStart() : 65;
+        int softPityStart = poolConfig != null ? poolConfig.getSoftPityStart() : 60;
         double softPityInc = poolConfig != null ? poolConfig.getSoftPityIncrement().doubleValue() : 6.0;
 
         if (fiveStarRate >= 100) {
@@ -218,6 +219,15 @@ public class GachaService {
         // 限定武器池五星不歪：直接出UP
         if ("limited-weapon".equals(poolType) && rarity == 5 && !upItems.isEmpty()) {
             return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
+        }
+
+        // 特殊卡池：根据 allowLose 配置决定是否歪
+        if (poolType.startsWith("special-") && rarity == 5 && !upItems.isEmpty()) {
+            if (pool.getAllowLose() != null && !pool.getAllowLose()) {
+                // 100%出UP，不歪
+                return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
+            }
+            // 允许歪，走原有逻辑（50%概率，歪了大保底）
         }
 
         if (rarity == 5) {
@@ -461,7 +471,7 @@ public class GachaService {
 
         // 限定五星和常驻五星统计
         int limitedFiveStar = (int) fiveStarRecords.stream()
-                .filter(r -> "limited-character".equals(r.getPoolType()) || "limited-weapon".equals(r.getPoolType()))
+                .filter(r -> r.getPoolType().startsWith("limited-") || r.getPoolType().startsWith("special-"))
                 .filter(GachaRecord::getIsLimited)
                 .count();
         int standardFiveStar = totalFiveStar - limitedFiveStar;
@@ -470,10 +480,10 @@ public class GachaService {
 
         // 计算小保底不歪概率（限定池中未歪的次数 / 限定池五星总数）
         long limitedPoolFiveStars = fiveStarRecords.stream()
-                .filter(r -> "limited-character".equals(r.getPoolType()) || "limited-weapon".equals(r.getPoolType()))
+                .filter(r -> r.getPoolType().startsWith("limited-") || r.getPoolType().startsWith("special-"))
                 .count();
         long notLostCount = fiveStarRecords.stream()
-                .filter(r -> "limited-character".equals(r.getPoolType()) || "limited-weapon".equals(r.getPoolType()))
+                .filter(r -> r.getPoolType().startsWith("limited-") || r.getPoolType().startsWith("special-"))
                 .filter(GachaRecord::getIsLimited)
                 .count();
         double notLostRate = limitedPoolFiveStars > 0 ? (notLostCount * 100.0 / limitedPoolFiveStars) : 0;
@@ -508,6 +518,34 @@ public class GachaService {
             poolStats.put("avgWeaponPity", Math.round(avgWeaponPity * 10) / 10.0);
         } else {
             poolStats.put("avgWeaponPity", 0);
+        }
+
+        // 特殊角色池统计
+        List<GachaRecord> specialCharPoolRecords = fiveStarRecords.stream()
+                .filter(r -> "special-character".equals(r.getPoolType()))
+                .toList();
+        if (!specialCharPoolRecords.isEmpty()) {
+            double avgSpecialCharPity = specialCharPoolRecords.stream()
+                    .mapToInt(GachaRecord::getPityCount)
+                    .average()
+                    .orElse(0);
+            poolStats.put("avgSpecialCharacterPity", Math.round(avgSpecialCharPity * 10) / 10.0);
+        } else {
+            poolStats.put("avgSpecialCharacterPity", 0);
+        }
+
+        // 特殊武器池统计
+        List<GachaRecord> specialWpnPoolRecords = fiveStarRecords.stream()
+                .filter(r -> "special-weapon".equals(r.getPoolType()))
+                .toList();
+        if (!specialWpnPoolRecords.isEmpty()) {
+            double avgSpecialWpnPity = specialWpnPoolRecords.stream()
+                    .mapToInt(GachaRecord::getPityCount)
+                    .average()
+                    .orElse(0);
+            poolStats.put("avgSpecialWeaponPity", Math.round(avgSpecialWpnPity * 10) / 10.0);
+        } else {
+            poolStats.put("avgSpecialWeaponPity", 0);
         }
 
         analysis.put("poolStats", poolStats);
@@ -564,7 +602,7 @@ public class GachaService {
 
         // 按卡池类型分组（不按名称去重，每条五星记录独立显示）
         Map<String, List<Map<String, Object>>> poolGroupedItems = new HashMap<>();
-        String[] poolTypes = {"limited-character", "limited-weapon", "standard-character", "standard-weapon"};
+        String[] poolTypes = {"limited-character", "limited-weapon", "standard-character", "standard-weapon", "special-character", "special-weapon"};
 
         Map<String, String> imageUrlMap = new HashMap<>();
         for (GachaItem item : allFiveStarItems) {

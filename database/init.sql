@@ -25,7 +25,7 @@ ON DUPLICATE KEY UPDATE role = 'admin';
 CREATE TABLE IF NOT EXISTS gacha_records (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
-    pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon',
+    pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon/special-character/special-weapon',
     item_name VARCHAR(100) NOT NULL COMMENT '物品名称',
     item_rarity INT NOT NULL COMMENT '稀有度：3/4/5',
     item_type VARCHAR(20) NOT NULL COMMENT '类型：character/weapon',
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS gacha_records (
 CREATE TABLE IF NOT EXISTS gacha_pity (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
-    pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon',
+    pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon/special-character/special-weapon',
     five_star_count INT DEFAULT 0 COMMENT '距离五星保底累计抽数',
     four_star_count INT DEFAULT 0 COMMENT '距离四星保底累计抽数',
     guaranteed_five BOOLEAN DEFAULT FALSE COMMENT '五星大保底（下次五星必出UP）',
@@ -69,7 +69,12 @@ INSERT INTO item_category (id, name, rarity, item_type, description, sort_order)
 (4, '五星常驻角色', 5, 'character', '常驻池可出的五星角色', 4),
 (5, '五星常驻武器', 5, 'weapon', '常驻池可出的五星武器', 5),
 (6, '五星限定武器', 5, 'weapon', '限定池专精五星武器', 6),
-(7, '五星限定角色', 5, 'character', '限定UP五星角色', 7);
+(7, '五星限定角色', 5, 'character', '限定UP五星角色', 7),
+(8, '五星特殊角色', 5, 'character', '特殊卡池限定五星角色', 8),
+(9, '五星特殊武器', 5, 'weapon', '特殊卡池限定五星武器', 9),
+(10, '三星特殊武器', 3, 'weapon', '三星特殊活动武器', 10),
+(11, '四星特殊角色', 4, 'character', '特殊卡池四星角色', 11),
+(12, '四星特殊武器', 4, 'weapon', '特殊卡池四星武器', 12);
 
 -- ========== 统一抽卡物品表 ==========
 CREATE TABLE IF NOT EXISTS gacha_items (
@@ -216,7 +221,7 @@ INSERT INTO gacha_items (id, name, rarity, item_type, category_id, image_url) VA
 CREATE TABLE IF NOT EXISTS gacha_pool (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL COMMENT '卡池名称',
-    pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon',
+    pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon/special-character/special-weapon',
     description TEXT COMMENT '卡池描述',
     five_star_rate DECIMAL(5,2) DEFAULT 0.80 COMMENT '五星基础概率(%)',
     four_star_rate DECIMAL(5,2) DEFAULT 6.00 COMMENT '四星基础概率(%)',
@@ -232,6 +237,7 @@ CREATE TABLE IF NOT EXISTS gacha_pool (
     thumbnail_url MEDIUMTEXT COMMENT '侧栏缩略图（base64 data URL）',
     fivestar_up BIGINT COMMENT '五星UP物品ID（单个）',
     fourstar_up VARCHAR(200) COMMENT '四星UP物品ID列表，逗号分隔',
+    allow_lose BOOLEAN DEFAULT TRUE COMMENT '是否允许歪（false=100%出UP）',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_pool_type (pool_type),
@@ -247,4 +253,5 @@ CREATE TABLE IF NOT EXISTS pool_category (
     FOREIGN KEY (category_id) REFERENCES item_category(id) ON DELETE CASCADE,
     UNIQUE KEY uk_pool_category (pool_id, category_id)
 );
+
 

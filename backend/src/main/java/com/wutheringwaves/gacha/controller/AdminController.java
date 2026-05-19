@@ -1,13 +1,21 @@
 package com.wutheringwaves.gacha.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.wutheringwaves.gacha.mapper.GachaItemMapper;
 import com.wutheringwaves.gacha.model.GachaItem;
 import com.wutheringwaves.gacha.model.GachaPool;
 import com.wutheringwaves.gacha.service.AdminService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 import java.util.*;
 
@@ -18,6 +26,9 @@ public class AdminController {
 
     private final AdminService adminService;
     private final GachaItemMapper gachaItemMapper;
+
+    @Value("${app.upload.dir:uploads}")
+    private String uploadDir;
 
     // ========== 卡池管理 ==========
 
@@ -89,15 +100,64 @@ public class AdminController {
     @GetMapping("/items")
     public ResponseEntity<Map<String, Object>> listAllItems(
             @RequestParam(required = false) Integer rarity,
-            @RequestParam(required = false) String itemType) {
-        LambdaQueryWrapper<GachaItem> wrapper = new LambdaQueryWrapper<>();
-        if (rarity != null) wrapper.eq(GachaItem::getRarity, rarity);
-        if (itemType != null && !itemType.isEmpty()) wrapper.eq(GachaItem::getItemType, itemType);
-        wrapper.orderByAsc(GachaItem::getRarity).orderByAsc(GachaItem::getName);
+            @RequestParam(required = false) String itemType,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        // 无分页参数时返回全量列表（兼容卡池管理中的物品选择）
+        if (page == null && size == null && keyword == null && categoryId == null) {
+            LambdaQueryWrapper<GachaItem> wrapper = new LambdaQueryWrapper<>();
+            if (rarity != null) wrapper.eq(GachaItem::getRarity, rarity);
+            if (itemType != null && !itemType.isEmpty()) wrapper.eq(GachaItem::getItemType, itemType);
+            wrapper.orderByAsc(GachaItem::getId);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "items", gachaItemMapper.selectList(wrapper)
+            ));
+        }
         return ResponseEntity.ok(Map.of(
                 "success", true,
-                "items", gachaItemMapper.selectList(wrapper)
+                "items", adminService.listItems(page != null ? page : 1, size != null ? size : 20,
+                        rarity, itemType, keyword, categoryId)
         ));
+    }
+
+    @GetMapping("/items/{id}")
+    public ResponseEntity<Map<String, Object>> getItem(@PathVariable Long id) {
+        GachaItem item = adminService.getItemById(id);
+        if (item == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "物品不存在"));
+        }
+        return ResponseEntity.ok(Map.of("success", true, "item", item));
+    }
+
+    @PostMapping("/items")
+    public ResponseEntity<Map<String, Object>> createItem(@RequestBody GachaItem item) {
+        GachaItem created = adminService.createItem(item);
+        if (created == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "分类不存在"));
+        }
+        return ResponseEntity.ok(Map.of("success", true, "item", created));
+    }
+
+    @PutMapping("/items/{id}")
+    public ResponseEntity<Map<String, Object>> updateItem(@PathVariable Long id, @RequestBody GachaItem item) {
+        item.setId(id);
+        GachaItem updated = adminService.updateItem(item);
+        if (updated == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "物品不存在或分类无效"));
+        }
+        return ResponseEntity.ok(Map.of("success", true, "item", updated));
+    }
+
+    @DeleteMapping("/items/{id}")
+    public ResponseEntity<Map<String, Object>> deleteItem(@PathVariable Long id) {
+        boolean result = adminService.deleteItem(id);
+        if (!result) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "物品不存在或已被卡池引用，无法删除"));
+        }
+        return ResponseEntity.ok(Map.of("success", true, "message", "物品已删除"));
     }
 
     @GetMapping("/pools/{id}/items")
@@ -190,5 +250,38 @@ public class AdminController {
                 "success", true,
                 "dailyStats", adminService.getDailyStats(days)
         ));
+    }
+
+    // ========== 文件上传 ==========
+
+    @PostMapping("/upload")
+    public ResponseEntity<Map<String, Object>> uploadFile(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "文件为空"));
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "仅支持图片文件"));
+        }
+
+        try {
+            String originalFilename = file.getOriginalFilename();
+            String extension = "";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+            String filename = UUID.randomUUID().toString() + extension;
+
+            Path uploadPath = Paths.get(uploadDir, "images");
+            Files.createDirectories(uploadPath);
+            Path filePath = uploadPath.resolve(filename);
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            String url = "/uploads/images/" + filename;
+            return ResponseEntity.ok(Map.of("success", true, "url", url));
+        } catch (IOException e) {
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", "上传失败: " + e.getMessage()));
+        }
     }
 }

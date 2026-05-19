@@ -30,6 +30,7 @@ public class GachaPool {
     private String thumbnailUrl;
     private Long fivestarUp;
     private String fourstarUp;
+    private Boolean allowLose;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
