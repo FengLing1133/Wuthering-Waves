@@ -175,6 +175,52 @@ public class AdminService {
         return gachaItemMapper.selectById(id);
     }
 
+    // ========== 物品管理 ==========
+
+    public Page<GachaItem> listItems(int page, int size, Integer rarity,
+                                      String itemType, String keyword, Long categoryId) {
+        Page<GachaItem> pageParam = new Page<>(page, size);
+        LambdaQueryWrapper<GachaItem> wrapper = new LambdaQueryWrapper<>();
+        if (rarity != null) wrapper.eq(GachaItem::getRarity, rarity);
+        if (itemType != null && !itemType.isEmpty()) wrapper.eq(GachaItem::getItemType, itemType);
+        if (categoryId != null) wrapper.eq(GachaItem::getCategoryId, categoryId);
+        if (keyword != null && !keyword.isEmpty()) wrapper.like(GachaItem::getName, keyword);
+        wrapper.orderByAsc(GachaItem::getId);
+        return gachaItemMapper.selectPage(pageParam, wrapper);
+    }
+
+    public GachaItem createItem(GachaItem item) {
+        if (item.getCategoryId() == null) return null;
+        ItemCategory cat = itemCategoryMapper.selectById(item.getCategoryId());
+        if (cat == null) return null;
+        gachaItemMapper.insert(item);
+        return item;
+    }
+
+    public GachaItem updateItem(GachaItem item) {
+        GachaItem existing = gachaItemMapper.selectById(item.getId());
+        if (existing == null) return null;
+        if (item.getCategoryId() != null) {
+            ItemCategory cat = itemCategoryMapper.selectById(item.getCategoryId());
+            if (cat == null) return null;
+        }
+        gachaItemMapper.updateById(item);
+        return gachaItemMapper.selectById(item.getId());
+    }
+
+    public boolean deleteItem(Long id) {
+        GachaItem item = gachaItemMapper.selectById(id);
+        if (item == null) return false;
+        // 检查是否被卡池引用为UP物品
+        LambdaQueryWrapper<GachaPool> poolWrapper = new LambdaQueryWrapper<>();
+        poolWrapper.and(w -> w
+                .eq(GachaPool::getFivestarUp, id)
+                .or().apply("FIND_IN_SET({0}, fourstar_up)", id));
+        if (gachaPoolMapper.selectCount(poolWrapper) > 0) return false;
+        gachaItemMapper.deleteById(id);
+        return true;
+    }
+
     private List<Long> getCategoryIdsByPool(Long poolId) {
         LambdaQueryWrapper<PoolCategory> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(PoolCategory::getPoolId, poolId);

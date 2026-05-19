@@ -25,7 +25,7 @@ ON DUPLICATE KEY UPDATE role = 'admin';
 CREATE TABLE IF NOT EXISTS gacha_records (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
-    pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon/special-activity',
+    pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon/special-character/special-weapon',
     item_name VARCHAR(100) NOT NULL COMMENT '物品名称',
     item_rarity INT NOT NULL COMMENT '稀有度：3/4/5',
     item_type VARCHAR(20) NOT NULL COMMENT '类型：character/weapon',
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS gacha_records (
 CREATE TABLE IF NOT EXISTS gacha_pity (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
-    pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon/special-activity',
+    pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon/special-character/special-weapon',
     five_star_count INT DEFAULT 0 COMMENT '距离五星保底累计抽数',
     four_star_count INT DEFAULT 0 COMMENT '距离四星保底累计抽数',
     guaranteed_five BOOLEAN DEFAULT FALSE COMMENT '五星大保底（下次五星必出UP）',
@@ -71,7 +71,10 @@ INSERT INTO item_category (id, name, rarity, item_type, description, sort_order)
 (6, '五星限定武器', 5, 'weapon', '限定池专精五星武器', 6),
 (7, '五星限定角色', 5, 'character', '限定UP五星角色', 7),
 (8, '五星特殊角色', 5, 'character', '特殊卡池限定五星角色', 8),
-(9, '五星特殊武器', 5, 'weapon', '特殊卡池限定五星武器', 9);
+(9, '五星特殊武器', 5, 'weapon', '特殊卡池限定五星武器', 9),
+(10, '三星特殊武器', 3, 'weapon', '三星特殊活动武器', 10),
+(11, '四星特殊角色', 4, 'character', '特殊卡池四星角色', 11),
+(12, '四星特殊武器', 4, 'weapon', '特殊卡池四星武器', 12);
 
 -- ========== 统一抽卡物品表 ==========
 CREATE TABLE IF NOT EXISTS gacha_items (
@@ -212,19 +215,13 @@ INSERT INTO gacha_items (id, name, rarity, item_type, category_id, image_url) VA
 (117, '爱弥斯', 5, 'character', 7, '/images/avatars/aimisi.png'),
 (118, '陆·赫斯', 5, 'character', 7, '/images/avatars/luhesi.png'),
 (119, '西格莉卡', 5, 'character', 7, '/images/avatars/xigelika.png'),
-(120, '绯雪', 5, 'character', 7, '/images/avatars/feixue.png'),
--- ===== 五星特殊角色 (category_id=8) =====
-(121, '特殊角色A', 5, 'character', 8, '/images/avatars/special_char_a.png'),
-(122, '特殊角色B', 5, 'character', 8, '/images/avatars/special_char_b.png'),
--- ===== 五星特殊武器 (category_id=9) =====
-(123, '特殊武器A', 5, 'weapon', 9, '/images/weapons/special_weapon_a.png'),
-(124, '特殊武器B', 5, 'weapon', 9, '/images/weapons/special_weapon_b.png');
+(120, '绯雪', 5, 'character', 7, '/images/avatars/feixue.png');
 
 -- ========== 卡池配置表（含UP物品信息） ==========
 CREATE TABLE IF NOT EXISTS gacha_pool (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL COMMENT '卡池名称',
-    pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon/special-activity',
+    pool_type VARCHAR(30) NOT NULL COMMENT '池子类型：limited-character/limited-weapon/standard-character/standard-weapon/special-character/special-weapon',
     description TEXT COMMENT '卡池描述',
     five_star_rate DECIMAL(5,2) DEFAULT 0.80 COMMENT '五星基础概率(%)',
     four_star_rate DECIMAL(5,2) DEFAULT 6.00 COMMENT '四星基础概率(%)',
@@ -257,21 +254,4 @@ CREATE TABLE IF NOT EXISTS pool_category (
     UNIQUE KEY uk_pool_category (pool_id, category_id)
 );
 
--- ========== 特殊卡池配置示例 ==========
-INSERT INTO gacha_pool (name, pool_type, description, five_star_rate, four_star_rate, max_pity, soft_pity_start, soft_pity_increment, status, sidebar_visible, sidebar_order, allow_lose, fivestar_up)
-SELECT '特殊活动唤取', 'special-activity', '特殊活动卡池', 0.80, 6.00, 80, 65, 6.00, 'active', TRUE, 5, TRUE, 121
-FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM gacha_pool WHERE pool_type = 'special-activity');
-
--- 特殊活动卡池关联分类（幂等：先查 pool_id，再 IGNORE 插入）
-SET @new_pool_id = (SELECT id FROM gacha_pool WHERE pool_type = 'special-activity' LIMIT 1);
-
-INSERT IGNORE INTO pool_category (pool_id, category_id) VALUES
-(@new_pool_id, 1),  -- 三星武器
-(@new_pool_id, 2),  -- 四星角色
-(@new_pool_id, 3),  -- 四星武器
-(@new_pool_id, 4),  -- 五星常驻角色（歪的候选）
-(@new_pool_id, 5),  -- 五星常驻武器（歪的候选）
-(@new_pool_id, 8),  -- 五星特殊角色
-(@new_pool_id, 9);  -- 五星特殊武器
 

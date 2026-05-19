@@ -159,6 +159,8 @@
                             <option value="limited-weapon">武器活动唤取</option>
                             <option value="standard-character">角色常驻唤取</option>
                             <option value="standard-weapon">武器常驻唤取</option>
+                            <option value="special-character">特殊角色唤取</option>
+                            <option value="special-weapon">特殊武器唤取</option>
                         </select>
                         <span class="history-select-arrow">▾</span>
                     </div>
@@ -259,6 +261,8 @@
                     <button class="analysis-pool-tab" data-pool="limited-weapon">武器唤取</button>
                     <button class="analysis-pool-tab" data-pool="standard-character">常驻角色</button>
                     <button class="analysis-pool-tab" data-pool="standard-weapon">常驻武器</button>
+                    <button class="analysis-pool-tab" data-pool="special-character">特殊角色</button>
+                    <button class="analysis-pool-tab" data-pool="special-weapon">特殊武器</button>
                 </div>
 
                 <!-- 卡池五星记录 -->
@@ -275,6 +279,44 @@
             <div class="light-effect"></div>
             <div class="star-effect"></div>
         </div>
+        <!-- 视频播放器 -->
+        <video id="gachaVideo" class="gacha-video hidden" playsinline preload="metadata"></video>
+    </div>
+
+    <!-- 全局跳过按钮 -->
+    <button id="skipBtn" class="skip-btn hidden">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+        </svg>
+        <span>跳过</span>
+    </button>
+
+    <!-- 单个物品展示页面 -->
+    <div id="itemShowcase" class="item-showcase hidden">
+        <div class="showcase-bg"></div>
+        <button class="showcase-skip-btn">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+            </svg>
+            <span>跳过</span>
+        </button>
+        <div class="showcase-content">
+            <div class="showcase-item-icon" id="showcaseIcon"></div>
+            <div class="showcase-item-info">
+                <div class="showcase-item-name" id="showcaseName"></div>
+                <div class="showcase-item-stars" id="showcaseStars"></div>
+            </div>
+        </div>
+        <div class="showcase-hint">点击任意位置继续</div>
+    </div>
+
+    <!-- 十抽汇总卡片页面 -->
+    <div id="tenPullSummary" class="ten-pull-summary hidden">
+        <div class="summary-bg"></div>
+        <div class="summary-content">
+            <div class="summary-cards" id="summaryCards"></div>
+        </div>
+        <button class="summary-close-btn" id="closeSummaryBtn">确认</button>
     </div>
 
     <script src="js/api.js"></script>

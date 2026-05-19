@@ -60,6 +60,7 @@ CREATE TABLE gacha_pool (
     thumbnail_url VARCHAR(255),
     fivestar_up BIGINT,
     fourstar_up VARCHAR(200),
+    allow_lose BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

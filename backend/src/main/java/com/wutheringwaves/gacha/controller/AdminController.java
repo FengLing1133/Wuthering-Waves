@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 import java.util.*;
 
@@ -275,7 +276,7 @@ public class AdminController {
             Path uploadPath = Paths.get(uploadDir, "images");
             Files.createDirectories(uploadPath);
             Path filePath = uploadPath.resolve(filename);
-            file.transferTo(filePath.toFile());
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
             String url = "/uploads/images/" + filename;
             return ResponseEntity.ok(Map.of("success", true, "url", url));

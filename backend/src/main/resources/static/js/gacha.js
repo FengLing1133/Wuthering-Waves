@@ -66,7 +66,7 @@ const Gacha = {
             let tag = '活动';
             if (pool.poolType && pool.poolType.startsWith('standard-')) {
                 tag = '常驻';
-            } else if (pool.poolType === 'special-activity') {
+            } else if (pool.poolType.startsWith('special-')) {
                 tag = '特殊';
             }
             return `<div class="banner-slot ${isActive}" data-pool-id="${pool.id}">
@@ -118,7 +118,8 @@ const Gacha = {
             case 'standard-weapon': subtitle = '武器常驻唤取'; break;
             case 'standard-character': subtitle = '角色常驻唤取'; break;
             case 'limited-weapon': subtitle = '武器活动唤取'; break;
-            case 'special-activity': subtitle = '特殊活动唤取'; break;
+            case 'special-character': subtitle = '特殊角色唤取'; break;
+            case 'special-weapon': subtitle = '特殊武器唤取'; break;
             default: subtitle = '角色活动唤取';
         }
         document.getElementById('bannerSubtitle').textContent = subtitle;
@@ -440,7 +441,8 @@ const Gacha = {
                 resolve();
             };
 
-            // 开始播放
+            // 开始播放（取消静音，因为抽卡按钮点击已是用户交互）
+            video.muted = false;
             video.play().catch(() => {
                 this.hideVideoOverlay();
                 resolve();
@@ -547,11 +549,8 @@ const Gacha = {
 
     // 显示十连抽动画
     async showTenPullAnimation(results) {
-        // 按稀有度排序，高星在前
-        const sortedResults = [...results].sort((a, b) => b.rarity - a.rarity);
-
-        // 依次展示每个物品，跳过时直接退出循环
-        for (const item of sortedResults) {
+        // 依次展示每个物品，按实际抽取顺序，跳过时直接退出循环
+        for (const item of results) {
             if (this._skipRequested) break;
             await this.showItemShowcase(item);
             if (!this._skipRequested) {
@@ -572,10 +571,8 @@ const Gacha = {
 
             cardsContainer.innerHTML = '';
 
-            // 按稀有度排序，高星在前
-            const sortedResults = [...results].sort((a, b) => b.rarity - a.rarity);
-
-            sortedResults.forEach(item => {
+            // 按实际抽取顺序展示
+            results.forEach(item => {
                 const card = document.createElement('div');
                 card.className = `summary-card rarity-${item.rarity}`;
 
@@ -748,6 +745,7 @@ const Gacha = {
 
         // 页码信息
         html += `<span class="page-info">${this.historyCurrentPage} / ${this.historyTotalPages}</span>`;
+        html += `<input type="number" class="page-jump-input" min="1" max="${this.historyTotalPages}" placeholder="页码" data-action="jump">`;
 
         container.innerHTML = html;
 
@@ -761,6 +759,18 @@ const Gacha = {
                 }
             });
         });
+
+        // 绑定页码跳转
+        const jumpInput = container.querySelector('.page-jump-input');
+        if (jumpInput) {
+            jumpInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const page = Math.max(1, Math.min(this.historyTotalPages, parseInt(jumpInput.value) || 1));
+                    this.historyCurrentPage = page;
+                    this.loadHistory();
+                }
+            });
+        }
     },
 
     // 更新货币显示
@@ -961,7 +971,7 @@ const Gacha = {
             }
 
             let lostHtml = '';
-            if (item.poolType && item.poolType.startsWith('limited-') && !isLimited) {
+            if (item.poolType && (item.poolType.startsWith('limited-') || item.poolType.startsWith('special-')) && !isLimited) {
                 lostHtml = '<span class="analysis-pool-record-lost">歪</span>';
             }
 

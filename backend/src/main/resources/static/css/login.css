@@ -1,11 +1,11 @@
-/* 登录页面样式 */
+/* 登录页面样式 - 浅色系 */
 
 .login-page {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    background: radial-gradient(ellipse at center, #1a237e 0%, #0a0e1a 70%);
+    background: linear-gradient(180deg, rgba(245, 240, 230, 0.98) 0%, rgba(240, 235, 225, 0.95) 100%);
 }
 
 .login-container {
@@ -22,7 +22,7 @@
     transform: translate(-50%, -50%);
     width: 500px;
     height: 500px;
-    background: radial-gradient(circle, rgba(79, 195, 247, 0.15) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(196, 154, 48, 0.08) 0%, transparent 70%);
     border-radius: 50%;
     animation: pulse 4s ease-in-out infinite;
 }
@@ -41,11 +41,11 @@
 .login-box {
     position: relative;
     z-index: 10;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    background: #fff;
+    border: 1px solid rgba(180, 160, 130, 0.3);
     border-radius: 20px;
     padding: 40px;
-    backdrop-filter: blur(20px);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
 }
 
 .login-header {
@@ -56,7 +56,7 @@
 .login-header h1 {
     font-size: 48px;
     font-weight: 300;
-    background: linear-gradient(135deg, var(--accent-color), #81d4fa);
+    background: linear-gradient(135deg, #c49a30, #d4a843);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 10px;
@@ -64,7 +64,7 @@
 }
 
 .login-header p {
-    color: var(--text-secondary);
+    color: #6a6560;
     font-size: 16px;
     letter-spacing: 5px;
 }
@@ -79,8 +79,8 @@
     flex: 1;
     padding: 12px;
     background: transparent;
-    border: 1px solid var(--border-color);
-    color: var(--text-secondary);
+    border: 1px solid rgba(180, 160, 130, 0.3);
+    color: #6a6560;
     border-radius: 8px;
     cursor: pointer;
     font-size: 15px;
@@ -88,14 +88,14 @@
 }
 
 .tab-btn:hover {
-    border-color: var(--accent-color);
-    color: var(--text-primary);
+    border-color: #c49a30;
+    color: #2a2520;
 }
 
 .tab-btn.active {
-    background: rgba(79, 195, 247, 0.2);
-    border-color: var(--accent-color);
-    color: var(--accent-color);
+    background: rgba(196, 154, 48, 0.1);
+    border-color: #c49a30;
+    color: #c49a30;
 }
 
 .login-form {
@@ -112,33 +112,33 @@
 
 .form-group label {
     font-size: 14px;
-    color: var(--text-secondary);
+    color: #6a6560;
 }
 
 .form-group input {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border-color);
+    background: #fff;
+    border: 1px solid rgba(180, 160, 130, 0.4);
     border-radius: 10px;
     padding: 14px 18px;
-    color: var(--text-primary);
+    color: #2a2520;
     font-size: 15px;
     transition: all 0.3s ease;
 }
 
 .form-group input:focus {
     outline: none;
-    border-color: var(--accent-color);
-    box-shadow: 0 0 20px rgba(79, 195, 247, 0.2);
+    border-color: #8a7a5a;
+    box-shadow: 0 0 0 2px rgba(138, 122, 90, 0.15);
 }
 
 .form-group input::placeholder {
-    color: rgba(255, 255, 255, 0.3);
+    color: #aaa;
 }
 
 .submit-btn {
     width: 100%;
     height: 50px;
-    background: linear-gradient(135deg, var(--accent-color), var(--accent-glow));
+    background: linear-gradient(135deg, #c49a30, #d4a843);
     border: none;
     border-radius: 10px;
     color: white;
@@ -151,7 +151,7 @@
 
 .submit-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(79, 195, 247, 0.4);
+    box-shadow: 0 10px 30px rgba(196, 154, 48, 0.3);
 }
 
 .submit-btn:active {
@@ -166,9 +166,9 @@
 }
 
 .message.success {
-    color: #66bb6a;
+    color: #3a7a2a;
 }
 
 .message.error {
-    color: #ef5350;
+    color: #c0392b;
 }

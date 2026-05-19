@@ -877,6 +877,23 @@ body {
     margin-left: 8px;
 }
 
+.page-jump-input {
+    width: 70px;
+    padding: 5px 8px;
+    border: 1px solid rgba(180, 160, 130, 0.4);
+    border-radius: 4px;
+    font-size: 13px;
+    text-align: center;
+    margin-left: 8px;
+    background: #fff;
+    color: #5a5550;
+}
+
+.page-jump-input:focus {
+    outline: none;
+    border-color: #4a9eff;
+}
+
 .close-history-btn {
     background: transparent;
     border: 1px solid var(--border-subtle);
