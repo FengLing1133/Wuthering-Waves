@@ -8,12 +8,14 @@ import com.wutheringwaves.gacha.mapper.GachaRecordMapper;
 import com.wutheringwaves.gacha.mapper.UserMapper;
 import com.wutheringwaves.gacha.mapper.PoolCategoryMapper;
 import com.wutheringwaves.gacha.mapper.ItemCategoryMapper;
+import com.wutheringwaves.gacha.mapper.ItemThemeMapper;
 import com.wutheringwaves.gacha.model.GachaItem;
 import com.wutheringwaves.gacha.model.GachaPool;
 import com.wutheringwaves.gacha.model.GachaRecord;
 import com.wutheringwaves.gacha.model.User;
 import com.wutheringwaves.gacha.model.PoolCategory;
 import com.wutheringwaves.gacha.model.ItemCategory;
+import com.wutheringwaves.gacha.model.ItemTheme;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +36,7 @@ public class AdminService {
     private final UserMapper userMapper;
     private final PoolCategoryMapper poolCategoryMapper;
     private final ItemCategoryMapper itemCategoryMapper;
+    private final ItemThemeMapper itemThemeMapper;
 
     // ========== 卡池管理 ==========
 
@@ -94,6 +97,190 @@ public class AdminService {
     public List<ItemCategory> listCategories() {
         return itemCategoryMapper.selectList(
                 new LambdaQueryWrapper<ItemCategory>().orderByAsc(ItemCategory::getSortOrder));
+    }
+
+    // ========== 主题管理 ==========
+
+    public List<Map<String, Object>> listThemes() {
+        List<ItemTheme> themes = itemThemeMapper.selectList(
+                new LambdaQueryWrapper<ItemTheme>().orderByDesc(ItemTheme::getCreatedAt));
+        return themes.stream().map(theme -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", theme.getId());
+            map.put("name", theme.getName());
+            map.put("description", theme.getDescription());
+            map.put("createdAt", theme.getCreatedAt());
+            map.put("updatedAt", theme.getUpdatedAt());
+            LambdaQueryWrapper<ItemCategory> catWrapper = new LambdaQueryWrapper<>();
+            catWrapper.eq(ItemCategory::getThemeId, theme.getId());
+            map.put("categoryCount", itemCategoryMapper.selectCount(catWrapper));
+            return map;
+        }).toList();
+    }
+
+    public ItemTheme getThemeById(Long id) {
+        return itemThemeMapper.selectById(id);
+    }
+
+    @Transactional
+    public ItemTheme createTheme(String name, String description, List<String> generateCategories) {
+        ItemTheme theme = new ItemTheme();
+        theme.setName(name);
+        theme.setDescription(description);
+        itemThemeMapper.insert(theme);
+
+        if (generateCategories != null && !generateCategories.isEmpty()) {
+            for (String type : generateCategories) {
+                ItemCategory cat = buildCategoryFromType(type, theme.getId());
+                if (cat != null) {
+                    itemCategoryMapper.insert(cat);
+                }
+            }
+        }
+        return theme;
+    }
+
+    @Transactional
+    public ItemTheme updateTheme(Long id, ItemTheme update) {
+        ItemTheme theme = itemThemeMapper.selectById(id);
+        if (theme == null) return null;
+        if (update.getName() != null) theme.setName(update.getName());
+        if (update.getDescription() != null) theme.setDescription(update.getDescription());
+        itemThemeMapper.updateById(theme);
+        return theme;
+    }
+
+    @Transactional
+    public boolean deleteTheme(Long id) {
+        ItemTheme theme = itemThemeMapper.selectById(id);
+        if (theme == null) return false;
+
+        LambdaQueryWrapper<ItemCategory> catWrapper = new LambdaQueryWrapper<>();
+        catWrapper.eq(ItemCategory::getThemeId, id);
+        List<ItemCategory> categories = itemCategoryMapper.selectList(catWrapper);
+        for (ItemCategory cat : categories) {
+            LambdaQueryWrapper<PoolCategory> pcWrapper = new LambdaQueryWrapper<>();
+            pcWrapper.eq(PoolCategory::getCategoryId, cat.getId());
+            if (poolCategoryMapper.selectCount(pcWrapper) > 0) return false;
+            LambdaQueryWrapper<GachaItem> itemWrapper = new LambdaQueryWrapper<>();
+            itemWrapper.eq(GachaItem::getCategoryId, cat.getId());
+            if (gachaItemMapper.selectCount(itemWrapper) > 0) return false;
+        }
+
+        for (ItemCategory cat : categories) {
+            itemCategoryMapper.deleteById(cat.getId());
+        }
+        itemThemeMapper.deleteById(id);
+        return true;
+    }
+
+    @Transactional
+    public ItemTheme copyTheme(String name, String description, Long sourceThemeId) {
+        ItemTheme source = itemThemeMapper.selectById(sourceThemeId);
+        if (source == null) return null;
+
+        ItemTheme newTheme = new ItemTheme();
+        newTheme.setName(name);
+        newTheme.setDescription(description);
+        itemThemeMapper.insert(newTheme);
+
+        LambdaQueryWrapper<ItemCategory> catWrapper = new LambdaQueryWrapper<>();
+        catWrapper.eq(ItemCategory::getThemeId, sourceThemeId);
+        List<ItemCategory> sourceCategories = itemCategoryMapper.selectList(catWrapper);
+        for (ItemCategory srcCat : sourceCategories) {
+            ItemCategory newCat = new ItemCategory();
+            newCat.setName(srcCat.getName());
+            newCat.setRarity(srcCat.getRarity());
+            newCat.setItemType(srcCat.getItemType());
+            newCat.setDescription(srcCat.getDescription());
+            newCat.setSortOrder(srcCat.getSortOrder());
+            newCat.setThemeId(newTheme.getId());
+            itemCategoryMapper.insert(newCat);
+        }
+        return newTheme;
+    }
+
+    public List<ItemCategory> getCategoriesByTheme(Long themeId) {
+        LambdaQueryWrapper<ItemCategory> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ItemCategory::getThemeId, themeId);
+        wrapper.orderByAsc(ItemCategory::getSortOrder);
+        return itemCategoryMapper.selectList(wrapper);
+    }
+
+    public ItemCategory createCategory(ItemCategory category) {
+        itemCategoryMapper.insert(category);
+        return category;
+    }
+
+    public ItemCategory updateCategory(Long id, ItemCategory update) {
+        ItemCategory category = itemCategoryMapper.selectById(id);
+        if (category == null) return null;
+        if (update.getName() != null) category.setName(update.getName());
+        if (update.getRarity() != null) category.setRarity(update.getRarity());
+        if (update.getItemType() != null) category.setItemType(update.getItemType());
+        if (update.getDescription() != null) category.setDescription(update.getDescription());
+        if (update.getThemeId() != null) category.setThemeId(update.getThemeId());
+        itemCategoryMapper.updateById(category);
+        return category;
+    }
+
+    public boolean deleteCategory(Long id) {
+        ItemCategory category = itemCategoryMapper.selectById(id);
+        if (category == null) return false;
+        LambdaQueryWrapper<PoolCategory> pcWrapper = new LambdaQueryWrapper<>();
+        pcWrapper.eq(PoolCategory::getCategoryId, id);
+        if (poolCategoryMapper.selectCount(pcWrapper) > 0) return false;
+        LambdaQueryWrapper<GachaItem> itemWrapper = new LambdaQueryWrapper<>();
+        itemWrapper.eq(GachaItem::getCategoryId, id);
+        if (gachaItemMapper.selectCount(itemWrapper) > 0) return false;
+        itemCategoryMapper.deleteById(id);
+        return true;
+    }
+
+    private ItemCategory buildCategoryFromType(String type, Long themeId) {
+        return switch (type) {
+            case "3-star-weapon" -> {
+                ItemCategory cat = new ItemCategory();
+                cat.setName("三星武器");
+                cat.setRarity(3);
+                cat.setItemType("weapon");
+                cat.setDescription("三星武器");
+                cat.setSortOrder(1);
+                cat.setThemeId(themeId);
+                yield cat;
+            }
+            case "3-star-character" -> {
+                ItemCategory cat = new ItemCategory();
+                cat.setName("三星角色");
+                cat.setRarity(3);
+                cat.setItemType("character");
+                cat.setDescription("三星角色");
+                cat.setSortOrder(2);
+                cat.setThemeId(themeId);
+                yield cat;
+            }
+            case "4-star-character" -> {
+                ItemCategory cat = new ItemCategory();
+                cat.setName("四星角色");
+                cat.setRarity(4);
+                cat.setItemType("character");
+                cat.setDescription("四星角色");
+                cat.setSortOrder(3);
+                cat.setThemeId(themeId);
+                yield cat;
+            }
+            case "4-star-weapon" -> {
+                ItemCategory cat = new ItemCategory();
+                cat.setName("四星武器");
+                cat.setRarity(4);
+                cat.setItemType("weapon");
+                cat.setDescription("四星武器");
+                cat.setSortOrder(4);
+                cat.setThemeId(themeId);
+                yield cat;
+            }
+            default -> null;
+        };
     }
 
     // ========== 卡池物品管理（基于分类） ==========
