@@ -1301,7 +1301,7 @@
 
         // 初始加载
         loadDashboard();
-        loadCategories().then(() => {
+        Promise.all([loadCategories(), loadThemes()]).then(() => {
             // 初始化物品管理分类过滤器
             const select = document.getElementById('itemCategoryFilter');
             select.innerHTML = '<option value="">全部分类</option>' +
