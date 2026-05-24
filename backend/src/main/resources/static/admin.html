@@ -892,7 +892,7 @@
             if (rarity) filtered = filtered.filter(c => c.rarity === parseInt(rarity));
             if (itemType) filtered = filtered.filter(c => c.itemType === itemType);
             select.innerHTML = '<option value="">全部分类</option>' +
-                filtered.map(c => `<option value="${c.id}" ${String(c.id)===currentValue?'selected':''}>${c.name}</option>`).join('');
+                filtered.map(c => `<option value="${c.id}" ${String(c.id)===currentValue?'selected':''}>${getCategoryLabel(c)}</option>`).join('');
             loadItems();
         }
 
@@ -903,7 +903,7 @@
             const currentValue = select.value;
             const filtered = allCategories.filter(c => c.rarity === rarity && c.itemType === itemType);
             select.innerHTML = filtered.map(c =>
-                `<option value="${c.id}" ${String(c.id)===currentValue?'selected':''}>${c.name}</option>`
+                `<option value="${c.id}" ${String(c.id)===currentValue?'selected':''}>${getCategoryLabel(c)}</option>`
             ).join('');
         }
 
@@ -1305,7 +1305,7 @@
             // 初始化物品管理分类过滤器
             const select = document.getElementById('itemCategoryFilter');
             select.innerHTML = '<option value="">全部分类</option>' +
-                allCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                allCategories.map(c => `<option value="${c.id}">${getCategoryLabel(c)}</option>`).join('');
         });
 
         async function loadThemesForPoolEdit() {
@@ -1313,6 +1313,12 @@
                 const res = await API.request('/admin/themes');
                 if (res.success) allThemes = res.themes;
             } catch (e) { console.error('加载主题失败:', e); }
+        }
+
+        function getCategoryLabel(cat) {
+            if (cat.themeId == null) return cat.name;
+            const theme = allThemes.find(t => t.id === cat.themeId);
+            return theme ? `${theme.name} / ${cat.name}` : cat.name;
         }
 
         // ========== 主题分类管理 ==========
