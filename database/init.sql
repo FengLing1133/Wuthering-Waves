@@ -61,6 +61,9 @@ CREATE TABLE IF NOT EXISTS item_theme (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+INSERT INTO item_theme (id, name, description) VALUES
+(1, '鸣潮', '默认基础主题');
+
 -- ========== 物品分类枚举表 ==========
 CREATE TABLE IF NOT EXISTS item_category (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -74,19 +77,14 @@ CREATE TABLE IF NOT EXISTS item_category (
     FOREIGN KEY (theme_id) REFERENCES item_theme(id)
 );
 
-INSERT INTO item_category (id, name, rarity, item_type, description, sort_order) VALUES
-(1, '三星武器', 3, 'weapon', '三星通用武器', 1),
-(2, '四星角色', 4, 'character', '四星角色', 2),
-(3, '四星武器', 4, 'weapon', '四星武器', 3),
-(4, '五星常驻角色', 5, 'character', '常驻池可出的五星角色', 4),
-(5, '五星常驻武器', 5, 'weapon', '常驻池可出的五星武器', 5),
-(6, '五星限定武器', 5, 'weapon', '限定池专精五星武器', 6),
-(7, '五星限定角色', 5, 'character', '限定UP五星角色', 7),
-(8, '五星特殊角色', 5, 'character', '特殊卡池限定五星角色', 8),
-(9, '五星特殊武器', 5, 'weapon', '特殊卡池限定五星武器', 9),
-(10, '三星特殊武器', 3, 'weapon', '三星特殊活动武器', 10),
-(11, '四星特殊角色', 4, 'character', '特殊卡池四星角色', 11),
-(12, '四星特殊武器', 4, 'weapon', '特殊卡池四星武器', 12);
+INSERT INTO item_category (id, name, rarity, item_type, description, sort_order, theme_id) VALUES
+(1, '三星武器', 3, 'weapon', '三星武器', 1, 1),
+(2, '四星角色', 4, 'character', '四星角色', 2, 1),
+(3, '四星武器', 4, 'weapon', '四星武器', 3, 1),
+(4, '五星常驻角色', 5, 'character', '常驻池可出的五星角色', 4, 1),
+(5, '五星常驻武器', 5, 'weapon', '常驻池可出的五星武器', 5, 1),
+(6, '五星限定武器', 5, 'weapon', '限定池专精五星武器', 6, 1),
+(7, '五星限定角色', 5, 'character', '限定UP五星角色', 7, 1);
 
 -- ========== 统一抽卡物品表 ==========
 CREATE TABLE IF NOT EXISTS gacha_items (
@@ -237,8 +235,8 @@ CREATE TABLE IF NOT EXISTS gacha_pool (
     description TEXT COMMENT '卡池描述',
     five_star_rate DECIMAL(5,2) DEFAULT 0.80 COMMENT '五星基础概率(%)',
     four_star_rate DECIMAL(5,2) DEFAULT 6.00 COMMENT '四星基础概率(%)',
-    max_pity INT DEFAULT 90 COMMENT '硬保底抽数',
-    soft_pity_start INT DEFAULT 75 COMMENT '软保底起始抽数',
+    max_pity INT DEFAULT 80 COMMENT '硬保底抽数',
+    soft_pity_start INT DEFAULT 55 COMMENT '软保底起始抽数',
     soft_pity_increment DECIMAL(5,2) DEFAULT 6.00 COMMENT '软保底每抽概率递增(%)',
     status VARCHAR(20) DEFAULT 'active' COMMENT '状态：active/inactive',
     start_time DATETIME COMMENT '上架时间',
