@@ -67,8 +67,18 @@ public class TestDataFactory {
         cat.setName(name);
         cat.setRarity(rarity);
         cat.setItemType(itemType);
-        cat.setSortOrder(id.intValue());
+        cat.setSortOrder(id != null ? id.intValue() : 0);
         return cat;
+    }
+
+    public static ItemTheme createTheme(Long id, String name) {
+        ItemTheme theme = new ItemTheme();
+        theme.setId(id);
+        theme.setName(name);
+        theme.setDescription("测试主题");
+        theme.setCreatedAt(LocalDateTime.now());
+        theme.setUpdatedAt(LocalDateTime.now());
+        return theme;
     }
 
     public static PoolCategory createPoolCategory(Long poolId, Long categoryId) {
