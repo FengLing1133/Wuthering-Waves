@@ -150,6 +150,7 @@
         <div class="tab-nav">
             <button class="tab-btn active" onclick="switchTab('dashboard')">数据报表</button>
             <button class="tab-btn" onclick="switchTab('pools')">卡池管理</button>
+            <button class="tab-btn" onclick="switchTab('themes')">主题分类</button>
             <button class="tab-btn" onclick="switchTab('items')">物品管理</button>
             <button class="tab-btn" onclick="switchTab('users')">用户管理</button>
         </div>
@@ -220,6 +221,31 @@
                 </thead>
                 <tbody id="poolsTableBody"></tbody>
             </table>
+        </div>
+
+        <!-- 主题分类 Tab -->
+        <div id="tab-themes" class="tab-content">
+            <div class="toolbar">
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-gold" onclick="openThemeModal()">+ 新建主题</button>
+                    <button class="btn" style="background:rgba(74,158,255,0.15);color:var(--accent-blue);border:1px solid var(--accent-blue-dim);" onclick="openCopyThemeModal()">从已有复制</button>
+                </div>
+            </div>
+            <div id="themesTableContainer">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width:50px;"></th>
+                            <th>ID</th>
+                            <th>主题名称</th>
+                            <th>分类数量</th>
+                            <th>描述</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="themesTableBody"></tbody>
+                </table>
+            </div>
         </div>
 
         <!-- 物品管理 Tab -->
@@ -454,6 +480,83 @@
         </div>
     </div>
 
+    <!-- 主题编辑弹窗 -->
+    <div class="modal-overlay" id="themeModal">
+        <div class="modal">
+            <h2 id="themeModalTitle">新建主题</h2>
+            <input type="hidden" id="themeId">
+            <label><span>主题名称</span><input type="text" id="themeName" placeholder="如：鸣潮1.0"></label>
+            <label><span>主题描述</span><textarea id="themeDesc" placeholder="主题描述（可选）"></textarea></label>
+            <label id="generateCategoriesGroup">
+                <span>自动生成分类</span>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+                    <label style="display:flex;align-items:center;gap:4px;font-size:13px;width:auto;margin:0;">
+                        <input type="checkbox" value="3-star-weapon" style="width:auto;"> 3★武器
+                    </label>
+                    <label style="display:flex;align-items:center;gap:4px;font-size:13px;width:auto;margin:0;">
+                        <input type="checkbox" value="3-star-character" style="width:auto;"> 3★角色
+                    </label>
+                    <label style="display:flex;align-items:center;gap:4px;font-size:13px;width:auto;margin:0;">
+                        <input type="checkbox" value="4-star-character" style="width:auto;"> 4★角色
+                    </label>
+                    <label style="display:flex;align-items:center;gap:4px;font-size:13px;width:auto;margin:0;">
+                        <input type="checkbox" value="4-star-weapon" style="width:auto;"> 4★武器
+                    </label>
+                </div>
+            </label>
+            <div class="modal-actions">
+                <button class="btn" style="background:rgba(180,160,130,0.15);color:#6a6560;" onclick="closeThemeModal()">取消</button>
+                <button class="btn btn-gold" onclick="saveTheme()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 复制主题弹窗 -->
+    <div class="modal-overlay" id="copyThemeModal">
+        <div class="modal">
+            <h2>从已有主题复制</h2>
+            <label><span>新主题名称</span><input type="text" id="copyThemeName" placeholder="如：鸣潮2.0"></label>
+            <label><span>新主题描述</span><textarea id="copyThemeDesc" placeholder="主题描述（可选）"></textarea></label>
+            <label><span>选择源主题</span>
+                <select id="copySourceThemeId"></select>
+            </label>
+            <div class="modal-actions">
+                <button class="btn" style="background:rgba(180,160,130,0.15);color:#6a6560;" onclick="closeCopyThemeModal()">取消</button>
+                <button class="btn btn-gold" onclick="saveCopyTheme()">复制</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分类编辑弹窗 -->
+    <div class="modal-overlay" id="categoryModal">
+        <div class="modal">
+            <h2 id="categoryModalTitle">新增分类</h2>
+            <input type="hidden" id="catId">
+            <input type="hidden" id="catThemeId">
+            <label><span>分类名称</span><input type="text" id="catName" placeholder="如：鸣潮1.0 三星武器"></label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <label><span>稀有度</span>
+                    <select id="catRarity">
+                        <option value="3">3星</option>
+                        <option value="4">4星</option>
+                        <option value="5">5星</option>
+                    </select>
+                </label>
+                <label><span>类型</span>
+                    <select id="catItemType">
+                        <option value="character">角色</option>
+                        <option value="weapon">武器</option>
+                    </select>
+                </label>
+            </div>
+            <label><span>描述</span><textarea id="catDescription" placeholder="分类描述（可选）"></textarea></label>
+            <div class="modal-actions">
+                <button class="btn" style="background:rgba(180,160,130,0.15);color:#6a6560;" onclick="closeCategoryModal()">取消</button>
+                <button class="btn btn-gold" onclick="saveCategory()">保存</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/js/api.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh.js"></script>
@@ -487,6 +590,7 @@
 
             if (name === 'dashboard') loadDashboard();
             if (name === 'pools') loadPools();
+            if (name === 'themes') loadThemes();
             if (name === 'items') loadItems();
             if (name === 'users') loadUsers();
         }
@@ -1164,6 +1268,252 @@
             select.innerHTML = '<option value="">全部分类</option>' +
                 allCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         });
+
+        // ========== 主题分类管理 ==========
+        let allThemes = [];
+        let expandedThemeId = null;
+
+        async function loadThemes() {
+            try {
+                const res = await API.request('/admin/themes');
+                if (res.success) {
+                    allThemes = res.themes;
+                    renderThemesTable();
+                }
+            } catch (e) { console.error('加载主题失败:', e); }
+        }
+
+        function renderThemesTable() {
+            const tbody = document.getElementById('themesTableBody');
+            if (allThemes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);">暂无主题，点击"新建主题"创建</td></tr>';
+                return;
+            }
+            tbody.innerHTML = allThemes.map(t => {
+                const isExpanded = expandedThemeId === t.id;
+                return `<tr>
+                    <td><button class="btn btn-sm" style="background:transparent;border:none;cursor:pointer;font-size:16px;" onclick="toggleThemeExpand(${t.id})">${isExpanded ? '▼' : '▶'}</button></td>
+                    <td>${t.id}</td>
+                    <td>${t.name}</td>
+                    <td>${t.categoryCount || 0}</td>
+                    <td>${t.description || '-'}</td>
+                    <td class="btn-group">
+                        <button class="btn btn-sm btn-primary" onclick="editTheme(${t.id})">编辑</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteTheme(${t.id},'${t.name.replace(/'/g, "\\'")}')">删除</button>
+                    </td>
+                </tr>
+                <tr id="themeCategories-${t.id}" style="display:${isExpanded ? '' : 'none'};">
+                    <td colspan="6" style="padding:0;">
+                        <div style="padding:12px 20px;background:rgba(245,240,232,0.9);" id="themeCategoriesContent-${t.id}">
+                            <div style="color:var(--text-dim);font-size:13px;">加载中...</div>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function toggleThemeExpand(themeId) {
+            if (expandedThemeId === themeId) {
+                expandedThemeId = null;
+                renderThemesTable();
+                return;
+            }
+            expandedThemeId = themeId;
+            renderThemesTable();
+            try {
+                const res = await API.request(`/admin/themes/${themeId}/categories`);
+                const container = document.getElementById(`themeCategoriesContent-${themeId}`);
+                if (res.success) {
+                    const categories = res.categories;
+                    container.innerHTML = `
+                        <table class="data-table" style="margin:0;">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>分类名称</th>
+                                    <th>稀有度</th>
+                                    <th>类型</th>
+                                    <th>描述</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${categories.length === 0 ? '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);">暂无分类</td></tr>' : ''}
+                                ${categories.map(c => `<tr>
+                                    <td>${c.id}</td>
+                                    <td>${c.name}</td>
+                                    <td><span class="badge-${c.rarity}star">${c.rarity}星</span></td>
+                                    <td>${c.itemType === 'character' ? '角色' : '武器'}</td>
+                                    <td>${c.description || '-'}</td>
+                                    <td class="btn-group">
+                                        <button class="btn btn-sm btn-primary" onclick="editCategory(${c.id})">编辑</button>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteCategory(${c.id},'${c.name.replace(/'/g, "\\'")}')">删除</button>
+                                    </td>
+                                </tr>`).join('')}
+                            </tbody>
+                        </table>
+                        <div style="margin-top:8px;">
+                            <button class="btn btn-sm btn-primary" onclick="openCategoryModal(${themeId})">+ 添加分类</button>
+                        </div>`;
+                }
+            } catch (e) { console.error('加载主题分类失败:', e); }
+        }
+
+        function openThemeModal(theme = null) {
+            document.getElementById('themeModal').classList.add('active');
+            document.getElementById('themeModalTitle').textContent = theme ? '编辑主题' : '新建主题';
+            document.getElementById('themeId').value = theme ? theme.id : '';
+            document.getElementById('themeName').value = theme ? theme.name : '';
+            document.getElementById('themeDesc').value = theme ? (theme.description || '') : '';
+            document.getElementById('generateCategoriesGroup').style.display = theme ? 'none' : '';
+            document.querySelectorAll('#generateCategoriesGroup input[type=checkbox]').forEach(cb => cb.checked = false);
+        }
+
+        function closeThemeModal() { document.getElementById('themeModal').classList.remove('active'); }
+
+        async function editTheme(id) {
+            try {
+                const res = await API.request(`/admin/themes/${id}`);
+                if (res.success) openThemeModal(res.theme);
+            } catch (e) { console.error(e); }
+        }
+
+        async function saveTheme() {
+            const id = document.getElementById('themeId').value;
+            if (id) {
+                const data = {
+                    name: document.getElementById('themeName').value,
+                    description: document.getElementById('themeDesc').value || null
+                };
+                if (!data.name) { alert('请输入主题名称'); return; }
+                try {
+                    const res = await API.request(`/admin/themes/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+                    if (res.success) { closeThemeModal(); loadThemes(); }
+                    else alert(res.message || '保存失败');
+                } catch (e) { alert('保存失败'); console.error(e); }
+            } else {
+                const generateCategories = [];
+                document.querySelectorAll('#generateCategoriesGroup input[type=checkbox]:checked').forEach(cb => {
+                    generateCategories.push(cb.value);
+                });
+                const data = {
+                    name: document.getElementById('themeName').value,
+                    description: document.getElementById('themeDesc').value || null,
+                    generateCategories: generateCategories
+                };
+                if (!data.name) { alert('请输入主题名称'); return; }
+                try {
+                    const res = await API.request('/admin/themes', { method: 'POST', body: JSON.stringify(data) });
+                    if (res.success) { closeThemeModal(); loadThemes(); }
+                    else alert(res.message || '保存失败');
+                } catch (e) { alert('保存失败'); console.error(e); }
+            }
+        }
+
+        async function deleteTheme(id, name) {
+            if (!confirm(`确定要删除主题「${name}」吗？\n将同时删除其下所有分类。如果分类已被卡池引用或包含物品，则无法删除。`)) return;
+            try {
+                const res = await API.request(`/admin/themes/${id}`, { method: 'DELETE' });
+                if (res.success) { loadThemes(); }
+                else alert(res.message || '删除失败');
+            } catch (e) { alert('删除失败'); console.error(e); }
+        }
+
+        async function openCopyThemeModal() {
+            document.getElementById('copyThemeModal').classList.add('active');
+            document.getElementById('copyThemeName').value = '';
+            document.getElementById('copyThemeDesc').value = '';
+            try {
+                const res = await API.request('/admin/themes');
+                const select = document.getElementById('copySourceThemeId');
+                if (res.success) {
+                    select.innerHTML = res.themes.map(t =>
+                        `<option value="${t.id}">${t.name} (${t.categoryCount}个分类)</option>`
+                    ).join('');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function closeCopyThemeModal() { document.getElementById('copyThemeModal').classList.remove('active'); }
+
+        async function saveCopyTheme() {
+            const data = {
+                name: document.getElementById('copyThemeName').value,
+                description: document.getElementById('copyThemeDesc').value || null,
+                sourceThemeId: parseInt(document.getElementById('copySourceThemeId').value)
+            };
+            if (!data.name) { alert('请输入新主题名称'); return; }
+            if (!data.sourceThemeId) { alert('请选择源主题'); return; }
+            try {
+                const res = await API.request('/admin/themes/copy', { method: 'POST', body: JSON.stringify(data) });
+                if (res.success) { closeCopyThemeModal(); loadThemes(); }
+                else alert(res.message || '复制失败');
+            } catch (e) { alert('复制失败'); console.error(e); }
+        }
+
+        function openCategoryModal(themeId, category = null) {
+            document.getElementById('categoryModal').classList.add('active');
+            document.getElementById('categoryModalTitle').textContent = category ? '编辑分类' : '新增分类';
+            document.getElementById('catId').value = category ? category.id : '';
+            document.getElementById('catThemeId').value = themeId || (category ? category.themeId : '') || '';
+            document.getElementById('catName').value = category ? category.name : '';
+            document.getElementById('catRarity').value = category ? category.rarity : 3;
+            document.getElementById('catItemType').value = category ? category.itemType : 'weapon';
+            document.getElementById('catDescription').value = category ? (category.description || '') : '';
+        }
+
+        function closeCategoryModal() { document.getElementById('categoryModal').classList.remove('active'); }
+
+        async function editCategory(id) {
+            try {
+                const res = await API.request('/admin/categories');
+                if (res.success) {
+                    const cat = res.categories.find(c => c.id === id);
+                    if (cat) openCategoryModal(cat.themeId, cat);
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function saveCategory() {
+            const id = document.getElementById('catId').value;
+            const data = {
+                name: document.getElementById('catName').value,
+                rarity: parseInt(document.getElementById('catRarity').value),
+                itemType: document.getElementById('catItemType').value,
+                description: document.getElementById('catDescription').value || null
+            };
+            if (!id) {
+                data.themeId = parseInt(document.getElementById('catThemeId').value) || null;
+            }
+            if (!data.name) { alert('请输入分类名称'); return; }
+            try {
+                const url = id ? `/admin/categories/${id}` : '/admin/categories';
+                const method = id ? 'PUT' : 'POST';
+                const res = await API.request(url, { method, body: JSON.stringify(data) });
+                if (res.success) {
+                    closeCategoryModal();
+                    if (expandedThemeId) toggleThemeExpand(expandedThemeId);
+                    await loadCategories();
+                    updateCategoryFilter();
+                } else {
+                    alert(res.message || '保存失败');
+                }
+            } catch (e) { alert('保存失败'); console.error(e); }
+        }
+
+        async function deleteCategory(id, name) {
+            if (!confirm(`确定要删除分类「${name}」吗？\n如果分类已被卡池引用或包含物品，则无法删除。`)) return;
+            try {
+                const res = await API.request(`/admin/categories/${id}`, { method: 'DELETE' });
+                if (res.success) {
+                    if (expandedThemeId) toggleThemeExpand(expandedThemeId);
+                    await loadCategories();
+                    updateCategoryFilter();
+                } else {
+                    alert(res.message || '删除失败');
+                }
+            } catch (e) { alert('删除失败'); console.error(e); }
+        }
     </script>
 </body>
 </html>
