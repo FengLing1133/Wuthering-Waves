@@ -1028,14 +1028,53 @@
                 container.innerHTML = '<div style="color:var(--text-dim);font-size:13px;">无分类数据</div>';
                 return;
             }
-            container.innerHTML = allCategories.map(cat => {
-                const selected = selectedCategoryIds.includes(cat.id);
-                return `<label style="display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:6px;border:1px solid ${selected ? 'var(--accent-blue)' : 'var(--border-subtle)'};background:${selected ? 'rgba(74,158,255,0.08)' : 'transparent'};cursor:pointer;transition:all 0.2s;font-size:13px;">
-                    <input type="checkbox" ${selected ? 'checked' : ''} onchange="toggleCategory(${cat.id})" style="width:auto;margin:0;">
-                    <span>${cat.name}</span>
-                    <span style="font-size:11px;color:var(--text-dim);">${cat.rarity}★${cat.itemType === 'character' ? '角色' : '武器'}</span>
-                </label>`;
-            }).join('');
+            // 分组：themeId=null → 通用分类，themeId!=null → 按主题分组
+            const generalCategories = allCategories.filter(c => c.themeId == null);
+            const themeCategories = {};
+            allCategories.forEach(c => {
+                if (c.themeId != null) {
+                    if (!themeCategories[c.themeId]) themeCategories[c.themeId] = [];
+                    themeCategories[c.themeId].push(c);
+                }
+            });
+
+            let html = '';
+
+            // 通用分类分组
+            if (generalCategories.length > 0) {
+                html += `<div style="width:100%;margin-bottom:4px;">
+                    <div style="font-size:13px;color:var(--accent-gold);margin-bottom:6px;">▼ 通用分类</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;">`;
+                generalCategories.forEach(cat => {
+                    const selected = selectedCategoryIds.includes(cat.id);
+                    html += `<label style="display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:6px;border:1px solid ${selected ? 'var(--accent-blue)' : 'var(--border-subtle)'};background:${selected ? 'rgba(74,158,255,0.08)' : 'transparent'};cursor:pointer;transition:all 0.2s;font-size:13px;">
+                        <input type="checkbox" ${selected ? 'checked' : ''} onchange="toggleCategory(${cat.id})" style="width:auto;margin:0;">
+                        <span>${cat.name}</span>
+                        <span style="font-size:11px;color:var(--text-dim);">${cat.rarity}★${cat.itemType === 'character' ? '角色' : '武器'}</span>
+                    </label>`;
+                });
+                html += `</div></div>`;
+            }
+
+            // 按主题分组
+            for (const [themeId, cats] of Object.entries(themeCategories)) {
+                const theme = allThemes.find(t => t.id === parseInt(themeId));
+                const themeName = theme ? theme.name : `主题 #${themeId}`;
+                html += `<div style="width:100%;margin-bottom:4px;">
+                    <div style="font-size:13px;color:var(--accent-purple);margin-bottom:6px;">▼ ${themeName}</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;">`;
+                cats.forEach(cat => {
+                    const selected = selectedCategoryIds.includes(cat.id);
+                    html += `<label style="display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:6px;border:1px solid ${selected ? 'var(--accent-blue)' : 'var(--border-subtle)'};background:${selected ? 'rgba(74,158,255,0.08)' : 'transparent'};cursor:pointer;transition:all 0.2s;font-size:13px;">
+                        <input type="checkbox" ${selected ? 'checked' : ''} onchange="toggleCategory(${cat.id})" style="width:auto;margin:0;">
+                        <span>${cat.name}</span>
+                        <span style="font-size:11px;color:var(--text-dim);">${cat.rarity}★${cat.itemType === 'character' ? '角色' : '武器'}</span>
+                    </label>`;
+                });
+                html += `</div></div>`;
+            }
+
+            container.innerHTML = html || '<div style="color:var(--text-dim);font-size:13px;">无分类数据</div>';
         }
 
         function toggleCategory(catId) {
@@ -1139,7 +1178,7 @@
 
             // 物品选择（分类模式）
             selectedCategoryIds = [];
-            Promise.all([loadAllItems(), loadCategories()]).then(() => {
+            Promise.all([loadAllItems(), loadCategories(), loadThemesForPoolEdit()]).then(() => {
                 if (pool && pool.id) {
                     loadPoolConfigForEdit(pool.id, pool).then(() => {
                         renderCategoryGrid();
@@ -1268,6 +1307,13 @@
             select.innerHTML = '<option value="">全部分类</option>' +
                 allCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         });
+
+        async function loadThemesForPoolEdit() {
+            try {
+                const res = await API.request('/admin/themes');
+                if (res.success) allThemes = res.themes;
+            } catch (e) { console.error('加载主题失败:', e); }
+        }
 
         // ========== 主题分类管理 ==========
         let allThemes = [];
