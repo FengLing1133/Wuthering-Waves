@@ -52,6 +52,15 @@ CREATE TABLE IF NOT EXISTS gacha_pity (
     UNIQUE KEY uk_user_pool (user_id, pool_type)
 );
 
+-- ========== 主题表 ==========
+CREATE TABLE IF NOT EXISTS item_theme (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL COMMENT '主题名称',
+    description VARCHAR(500) COMMENT '主题描述',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 -- ========== 物品分类枚举表 ==========
 CREATE TABLE IF NOT EXISTS item_category (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -59,7 +68,10 @@ CREATE TABLE IF NOT EXISTS item_category (
     rarity INT NOT NULL COMMENT '稀有度：3/4/5',
     item_type VARCHAR(20) NOT NULL COMMENT '类型：character/weapon',
     description VARCHAR(200) COMMENT '分类描述',
-    sort_order INT DEFAULT 0 COMMENT '排序'
+    sort_order INT DEFAULT 0 COMMENT '排序',
+    theme_id BIGINT DEFAULT NULL COMMENT '所属主题ID，NULL表示通用分类',
+    INDEX idx_theme_id (theme_id),
+    FOREIGN KEY (theme_id) REFERENCES item_theme(id)
 );
 
 INSERT INTO item_category (id, name, rarity, item_type, description, sort_order) VALUES
