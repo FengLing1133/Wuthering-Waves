@@ -1364,18 +1364,12 @@
             }).join('');
         }
 
-        async function toggleThemeExpand(themeId) {
-            if (expandedThemeId === themeId) {
-                expandedThemeId = null;
-                renderThemesTable();
-                return;
-            }
-            expandedThemeId = themeId;
-            renderThemesTable();
+        async function refreshExpandedTheme() {
+            if (!expandedThemeId) return;
             try {
-                const res = await API.request(`/admin/themes/${themeId}/categories`);
-                const container = document.getElementById(`themeCategoriesContent-${themeId}`);
-                if (res.success) {
+                const res = await API.request(`/admin/themes/${expandedThemeId}/categories`);
+                const container = document.getElementById(`themeCategoriesContent-${expandedThemeId}`);
+                if (res.success && container) {
                     const categories = res.categories;
                     container.innerHTML = `
                         <table class="data-table" style="margin:0;">
@@ -1405,10 +1399,21 @@
                             </tbody>
                         </table>
                         <div style="margin-top:8px;">
-                            <button class="btn btn-sm btn-primary" onclick="openCategoryModal(${themeId})">+ 添加分类</button>
+                            <button class="btn btn-sm btn-primary" onclick="openCategoryModal(${expandedThemeId})">+ 添加分类</button>
                         </div>`;
                 }
-            } catch (e) { console.error('加载主题分类失败:', e); }
+            } catch (e) { console.error('刷新主题分类失败:', e); }
+        }
+
+        async function toggleThemeExpand(themeId) {
+            if (expandedThemeId === themeId) {
+                expandedThemeId = null;
+                renderThemesTable();
+                return;
+            }
+            expandedThemeId = themeId;
+            renderThemesTable();
+            refreshExpandedTheme();
         }
 
         function openThemeModal(theme = null) {
@@ -1544,7 +1549,7 @@
                 const res = await API.request(url, { method, body: JSON.stringify(data) });
                 if (res.success) {
                     closeCategoryModal();
-                    if (expandedThemeId) toggleThemeExpand(expandedThemeId);
+                    if (expandedThemeId) refreshExpandedTheme();
                     await loadCategories();
                     updateCategoryFilter();
                 } else {
@@ -1558,7 +1563,7 @@
             try {
                 const res = await API.request(`/admin/categories/${id}`, { method: 'DELETE' });
                 if (res.success) {
-                    if (expandedThemeId) toggleThemeExpand(expandedThemeId);
+                    if (expandedThemeId) refreshExpandedTheme();
                     await loadCategories();
                     updateCategoryFilter();
                 } else {

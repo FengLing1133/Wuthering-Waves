@@ -420,26 +420,35 @@ const Gacha = {
             video.classList.remove('hidden');
             this.showSkipBtn();
 
-            // 跳过按钮：暂停视频，标记跳过，关闭遮罩
+            // 统一的清理函数
+            const cleanup = () => {
+                document.removeEventListener('keydown', onKeyDown);
+                this.hideVideoOverlay();
+                resolve();
+            };
+
+            // 跳过按钮：暂停视频，标记跳过
             const onSkip = () => {
                 video.pause();
                 this._skipRequested = true;
-                this.hideVideoOverlay();
-                resolve();
+                cleanup();
             };
             document.getElementById('skipBtn').onclick = onSkip;
 
-            // 视频播放结束
-            video.onended = () => {
-                this.hideVideoOverlay();
-                resolve();
+            // ESC 键跳过
+            const onKeyDown = (e) => {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    onSkip();
+                }
             };
+            document.addEventListener('keydown', onKeyDown);
+
+            // 视频播放结束
+            video.onended = cleanup;
 
             // 视频加载失败时直接跳过
-            video.onerror = () => {
-                this.hideVideoOverlay();
-                resolve();
-            };
+            video.onerror = cleanup;
 
             // 开始播放（取消静音，因为抽卡按钮点击已是用户交互）
             video.muted = false;
