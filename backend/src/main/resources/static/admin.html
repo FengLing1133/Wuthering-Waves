@@ -567,6 +567,7 @@
         </div>
     </div>
 
+    <script src="/js/escapeHtml.js"></script>
     <script src="/js/api.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh.js"></script>
@@ -585,11 +586,31 @@
         });
 
         // ========== 初始化 ==========
-        const adminUser = API.getUser();
-        if (!adminUser || adminUser.role !== 'admin') {
-            window.location.href = '/login.html';
-        }
-        document.getElementById('adminName').textContent = adminUser ? adminUser.username : '';
+        (async function initAdmin() {
+            try {
+                const resp = await fetch('/api/auth/user', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                if (!resp.ok) { window.location.href = '/login.html'; return; }
+                const data = await resp.json();
+                if (!data.success || data.user.role !== 'admin') {
+                    window.location.href = '/login.html';
+                    return;
+                }
+                document.getElementById('adminName').textContent = data.user.username;
+            } catch (e) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // 初始加载
+            loadDashboard();
+            Promise.all([loadCategories(), loadThemes()]).then(() => {
+                const select = document.getElementById('itemCategoryFilter');
+                select.innerHTML = '<option value="">全部分类</option>' +
+                    allCategories.map(c => `<option value="${c.id}">${getCategoryLabel(c)}</option>`).join('');
+            });
+        })();
 
         // ========== Tab 切换 ==========
         function switchTab(name) {
@@ -743,7 +764,7 @@
                     document.getElementById('usersTableBody').innerHTML = page.records.map(u => `
                         <tr>
                             <td>${u.id}</td>
-                            <td>${u.username}</td>
+                            <td>${escapeHtml(u.username)}</td>
                             <td><span class="badge ${u.role==='admin'?'badge-active':'badge-inactive'}">${u.role || 'user'}</span></td>
                             <td>${(u.starlight||0).toLocaleString()}</td>
                             <td>${u.createdAt ? u.createdAt.replace('T', ' ').substring(0, 19) : '-'}</td>
@@ -993,7 +1014,7 @@
             }
         }
 
-        async function uploadItemImage(input) {
+        async function uploadFile(input, onSuccess) {
             if (!input.files || !input.files[0]) return;
             const formData = new FormData();
             formData.append('file', input.files[0]);
@@ -1006,8 +1027,7 @@
                 });
                 const result = await resp.json();
                 if (result.success) {
-                    document.getElementById('itemImageUrl').value = result.url;
-                    previewItemImageUrl(result.url);
+                    onSuccess(result.url);
                 } else {
                     alert(result.message || '上传失败');
                 }
@@ -1017,50 +1037,23 @@
             }
         }
 
-        async function uploadItemVideo(input) {
-            if (!input.files || !input.files[0]) return;
-            const formData = new FormData();
-            formData.append('file', input.files[0]);
-            try {
-                const token = localStorage.getItem('token');
-                const resp = await fetch('/api/admin/upload', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: formData
-                });
-                const result = await resp.json();
-                if (result.success) {
-                    document.getElementById('itemVideoUrl').value = result.url;
-                } else {
-                    alert(result.message || '上传失败');
-                }
-            } catch (e) {
-                alert('上传失败');
-                console.error(e);
-            }
+        function uploadItemImage(input) {
+            uploadFile(input, url => {
+                document.getElementById('itemImageUrl').value = url;
+                previewItemImageUrl(url);
+            });
         }
 
-        async function uploadItemLoopVideo(input) {
-            if (!input.files || !input.files[0]) return;
-            const formData = new FormData();
-            formData.append('file', input.files[0]);
-            try {
-                const token = localStorage.getItem('token');
-                const resp = await fetch('/api/admin/upload', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: formData
-                });
-                const result = await resp.json();
-                if (result.success) {
-                    document.getElementById('itemLoopVideoUrl').value = result.url;
-                } else {
-                    alert(result.message || '上传失败');
-                }
-            } catch (e) {
-                alert('上传失败');
-                console.error(e);
-            }
+        function uploadItemVideo(input) {
+            uploadFile(input, url => {
+                document.getElementById('itemVideoUrl').value = url;
+            });
+        }
+
+        function uploadItemLoopVideo(input) {
+            uploadFile(input, url => {
+                document.getElementById('itemLoopVideoUrl').value = url;
+            });
         }
 
         // ========== 卡池物品管理（分类模式） ==========
@@ -1359,15 +1352,6 @@
             });
         });
 
-        // 初始加载
-        loadDashboard();
-        Promise.all([loadCategories(), loadThemes()]).then(() => {
-            // 初始化物品管理分类过滤器
-            const select = document.getElementById('itemCategoryFilter');
-            select.innerHTML = '<option value="">全部分类</option>' +
-                allCategories.map(c => `<option value="${c.id}">${getCategoryLabel(c)}</option>`).join('');
-        });
-
         async function loadThemesForPoolEdit() {
             try {
                 const res = await API.request('/admin/themes');
@@ -1376,7 +1360,7 @@
         }
 
         function getCategoryLabel(cat) {
-            if (cat.themeId == null) return cat.name;
+            if (cat.themeId === null || cat.themeId === undefined) return cat.name;
             const theme = allThemes.find(t => t.id === cat.themeId);
             return theme ? `${theme.name} / ${cat.name}` : cat.name;
         }

@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("AuthController 单元测试")
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc
 class AuthControllerTest extends BaseTest {
 
     @Autowired
@@ -169,10 +169,11 @@ class AuthControllerTest extends BaseTest {
     }
 
     @Test
-    @DisplayName("获取用户信息失败 - 无Token返回400")
-    void getUserInfo_noToken_400() throws Exception {
+    @DisplayName("获取用户信息失败 - 无Token返回401")
+    void getUserInfo_noToken_401() throws Exception {
         mockMvc.perform(get("/api/auth/user"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("缺少认证信息"));
     }
 
     @Test

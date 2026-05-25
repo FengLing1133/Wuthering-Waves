@@ -167,46 +167,75 @@ public class GachaService {
                                   int rarity, String poolType,
                                   boolean guaranteedFive, boolean guaranteedFour,
                                   boolean isLimitedPool) {
-        List<GachaItem> candidates = items.stream()
-                .filter(item -> item.getRarity() == rarity)
-                .toList();
-
-        if (candidates.isEmpty()) {
-            candidates = items.stream()
-                    .filter(item -> item.getRarity() == 3)
-                    .toList();
-        }
-
+        List<GachaItem> candidates = filterByRarity(items, rarity, poolType);
         if (candidates.isEmpty()) {
             throw new IllegalStateException("物品池为空，poolType=" + poolType + ", rarity=" + rarity);
         }
 
         Long fivestarUp = pool.getFivestarUp();
         Set<Long> fourstarUpIds = parseFourstarUp(pool.getFourstarUp());
+        List<GachaItem> upItems = filterUpItems(candidates, rarity, fivestarUp, fourstarUpIds);
+        List<GachaItem> nonUpItems = filterNonUpItems(candidates, rarity, fivestarUp, fourstarUpIds, isLimitedPool);
 
-        List<GachaItem> upItems = candidates.stream()
+        // 非限定池或无UP物品：完全随机
+        if (!isLimitedPool || upItems.isEmpty()) {
+            return randomPick(candidates);
+        }
+
+        // 限定武器池五星：100%出UP（不歪）
+        if ("limited-weapon".equals(poolType) && rarity == 5 && !upItems.isEmpty()) {
+            return randomPick(upItems);
+        }
+
+        // 特殊卡池：根据 allowLose 配置
+        if (poolType.startsWith("special-") && rarity == 5 && !upItems.isEmpty()
+                && pool.getAllowLose() != null && !pool.getAllowLose()) {
+            return randomPick(upItems);
+        }
+
+        // 五星/四星 50/50 概率判定
+        if ((rarity == 5 && guaranteedFive) || (rarity == 4 && guaranteedFour)) {
+            return randomPick(upItems);
+        }
+        boolean win5050 = ThreadLocalRandom.current().nextDouble() < 0.5;
+        if ((rarity == 5 || rarity == 4) && win5050) {
+            return randomPick(upItems);
+        }
+        if ((rarity == 5 || rarity == 4) && !nonUpItems.isEmpty()) {
+            return randomPick(nonUpItems);
+        }
+        return randomPick(upItems.isEmpty() ? candidates : upItems);
+    }
+
+    private GachaItem randomPick(List<GachaItem> items) {
+        return items.get(ThreadLocalRandom.current().nextInt(items.size()));
+    }
+
+    private List<GachaItem> filterByRarity(List<GachaItem> items, int rarity, String poolType) {
+        List<GachaItem> candidates = items.stream()
+                .filter(item -> item.getRarity() == rarity)
+                .toList();
+        if (!candidates.isEmpty()) return candidates;
+        // 稀有度物品缺失时回退到三星
+        return items.stream().filter(item -> item.getRarity() == 3).toList();
+    }
+
+    private List<GachaItem> filterUpItems(List<GachaItem> candidates, int rarity,
+                                           Long fivestarUp, Set<Long> fourstarUpIds) {
+        return candidates.stream()
                 .filter(item -> {
                     if (rarity == 5) return fivestarUp != null && item.getId().equals(fivestarUp);
                     if (rarity == 4) return fourstarUpIds.contains(item.getId());
                     return false;
                 })
                 .toList();
+    }
 
-        // 限定池歪只能歪到常驻分类，不能歪到其他限定物品
-        List<GachaItem> nonUpItems;
-        if (isLimitedPool) {
-            Set<Long> standardCategoryIds = getStandardCategoryIds(rarity);
-            nonUpItems = candidates.stream()
-                    .filter(item -> {
-                        boolean isNotUp;
-                        if (rarity == 5) isNotUp = fivestarUp == null || !item.getId().equals(fivestarUp);
-                        else if (rarity == 4) isNotUp = !fourstarUpIds.contains(item.getId());
-                        else isNotUp = true;
-                        return isNotUp && standardCategoryIds.contains(item.getCategoryId());
-                    })
-                    .toList();
-        } else {
-            nonUpItems = candidates.stream()
+    private List<GachaItem> filterNonUpItems(List<GachaItem> candidates, int rarity,
+                                              Long fivestarUp, Set<Long> fourstarUpIds,
+                                              boolean isLimitedPool) {
+        if (!isLimitedPool) {
+            return candidates.stream()
                     .filter(item -> {
                         if (rarity == 5) return fivestarUp == null || !item.getId().equals(fivestarUp);
                         if (rarity == 4) return !fourstarUpIds.contains(item.getId());
@@ -214,54 +243,17 @@ public class GachaService {
                     })
                     .toList();
         }
-
-        if (!isLimitedPool || upItems.isEmpty()) {
-            return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
-        }
-
-        // 限定武器池五星不歪：直接出UP
-        if ("limited-weapon".equals(poolType) && rarity == 5 && !upItems.isEmpty()) {
-            return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
-        }
-
-        // 特殊卡池：根据 allowLose 配置决定是否歪
-        if (poolType.startsWith("special-") && rarity == 5 && !upItems.isEmpty()) {
-            if (pool.getAllowLose() != null && !pool.getAllowLose()) {
-                // 100%出UP，不歪
-                return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
-            }
-            // 允许歪，走原有逻辑（50%概率，歪了大保底）
-        }
-
-        if (rarity == 5) {
-            if (guaranteedFive) {
-                return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
-            }
-            if (ThreadLocalRandom.current().nextDouble() < 0.5) {
-                return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
-            } else {
-                if (!nonUpItems.isEmpty()) {
-                    return nonUpItems.get(ThreadLocalRandom.current().nextInt(nonUpItems.size()));
-                }
-                return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
-            }
-        }
-
-        if (rarity == 4) {
-            if (guaranteedFour) {
-                return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
-            }
-            if (ThreadLocalRandom.current().nextDouble() < 0.5) {
-                return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
-            } else {
-                if (!nonUpItems.isEmpty()) {
-                    return nonUpItems.get(ThreadLocalRandom.current().nextInt(nonUpItems.size()));
-                }
-                return upItems.get(ThreadLocalRandom.current().nextInt(upItems.size()));
-            }
-        }
-
-        return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
+        // 限定池歪只能歪到常驻分类
+        Set<Long> standardCategoryIds = getStandardCategoryIds(rarity);
+        return candidates.stream()
+                .filter(item -> {
+                    boolean isNotUp;
+                    if (rarity == 5) isNotUp = fivestarUp == null || !item.getId().equals(fivestarUp);
+                    else if (rarity == 4) isNotUp = !fourstarUpIds.contains(item.getId());
+                    else isNotUp = true;
+                    return isNotUp && standardCategoryIds.contains(item.getCategoryId());
+                })
+                .toList();
     }
 
     // ========== 按分类查询池内物品 ==========

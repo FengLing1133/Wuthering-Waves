@@ -34,48 +34,73 @@ const Gacha = {
                 })
                 .catch(err => console.warn(`视频 ${rarity}star.mp4 预加载失败:`, err));
         });
+
+        // 页面卸载时释放所有 Blob URL
+        window.addEventListener('beforeunload', () => {
+            Object.values(this._videoCache).forEach(url => URL.revokeObjectURL(url));
+            Object.values(this._itemVideoCache).forEach(urls => {
+                if (urls.video) URL.revokeObjectURL(urls.video);
+                if (urls.loop) URL.revokeObjectURL(urls.loop);
+            });
+        });
     },
 
     // 清除五星物品视频缓存
     clearFiveStarCache() {
+        this._preloadGeneration = (this._preloadGeneration || 0) + 1;
         Object.values(this._itemVideoCache).forEach(urls => {
-            URL.revokeObjectURL(urls.video);
-            URL.revokeObjectURL(urls.loop);
+            if (urls.video) URL.revokeObjectURL(urls.video);
+            if (urls.loop) URL.revokeObjectURL(urls.loop);
         });
         this._itemVideoCache = {};
     },
 
-    // 预加载当前卡池所有五星物品的视频
+    // 预加载当前卡池所有五星物品的视频（并发限制：最多同时 6 个）
     preloadFiveStarVideos(fiveStarItems) {
         if (!fiveStarItems || fiveStarItems.length === 0) return;
+        const generation = this._preloadGeneration || 0;
+        const MAX_CONCURRENT = 6;
+        const tasks = [];
+
         fiveStarItems.forEach(item => {
             const id = item.id;
-            // 避免重复预加载
             if (this._itemVideoCache[id]) return;
 
             if (item.videoUrl) {
-                fetch(item.videoUrl)
-                    .then(res => res.blob())
-                    .then(blob => {
-                        if (!this._itemVideoCache[id]) {
-                            this._itemVideoCache[id] = {};
-                        }
-                        this._itemVideoCache[id].video = URL.createObjectURL(blob);
-                    })
-                    .catch(err => console.warn(`五星视频 ${item.videoUrl} 预加载失败:`, err));
+                tasks.push({ id, url: item.videoUrl, field: 'video' });
             }
             if (item.loopVideoUrl) {
-                fetch(item.loopVideoUrl)
-                    .then(res => res.blob())
-                    .then(blob => {
-                        if (!this._itemVideoCache[id]) {
-                            this._itemVideoCache[id] = {};
-                        }
-                        this._itemVideoCache[id].loop = URL.createObjectURL(blob);
-                    })
-                    .catch(err => console.warn(`五星循环视频 ${item.loopVideoUrl} 预加载失败:`, err));
+                tasks.push({ id, url: item.loopVideoUrl, field: 'loop' });
             }
         });
+
+        if (tasks.length === 0) return;
+
+        // 并发限制队列
+        let running = 0;
+        let idx = 0;
+
+        const runNext = () => {
+            while (running < MAX_CONCURRENT && idx < tasks.length) {
+                const task = tasks[idx++];
+                running++;
+                fetch(task.url)
+                    .then(res => res.blob())
+                    .then(blob => {
+                        if (this._preloadGeneration !== generation) return; // 已切换卡池，丢弃
+                        if (!this._itemVideoCache[task.id]) {
+                            this._itemVideoCache[task.id] = {};
+                        }
+                        this._itemVideoCache[task.id][task.field] = URL.createObjectURL(blob);
+                    })
+                    .catch(err => console.warn(`视频 ${task.url} 预加载失败:`, err))
+                    .finally(() => {
+                        running--;
+                        runNext();
+                    });
+            }
+        };
+        runNext();
     },
 
     // 从API加载卡池列表
@@ -651,9 +676,7 @@ const Gacha = {
             };
 
             const onClick = () => {
-                if (phase === 'loop') {
-                    cleanup();
-                }
+                cleanup();
             };
 
             const onKeyDown = (e) => {

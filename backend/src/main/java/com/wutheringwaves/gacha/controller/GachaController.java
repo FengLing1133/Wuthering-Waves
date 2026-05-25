@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,13 +127,20 @@ public class GachaController {
         List<Map<String, Object>> visiblePools = new ArrayList<>();
 
         LocalDateTime now = LocalDateTime.now();
+        // 过滤可见卡池
+        List<GachaPool> visible = new ArrayList<>();
         for (GachaPool pool : pools) {
-            // 检查是否侧栏可见
             if (!Boolean.TRUE.equals(pool.getSidebarVisible())) continue;
-            // 检查时间范围
             if (pool.getStartTime() != null && pool.getStartTime().isAfter(now)) continue;
             if (pool.getEndTime() != null && pool.getEndTime().isBefore(now)) continue;
+            visible.add(pool);
+        }
 
+        // 批量查询 UP 物品和四星头像（一次 SQL 替代 N 次循环查询）
+        Map<Long, List<Map<String, Object>>> allUpItems = adminService.batchGetPoolUpItems(visible);
+        Map<Long, List<Map<String, Object>>> allFourStarAvatars = adminService.batchGetPoolFourStarItems(visible);
+
+        for (GachaPool pool : visible) {
             Map<String, Object> poolData = new HashMap<>();
             poolData.put("id", pool.getId());
             poolData.put("name", pool.getName());
@@ -140,7 +148,7 @@ public class GachaController {
             poolData.put("description", pool.getDescription());
             poolData.put("bgImageUrl", pool.getBgImageUrl());
             poolData.put("thumbnailUrl", pool.getThumbnailUrl());
-            poolData.put("upItems", adminService.getPoolUpItems(pool.getId()));
+            poolData.put("upItems", allUpItems.getOrDefault(pool.getId(), Collections.emptyList()));
             poolData.put("fiveStarRate", pool.getFiveStarRate());
             poolData.put("fourStarRate", pool.getFourStarRate());
             poolData.put("maxPity", pool.getMaxPity());
@@ -149,17 +157,14 @@ public class GachaController {
             poolData.put("startTime", pool.getStartTime());
             poolData.put("endTime", pool.getEndTime());
             poolData.put("sidebarOrder", pool.getSidebarOrder());
-
-            // 关联的四星UP物品
-            poolData.put("fourStarAvatars", adminService.getPoolFourStarItems(pool.getId()));
-
+            poolData.put("fourStarAvatars", allFourStarAvatars.getOrDefault(pool.getId(), Collections.emptyList()));
             visiblePools.add(poolData);
         }
 
         // 按 sidebarOrder 排序
         visiblePools.sort((a, b) -> {
-            int orderA = a.get("sidebarOrder") != null ? (int) a.get("sidebarOrder") : 0;
-            int orderB = b.get("sidebarOrder") != null ? (int) b.get("sidebarOrder") : 0;
+            int orderA = ((Number) a.getOrDefault("sidebarOrder", 0)).intValue();
+            int orderB = ((Number) b.getOrDefault("sidebarOrder", 0)).intValue();
             return Integer.compare(orderA, orderB);
         });
 

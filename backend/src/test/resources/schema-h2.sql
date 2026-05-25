@@ -2,8 +2,10 @@
 DROP TABLE IF EXISTS gacha_records;
 DROP TABLE IF EXISTS gacha_pity;
 DROP TABLE IF EXISTS pool_category;
+DROP TABLE IF EXISTS gacha_pool_fourstar_up;
 DROP TABLE IF EXISTS gacha_items;
 DROP TABLE IF EXISTS item_category;
+DROP TABLE IF EXISTS item_theme;
 DROP TABLE IF EXISTS gacha_pool;
 DROP TABLE IF EXISTS users;
 
@@ -19,6 +21,15 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 主题表
+CREATE TABLE item_theme (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description VARCHAR(500),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 物品分类枚举表
 CREATE TABLE item_category (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -26,7 +37,8 @@ CREATE TABLE item_category (
     rarity INT NOT NULL,
     item_type VARCHAR(20) NOT NULL,
     description VARCHAR(200),
-    sort_order INT DEFAULT 0
+    sort_order INT DEFAULT 0,
+    theme_id BIGINT DEFAULT NULL
 );
 
 -- 抽卡物品表
@@ -50,21 +62,29 @@ CREATE TABLE gacha_pool (
     description VARCHAR(500),
     five_star_rate DECIMAL(5,2) DEFAULT 0.80,
     four_star_rate DECIMAL(5,2) DEFAULT 6.00,
-    max_pity INT DEFAULT 90,
-    soft_pity_start INT DEFAULT 75,
+    max_pity INT DEFAULT 80,
+    soft_pity_start INT DEFAULT 55,
     soft_pity_increment DECIMAL(5,2) DEFAULT 6.00,
     status VARCHAR(20) DEFAULT 'active',
     start_time TIMESTAMP,
     end_time TIMESTAMP,
     sidebar_visible BOOLEAN DEFAULT FALSE,
     sidebar_order INT DEFAULT 0,
-    bg_image_url VARCHAR(255),
-    thumbnail_url VARCHAR(255),
+    bg_image_url VARCHAR(2000),
+    thumbnail_url VARCHAR(2000),
     fivestar_up BIGINT,
     fourstar_up VARCHAR(200),
     allow_lose BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 卡池四星UP关联表
+CREATE TABLE gacha_pool_fourstar_up (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    pool_id BIGINT NOT NULL,
+    item_id BIGINT NOT NULL,
+    UNIQUE (pool_id, item_id)
 );
 
 -- 卡池-分类关联表
