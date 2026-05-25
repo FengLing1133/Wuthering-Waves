@@ -310,6 +310,20 @@
         <div class="showcase-hint">点击任意位置继续</div>
     </div>
 
+    <!-- 五星物品专属展示页面（唤取视频 + 循环展示） -->
+    <div id="fiveStarShowcase" class="five-star-showcase hidden">
+        <div class="five-star-bg"></div>
+        <video id="fiveStarSummonVideo" class="five-star-summon-video" playsinline preload="auto"></video>
+        <video id="fiveStarLoopVideo" class="five-star-loop-video hidden" playsinline loop muted preload="auto"></video>
+        <button id="fiveStarShowcaseSkipBtn" class="showcase-skip-btn" style="z-index:10;">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+            </svg>
+            <span>跳过</span>
+        </button>
+        <div class="five-star-click-hint">点击任意位置继续</div>
+    </div>
+
     <!-- 十抽汇总卡片页面 -->
     <div id="tenPullSummary" class="ten-pull-summary hidden">
         <div class="summary-bg"></div>

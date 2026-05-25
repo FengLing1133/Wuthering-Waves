@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.wutheringwaves.gacha.mapper.GachaItemMapper;
 import com.wutheringwaves.gacha.model.GachaItem;
 import com.wutheringwaves.gacha.model.GachaPool;
+import com.wutheringwaves.gacha.model.ItemCategory;
+import com.wutheringwaves.gacha.model.ItemTheme;
 import com.wutheringwaves.gacha.service.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -92,6 +94,109 @@ public class AdminController {
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "categories", adminService.listCategories()
+        ));
+    }
+
+    @PostMapping("/categories")
+    public ResponseEntity<Map<String, Object>> createCategory(@RequestBody ItemCategory category) {
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "category", adminService.createCategory(category)
+        ));
+    }
+
+    @PutMapping("/categories/{id}")
+    public ResponseEntity<Map<String, Object>> updateCategory(@PathVariable Long id, @RequestBody ItemCategory category) {
+        ItemCategory updated = adminService.updateCategory(id, category);
+        if (updated == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "分类不存在"));
+        }
+        return ResponseEntity.ok(Map.of("success", true, "category", updated));
+    }
+
+    @DeleteMapping("/categories/{id}")
+    public ResponseEntity<Map<String, Object>> deleteCategory(@PathVariable Long id) {
+        boolean result = adminService.deleteCategory(id);
+        if (!result) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "分类不存在或已被引用，无法删除"));
+        }
+        return ResponseEntity.ok(Map.of("success", true, "message", "分类已删除"));
+    }
+
+    // ========== 主题管理 ==========
+
+    @GetMapping("/themes")
+    public ResponseEntity<Map<String, Object>> listThemes() {
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "themes", adminService.listThemes()
+        ));
+    }
+
+    @GetMapping("/themes/{id}")
+    public ResponseEntity<Map<String, Object>> getTheme(@PathVariable Long id) {
+        ItemTheme theme = adminService.getThemeById(id);
+        if (theme == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "主题不存在"));
+        }
+        return ResponseEntity.ok(Map.of("success", true, "theme", theme));
+    }
+
+    @PostMapping("/themes")
+    public ResponseEntity<Map<String, Object>> createTheme(@RequestBody Map<String, Object> request) {
+        String name = (String) request.get("name");
+        String description = (String) request.get("description");
+        @SuppressWarnings("unchecked")
+        List<String> generateCategories = (List<String>) request.get("generateCategories");
+        if (name == null || name.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "主题名称不能为空"));
+        }
+        ItemTheme theme = adminService.createTheme(name, description, generateCategories);
+        return ResponseEntity.ok(Map.of("success", true, "theme", theme));
+    }
+
+    @PutMapping("/themes/{id}")
+    public ResponseEntity<Map<String, Object>> updateTheme(@PathVariable Long id, @RequestBody ItemTheme theme) {
+        ItemTheme updated = adminService.updateTheme(id, theme);
+        if (updated == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "主题不存在"));
+        }
+        return ResponseEntity.ok(Map.of("success", true, "theme", updated));
+    }
+
+    @DeleteMapping("/themes/{id}")
+    public ResponseEntity<Map<String, Object>> deleteTheme(@PathVariable Long id) {
+        boolean result = adminService.deleteTheme(id);
+        if (!result) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "主题不存在或其下分类已被引用，无法删除"));
+        }
+        return ResponseEntity.ok(Map.of("success", true, "message", "主题已删除"));
+    }
+
+    @PostMapping("/themes/copy")
+    public ResponseEntity<Map<String, Object>> copyTheme(@RequestBody Map<String, Object> request) {
+        String name = (String) request.get("name");
+        String description = (String) request.get("description");
+        Long sourceThemeId = request.get("sourceThemeId") != null
+                ? ((Number) request.get("sourceThemeId")).longValue() : null;
+        if (name == null || name.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "主题名称不能为空"));
+        }
+        if (sourceThemeId == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "源主题ID不能为空"));
+        }
+        ItemTheme theme = adminService.copyTheme(name, description, sourceThemeId);
+        if (theme == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "源主题不存在"));
+        }
+        return ResponseEntity.ok(Map.of("success", true, "theme", theme));
+    }
+
+    @GetMapping("/themes/{id}/categories")
+    public ResponseEntity<Map<String, Object>> getThemeCategories(@PathVariable Long id) {
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "categories", adminService.getCategoriesByTheme(id)
         ));
     }
 
@@ -261,8 +366,10 @@ public class AdminController {
         }
 
         String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "仅支持图片文件"));
+        boolean isImage = contentType != null && contentType.startsWith("image/");
+        boolean isVideo = contentType != null && contentType.startsWith("video/");
+        if (!isImage && !isVideo) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "仅支持图片和视频文件"));
         }
 
         try {
@@ -273,12 +380,13 @@ public class AdminController {
             }
             String filename = UUID.randomUUID().toString() + extension;
 
-            Path uploadPath = Paths.get(uploadDir, "images");
+            String subDir = isVideo ? "videos" : "images";
+            Path uploadPath = Paths.get(uploadDir, subDir);
             Files.createDirectories(uploadPath);
             Path filePath = uploadPath.resolve(filename);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            String url = "/uploads/images/" + filename;
+            String url = "/uploads/" + subDir + "/" + filename;
             return ResponseEntity.ok(Map.of("success", true, "url", url));
         } catch (IOException e) {
             return ResponseEntity.status(500).body(Map.of("success", false, "message", "上传失败: " + e.getMessage()));

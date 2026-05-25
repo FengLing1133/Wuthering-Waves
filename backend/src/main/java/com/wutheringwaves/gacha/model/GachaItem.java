@@ -15,5 +15,7 @@ public class GachaItem {
     private String itemType;
     private Long categoryId;
     private String imageUrl;
+    private String videoUrl;
+    private String loopVideoUrl;
     private String description;
 }

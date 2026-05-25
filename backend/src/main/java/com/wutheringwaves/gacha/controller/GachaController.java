@@ -190,6 +190,15 @@ public class GachaController {
         poolData.put("endTime", pool.getEndTime());
         poolData.put("fourStarAvatars", adminService.getPoolFourStarItems(pool.getId()));
 
+        // 返回该池所有五星物品（含视频URL），供前端预加载
+        List<Map<String, Object>> fiveStarItems = new ArrayList<>();
+        for (GachaItem item : adminService.getPoolItems(pool.getId())) {
+            if (item.getRarity() == 5 && item.getVideoUrl() != null && !item.getVideoUrl().isBlank()) {
+                fiveStarItems.add(adminService.itemToMap(item));
+            }
+        }
+        poolData.put("fiveStarItems", fiveStarItems);
+
         return ResponseEntity.ok(Map.of("success", true, "pool", poolData));
     }
 
