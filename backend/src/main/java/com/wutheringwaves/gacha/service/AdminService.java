@@ -9,6 +9,7 @@ import com.wutheringwaves.gacha.mapper.UserMapper;
 import com.wutheringwaves.gacha.mapper.PoolCategoryMapper;
 import com.wutheringwaves.gacha.mapper.ItemCategoryMapper;
 import com.wutheringwaves.gacha.mapper.ItemThemeMapper;
+import com.wutheringwaves.gacha.mapper.PoolFourStarUpMapper;
 import com.wutheringwaves.gacha.model.GachaItem;
 import com.wutheringwaves.gacha.model.GachaPool;
 import com.wutheringwaves.gacha.model.GachaRecord;
@@ -16,6 +17,7 @@ import com.wutheringwaves.gacha.model.User;
 import com.wutheringwaves.gacha.model.PoolCategory;
 import com.wutheringwaves.gacha.model.ItemCategory;
 import com.wutheringwaves.gacha.model.ItemTheme;
+import com.wutheringwaves.gacha.model.PoolFourStarUp;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +39,7 @@ public class AdminService {
     private final PoolCategoryMapper poolCategoryMapper;
     private final ItemCategoryMapper itemCategoryMapper;
     private final ItemThemeMapper itemThemeMapper;
+    private final PoolFourStarUpMapper poolFourStarUpMapper;
 
     // ========== 卡池管理 ==========
 
@@ -310,41 +313,93 @@ public class AdminService {
         return gachaItemMapper.selectList(wrapper);
     }
 
-    public List<Map<String, Object>> getPoolUpItems(Long poolId) {
-        GachaPool pool = gachaPoolMapper.selectById(poolId);
-        if (pool == null) return Collections.emptyList();
-
-        List<Map<String, Object>> result = new ArrayList<>();
-        if (pool.getFivestarUp() != null) {
-            GachaItem item = gachaItemMapper.selectById(pool.getFivestarUp());
-            if (item != null) result.add(itemToMap(item));
+    // 批量获取多个卡池的 UP 物品和四星头像，避免 N+1
+    public Map<Long, List<Map<String, Object>>> batchGetPoolUpItems(List<GachaPool> pools) {
+        // 收集所有 UP 物品 ID
+        Set<Long> allIds = new HashSet<>();
+        for (GachaPool pool : pools) {
+            if (pool.getFivestarUp() != null) allIds.add(pool.getFivestarUp());
+            allIds.addAll(getPoolFourStarUpIds(pool));
         }
-        if (pool.getFourstarUp() != null && !pool.getFourstarUp().isBlank()) {
-            for (Long id : parseFourstarUp(pool.getFourstarUp())) {
-                GachaItem item = gachaItemMapper.selectById(id);
-                if (item != null) result.add(itemToMap(item));
+        Map<Long, GachaItem> itemMap = Collections.emptyMap();
+        if (!allIds.isEmpty()) {
+            itemMap = gachaItemMapper.selectBatchIds(allIds).stream()
+                    .collect(Collectors.toMap(GachaItem::getId, i -> i));
+        }
+
+        Map<Long, List<Map<String, Object>>> result = new HashMap<>();
+        for (GachaPool pool : pools) {
+            List<Map<String, Object>> upItems = new ArrayList<>();
+            if (pool.getFivestarUp() != null) {
+                GachaItem item = itemMap.get(pool.getFivestarUp());
+                if (item != null) upItems.add(itemToMap(item));
             }
+            for (Long id : getPoolFourStarUpIds(pool)) {
+                GachaItem item = itemMap.get(id);
+                if (item != null) upItems.add(itemToMap(item));
+            }
+            result.put(pool.getId(), upItems);
         }
         return result;
     }
 
-    public List<Map<String, Object>> getPoolFourStarItems(Long poolId) {
-        GachaPool pool = gachaPoolMapper.selectById(poolId);
-        if (pool == null || pool.getFourstarUp() == null || pool.getFourstarUp().isBlank()) {
-            return Collections.emptyList();
+    public Map<Long, List<Map<String, Object>>> batchGetPoolFourStarItems(List<GachaPool> pools) {
+        Set<Long> allIds = new HashSet<>();
+        for (GachaPool pool : pools) {
+            allIds.addAll(getPoolFourStarUpIds(pool));
         }
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (Long id : parseFourstarUp(pool.getFourstarUp())) {
-            GachaItem item = gachaItemMapper.selectById(id);
-            if (item != null) {
-                Map<String, Object> m = new HashMap<>();
-                m.put("id", item.getId());
-                m.put("name", item.getName());
-                m.put("imageUrl", item.getImageUrl());
-                result.add(m);
+        Map<Long, GachaItem> itemMap = Collections.emptyMap();
+        if (!allIds.isEmpty()) {
+            itemMap = gachaItemMapper.selectBatchIds(allIds).stream()
+                    .collect(Collectors.toMap(GachaItem::getId, i -> i));
+        }
+
+        Map<Long, List<Map<String, Object>>> result = new HashMap<>();
+        for (GachaPool pool : pools) {
+            List<Map<String, Object>> avatars = new ArrayList<>();
+            for (Long id : getPoolFourStarUpIds(pool)) {
+                GachaItem item = itemMap.get(id);
+                if (item != null) {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", item.getId());
+                    m.put("name", item.getName());
+                    m.put("imageUrl", item.getImageUrl());
+                    avatars.add(m);
+                }
             }
+            result.put(pool.getId(), avatars);
         }
         return result;
+    }
+
+    public List<Map<String, Object>> getPoolUpItems(Long poolId) {
+        GachaPool pool = gachaPoolMapper.selectById(poolId);
+        if (pool == null) return Collections.emptyList();
+
+        // 收集所有 UP 物品 ID
+        Set<Long> ids = new HashSet<>();
+        if (pool.getFivestarUp() != null) ids.add(pool.getFivestarUp());
+        ids.addAll(getPoolFourStarUpIds(pool));
+        if (ids.isEmpty()) return Collections.emptyList();
+
+        // 批量查询
+        List<GachaItem> items = gachaItemMapper.selectBatchIds(ids);
+        return items.stream().map(this::itemToMap).toList();
+    }
+
+    public List<Map<String, Object>> getPoolFourStarItems(Long poolId) {
+        GachaPool pool = gachaPoolMapper.selectById(poolId);
+        if (pool == null) return Collections.emptyList();
+        Set<Long> ids = getPoolFourStarUpIds(pool);
+        if (ids.isEmpty()) return Collections.emptyList();
+        List<GachaItem> items = gachaItemMapper.selectBatchIds(ids);
+        return items.stream().map(item -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", item.getId());
+            m.put("name", item.getName());
+            m.put("imageUrl", item.getImageUrl());
+            return m;
+        }).toList();
     }
 
     @Transactional
@@ -364,7 +419,20 @@ public class AdminService {
             }
         }
 
-        // 更新UP物品
+        // 更新四星UP关联表
+        LambdaQueryWrapper<PoolFourStarUp> fsuWrapper = new LambdaQueryWrapper<>();
+        fsuWrapper.eq(PoolFourStarUp::getPoolId, poolId);
+        poolFourStarUpMapper.delete(fsuWrapper);
+        if (fourstarUpIds != null && !fourstarUpIds.isEmpty()) {
+            for (Long itemId : fourstarUpIds) {
+                PoolFourStarUp fsu = new PoolFourStarUp();
+                fsu.setPoolId(poolId);
+                fsu.setItemId(itemId);
+                poolFourStarUpMapper.insert(fsu);
+            }
+        }
+
+        // 更新UP物品（保留旧字段兼容）
         GachaPool pool = gachaPoolMapper.selectById(poolId);
         pool.setFivestarUp(fivestarUp);
         pool.setFourstarUp(fourstarUpIds != null && !fourstarUpIds.isEmpty()
@@ -452,6 +520,17 @@ public class AdminService {
                 .filter(s -> !s.isEmpty())
                 .map(Long::parseLong)
                 .collect(Collectors.toSet());
+    }
+
+    // 优先读新表，回退到旧字段
+    private Set<Long> getPoolFourStarUpIds(GachaPool pool) {
+        LambdaQueryWrapper<PoolFourStarUp> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(PoolFourStarUp::getPoolId, pool.getId());
+        List<PoolFourStarUp> records = poolFourStarUpMapper.selectList(wrapper);
+        if (!records.isEmpty()) {
+            return records.stream().map(PoolFourStarUp::getItemId).collect(Collectors.toSet());
+        }
+        return parseFourstarUp(pool.getFourstarUp());
     }
 
     // ========== 用户管理 ==========

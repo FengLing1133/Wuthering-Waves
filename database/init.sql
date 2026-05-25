@@ -232,28 +232,28 @@ INSERT INTO gacha_items (id, name, rarity, item_type, category_id, image_url) VA
 (118, '陆·赫斯', 5, 'character', 7, '/images/avatars/luhesi.png'),
 (119, '西格莉卡', 5, 'character', 7, '/images/avatars/xigelika.png'),
 (120, '绯雪', 5, 'character', 7, '/images/avatars/feixue.png'),
-(121, '猪咪奶龙', 3, 'character', 8, '/uploads/images/ae26fe13-d7a0-4df5-99b6-8634c8e3f2d4.png', null),
-(122, '憋笑Faker', 3, 'character', 8, '/uploads/images/eb3de7ab-c796-417d-865e-2700108a32b0.png', null),
-(123, '憋笑林伟龙', 4, 'character', 9, '/uploads/images/598545e8-440f-44d1-8597-f63d369e5066.png', null),
-(124, '大憋笑林伟龙', 4, 'character', 9, '/uploads/images/17522df4-ddd0-4758-9e6f-37cf65b19d93.png', null),
-(125, '鼻涕林伟龙', 4, 'character', 9, '/uploads/images/c9e7038b-d473-4414-b611-09bb1adc83b8.png', null),
-(126, '比心奶龙', 3, 'character', 8, '/uploads/images/0c61d38f-d02f-4f3e-b92f-829fdd546256.png', null),
-(127, '博士林伟龙', 4, 'character', 9, '/uploads/images/9cb9d327-a3ed-4efc-8324-5960e4b99298.png', null),
-(128, '丁真', 3, 'character', 8, '/uploads/images/28118c7b-aacc-47a1-91ae-0b5cb5effe71.png', null),
-(129, '朵拉', 3, 'character', 8, '/uploads/images/5e26a367-ade9-43f7-83a7-300cdd110248.png', null),
-(130, '粉色奶龙', 3, 'character', 8, '/uploads/images/45ab7c87-8771-4f2a-a7e0-1bc429b74031.png', null),
-(131, '高质量林伟龙', 4, 'character', 9, '/uploads/images/6caa7c0e-49b8-4a25-9436-39bc7f580432.png', null),
-(132, '猴子小孩哥', 3, 'character', 8, '/uploads/images/f51a063b-6f21-4b57-b4dc-31dac00c800b.png', null),
-(133, '口罩林伟龙', 4, 'character', 9, '/uploads/images/18c11221-74af-4af4-a83c-f296a74a2616.png', null),
-(134, '狂铁小孩哥', 3, 'character', 8, '/uploads/images/41f31075-14e7-40fa-ba08-d23de52bf534.png', null),
-(135, '垃圾袋林伟龙', 4, 'character', 9, '/uploads/images/2dca9eb0-eeac-41f0-8aa9-3f4155fe8b6b.png', null),
-(136, '牢大', 3, 'character', 8, '/uploads/images/53225073-1aa8-471b-96e5-bd429f7763af.png', null),
-(137, '牢大屁股', 3, 'character', 8, '/uploads/images/aaee5cc5-3556-4168-914c-9a9909e728ea.png', null),
-(138, '认真梦泪', 3, 'character', 8, '/uploads/images/be9797e1-37d7-4240-9257-b4beb401f5ad.png', null),
-(139, '笑喷', 3, 'character', 8, '/uploads/images/34f2b23f-72d3-4660-b440-f5d5286292a5.png', null),
-(140, '曜小孩哥', 3, 'character', 8, '/uploads/images/de631301-3ab7-47ac-a9a2-af929e21cdc1.png', null),
-(141, '淫笑梦泪', 3, 'character', 8, '/uploads/images/112b2ec6-dd30-4fa4-b820-abfc7eeb565c.png', null),
-(142, '中指林伟龙', 5, 'character', 10, '/uploads/images/ea59c0d7-134d-41ed-9f1b-4f03f04ea810.png', null);
+(121, '猪咪奶龙', 3, 'character', 8, '/uploads/images/ae26fe13-d7a0-4df5-99b6-8634c8e3f2d4.png'),
+(122, '憋笑Faker', 3, 'character', 8, '/uploads/images/eb3de7ab-c796-417d-865e-2700108a32b0.png'),
+(123, '憋笑林伟龙', 4, 'character', 9, '/uploads/images/598545e8-440f-44d1-8597-f63d369e5066.png'),
+(124, '大憋笑林伟龙', 4, 'character', 9, '/uploads/images/17522df4-ddd0-4758-9e6f-37cf65b19d93.png'),
+(125, '鼻涕林伟龙', 4, 'character', 9, '/uploads/images/c9e7038b-d473-4414-b611-09bb1adc83b8.png'),
+(126, '比心奶龙', 3, 'character', 8, '/uploads/images/0c61d38f-d02f-4f3e-b92f-829fdd546256.png'),
+(127, '博士林伟龙', 4, 'character', 9, '/uploads/images/9cb9d327-a3ed-4efc-8324-5960e4b99298.png'),
+(128, '丁真', 3, 'character', 8, '/uploads/images/28118c7b-aacc-47a1-91ae-0b5cb5effe71.png'),
+(129, '朵拉', 3, 'character', 8, '/uploads/images/5e26a367-ade9-43f7-83a7-300cdd110248.png'),
+(130, '粉色奶龙', 3, 'character', 8, '/uploads/images/45ab7c87-8771-4f2a-a7e0-1bc429b74031.png'),
+(131, '高质量林伟龙', 4, 'character', 9, '/uploads/images/6caa7c0e-49b8-4a25-9436-39bc7f580432.png'),
+(132, '猴子小孩哥', 3, 'character', 8, '/uploads/images/f51a063b-6f21-4b57-b4dc-31dac00c800b.png'),
+(133, '口罩林伟龙', 4, 'character', 9, '/uploads/images/18c11221-74af-4af4-a83c-f296a74a2616.png'),
+(134, '狂铁小孩哥', 3, 'character', 8, '/uploads/images/41f31075-14e7-40fa-ba08-d23de52bf534.png'),
+(135, '垃圾袋林伟龙', 4, 'character', 9, '/uploads/images/2dca9eb0-eeac-41f0-8aa9-3f4155fe8b6b.png'),
+(136, '牢大', 3, 'character', 8, '/uploads/images/53225073-1aa8-471b-96e5-bd429f7763af.png'),
+(137, '牢大屁股', 3, 'character', 8, '/uploads/images/aaee5cc5-3556-4168-914c-9a9909e728ea.png'),
+(138, '认真梦泪', 3, 'character', 8, '/uploads/images/be9797e1-37d7-4240-9257-b4beb401f5ad.png'),
+(139, '笑喷', 3, 'character', 8, '/uploads/images/34f2b23f-72d3-4660-b440-f5d5286292a5.png'),
+(140, '曜小孩哥', 3, 'character', 8, '/uploads/images/de631301-3ab7-47ac-a9a2-af929e21cdc1.png'),
+(141, '淫笑梦泪', 3, 'character', 8, '/uploads/images/112b2ec6-dd30-4fa4-b820-abfc7eeb565c.png'),
+(142, '中指林伟龙', 5, 'character', 10, '/uploads/images/ea59c0d7-134d-41ed-9f1b-4f03f04ea810.png');
 
 -- ========== 卡池配置表（含UP物品信息） ==========
 CREATE TABLE IF NOT EXISTS gacha_pool (
@@ -271,8 +271,8 @@ CREATE TABLE IF NOT EXISTS gacha_pool (
     end_time DATETIME COMMENT '下架时间',
     sidebar_visible BOOLEAN DEFAULT FALSE COMMENT '是否显示在抽卡页面侧栏',
     sidebar_order INT DEFAULT 0 COMMENT '侧栏排序（越小越靠前）',
-    bg_image_url MEDIUMTEXT COMMENT '抽卡页面主背景大图（base64 data URL）',
-    thumbnail_url MEDIUMTEXT COMMENT '侧栏缩略图（base64 data URL）',
+    bg_image_url MEDIUMTEXT COMMENT '抽卡页面主背景大图路径',
+    thumbnail_url MEDIUMTEXT COMMENT '侧栏缩略图路径',
     fivestar_up BIGINT COMMENT '五星UP物品ID（单个）',
     fourstar_up VARCHAR(200) COMMENT '四星UP物品ID列表，逗号分隔',
     allow_lose BOOLEAN DEFAULT TRUE COMMENT '是否允许歪（false=100%出UP）',
@@ -280,6 +280,16 @@ CREATE TABLE IF NOT EXISTS gacha_pool (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_pool_type (pool_type),
     INDEX idx_status (status)
+);
+
+-- ========== 卡池四星UP关联表 ==========
+CREATE TABLE IF NOT EXISTS gacha_pool_fourstar_up (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    pool_id BIGINT NOT NULL COMMENT '卡池ID',
+    item_id BIGINT NOT NULL COMMENT '四星UP物品ID',
+    FOREIGN KEY (pool_id) REFERENCES gacha_pool(id) ON DELETE CASCADE,
+    FOREIGN KEY (item_id) REFERENCES gacha_items(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_pool_fourstar (pool_id, item_id)
 );
 
 -- ========== 卡池-分类关联表（替代 pool_item） ==========
@@ -292,4 +302,12 @@ CREATE TABLE IF NOT EXISTS pool_category (
     UNIQUE KEY uk_pool_category (pool_id, category_id)
 );
 
+-- ========== 性能索引 ==========
+CREATE INDEX idx_records_user_pool ON gacha_records(user_id, pool_type);
+CREATE INDEX idx_records_user_created ON gacha_records(user_id, created_at);
+CREATE INDEX idx_items_category ON gacha_items(category_id);
+CREATE INDEX idx_items_rarity_type ON gacha_items(rarity, item_type);
+CREATE INDEX idx_pool_type_status ON gacha_pool(pool_type, status);
 
+-- ========== 外键约束 ==========
+ALTER TABLE gacha_pool ADD CONSTRAINT fk_pool_fivestar_up FOREIGN KEY (fivestar_up) REFERENCES gacha_items(id) ON DELETE SET NULL;

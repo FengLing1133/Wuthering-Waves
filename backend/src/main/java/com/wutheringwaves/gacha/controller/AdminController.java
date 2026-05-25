@@ -21,7 +21,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -370,12 +373,18 @@ public class AdminController {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "仅支持图片和视频文件"));
         }
 
+        // 后缀白名单校验
+        String originalFilename = file.getOriginalFilename();
+        String extension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
+        }
+        Set<String> allowedExtensions = Set.of(".jpg", ".jpeg", ".png", ".gif", ".webp", ".mp4", ".webm");
+        if (!allowedExtensions.contains(extension)) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "不支持的文件格式"));
+        }
+
         try {
-            String originalFilename = file.getOriginalFilename();
-            String extension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
             String filename = UUID.randomUUID().toString() + extension;
 
             String subDir = isVideo ? "videos" : "images";
@@ -387,7 +396,7 @@ public class AdminController {
             String url = "/uploads/" + subDir + "/" + filename;
             return ResponseEntity.ok(Map.of("success", true, "url", url));
         } catch (IOException e) {
-            return ResponseEntity.status(500).body(Map.of("success", false, "message", "上传失败: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", "上传失败"));
         }
     }
 }

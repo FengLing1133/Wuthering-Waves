@@ -13,9 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.HashMap;
@@ -30,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("AdminController 单元测试")
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc
 class AdminControllerTest extends BaseTest {
 
     @Autowired
@@ -45,11 +42,25 @@ class AdminControllerTest extends BaseTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    private static final String ADMIN_TOKEN = "admin-test-token";
+
     @BeforeEach
     void setUp() {
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                2L, null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
-        SecurityContextHolder.getContext().setAuthentication(auth);
+        when(jwtUtil.validateToken(ADMIN_TOKEN)).thenReturn(true);
+        when(jwtUtil.getUserIdFromToken(ADMIN_TOKEN)).thenReturn(2L);
+        when(jwtUtil.getRoleFromToken(ADMIN_TOKEN)).thenReturn("ADMIN");
+    }
+
+    private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder addAuth(
+            org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request) {
+        return request.header("Authorization", "Bearer " + ADMIN_TOKEN);
+    }
+
+    @Test
+    @DisplayName("无认证访问管理接口 - 返回403")
+    void noAuth_returns403() throws Exception {
+        mockMvc.perform(get("/api/admin/pools"))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -58,7 +69,7 @@ class AdminControllerTest extends BaseTest {
         List<GachaPool> pools = List.of(TestDataFactory.createPool("character", "限定角色池"));
         when(adminService.listPools(any(), any())).thenReturn(pools);
 
-        mockMvc.perform(get("/api/admin/pools"))
+        mockMvc.perform(addAuth(get("/api/admin/pools")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.pools").isArray())
@@ -71,7 +82,7 @@ class AdminControllerTest extends BaseTest {
         GachaPool pool = TestDataFactory.createPool("character", "限定角色池");
         when(adminService.getPoolById(1L)).thenReturn(pool);
 
-        mockMvc.perform(get("/api/admin/pools/1"))
+        mockMvc.perform(addAuth(get("/api/admin/pools/1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.pool.name").value("限定角色池"));
@@ -82,7 +93,7 @@ class AdminControllerTest extends BaseTest {
     void getPool_notFound_400() throws Exception {
         when(adminService.getPoolById(999L)).thenReturn(null);
 
-        mockMvc.perform(get("/api/admin/pools/999"))
+        mockMvc.perform(addAuth(get("/api/admin/pools/999")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("卡池不存在"));
     }
@@ -94,7 +105,7 @@ class AdminControllerTest extends BaseTest {
         newPool.setId(null);
         when(adminService.createPool(any(GachaPool.class))).thenReturn(newPool);
 
-        mockMvc.perform(post("/api/admin/pools")
+        mockMvc.perform(addAuth(post("/api/admin/pools"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(newPool)))
                 .andExpect(status().isOk())
@@ -108,7 +119,7 @@ class AdminControllerTest extends BaseTest {
         GachaPool pool = TestDataFactory.createPool("character", "更新后的卡池");
         when(adminService.updatePool(any(GachaPool.class))).thenReturn(pool);
 
-        mockMvc.perform(put("/api/admin/pools/1")
+        mockMvc.perform(addAuth(put("/api/admin/pools/1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pool)))
                 .andExpect(status().isOk())
@@ -121,7 +132,7 @@ class AdminControllerTest extends BaseTest {
     void togglePoolStatus_success() throws Exception {
         when(adminService.togglePoolStatus(anyLong())).thenReturn(true);
 
-        mockMvc.perform(post("/api/admin/pools/1/toggle"))
+        mockMvc.perform(addAuth(post("/api/admin/pools/1/toggle")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
     }
@@ -131,7 +142,7 @@ class AdminControllerTest extends BaseTest {
     void togglePoolStatus_notFound_400() throws Exception {
         when(adminService.togglePoolStatus(999L)).thenReturn(false);
 
-        mockMvc.perform(post("/api/admin/pools/999/toggle"))
+        mockMvc.perform(addAuth(post("/api/admin/pools/999/toggle")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("卡池不存在"));
     }
@@ -144,7 +155,7 @@ class AdminControllerTest extends BaseTest {
         stats.put("totalPulls", 1000);
         when(adminService.getDashboardStats()).thenReturn(stats);
 
-        mockMvc.perform(get("/api/admin/stats/dashboard"))
+        mockMvc.perform(addAuth(get("/api/admin/stats/dashboard")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.stats.totalUsers").value(100))
@@ -159,7 +170,7 @@ class AdminControllerTest extends BaseTest {
         Map<String, Object> request = new HashMap<>();
         request.put("starlight", 5000);
 
-        mockMvc.perform(put("/api/admin/users/1/resources")
+        mockMvc.perform(addAuth(put("/api/admin/users/1/resources"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -174,7 +185,7 @@ class AdminControllerTest extends BaseTest {
         Map<String, Object> request = new HashMap<>();
         request.put("starlight", 5000);
 
-        mockMvc.perform(put("/api/admin/users/999/resources")
+        mockMvc.perform(addAuth(put("/api/admin/users/999/resources"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())

@@ -39,7 +39,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/gacha/pools", "/api/gacha/pools/*").permitAll()
                         .requestMatchers("/api/gacha/**").authenticated()
-                        .anyRequest().permitAll()
+                        .requestMatchers("/", "/login.html", "/index.html", "/admin.html").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/videos/**", "/uploads/**", "/assets/**").permitAll()
+                        .requestMatchers("/favicon.ico", "/error").permitAll()
+                        .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

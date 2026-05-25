@@ -14,6 +14,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
@@ -93,9 +94,24 @@ class GachaDistributionTest extends BaseTest {
             }
         }
 
+        // 验证五星率在合理范围内（0.5% ~ 20%）
+        double fiveStarRate = totalFiveStar * 100.0 / totalPulls;
+        assertTrue(fiveStarRate > 0.5,
+                String.format("五星率过低: %.2f%% (softPityStart=%d)", fiveStarRate, softPityStart));
+        assertTrue(fiveStarRate < 20.0,
+                String.format("五星率过高: %.2f%% (softPityStart=%d)", fiveStarRate, softPityStart));
+
+        // 验证区间分布非空（至少有一个区间有五星出货）
+        int nonEmptyBuckets = 0;
+        for (int count : buckets) {
+            if (count > 0) nonEmptyBuckets++;
+        }
+        assertTrue(nonEmptyBuckets >= 2,
+                String.format("五星区间分布异常: 仅有 %d 个区间有出货 (softPityStart=%d)", nonEmptyBuckets, softPityStart));
+
         System.out.println();
         System.out.println("===== soft_pity_start=" + softPityStart + ", 总抽数=" + totalPulls + " =====");
-        System.out.println("5星总数: " + totalFiveStar);
+        System.out.println("5星总数: " + totalFiveStar + " (五星率: " + String.format("%.2f%%", fiveStarRate) + ")");
         System.out.printf("%-10s | %-6s | %s%n", "区间", "金数", "占比");
         System.out.println("-----------|--------|--------");
         String[] labels = {"1~10", "11~20", "21~30", "31~40", "41~50", "51~60", "61~70", "71~80"};

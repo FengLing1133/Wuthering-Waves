@@ -10,6 +10,7 @@ import com.wutheringwaves.gacha.mapper.GachaRecordMapper;
 import com.wutheringwaves.gacha.mapper.ItemCategoryMapper;
 import com.wutheringwaves.gacha.mapper.ItemThemeMapper;
 import com.wutheringwaves.gacha.mapper.PoolCategoryMapper;
+import com.wutheringwaves.gacha.mapper.PoolFourStarUpMapper;
 import com.wutheringwaves.gacha.mapper.UserMapper;
 import com.wutheringwaves.gacha.model.*;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
@@ -56,6 +57,9 @@ class AdminServiceTest extends BaseTest {
     @MockBean
     private PoolCategoryMapper poolCategoryMapper;
 
+    @MockBean
+    private PoolFourStarUpMapper poolFourStarUpMapper;
+
     private GachaPool testPool;
 
     @BeforeAll
@@ -69,6 +73,7 @@ class AdminServiceTest extends BaseTest {
         TableInfoHelper.initTableInfo(assistant, ItemTheme.class);
         TableInfoHelper.initTableInfo(assistant, ItemCategory.class);
         TableInfoHelper.initTableInfo(assistant, PoolCategory.class);
+        TableInfoHelper.initTableInfo(assistant, PoolFourStarUp.class);
     }
 
     @BeforeEach

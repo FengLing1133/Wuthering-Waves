@@ -928,23 +928,6 @@ body {
     display: none !important;
 }
 
-/* ========== 抽卡动画 ========== */
-@keyframes snowfall {
-    0% {
-        opacity: 0;
-        transform: translateY(-10px) translateX(0);
-    }
-    10% {
-        opacity: 0.8;
-    }
-    90% {
-        opacity: 0.5;
-    }
-    100% {
-        opacity: 0;
-        transform: translateY(100vh) translateX(40px);
-    }
-}
 
 /* ========== 副标题行 + 更换按钮 ========== */
 
@@ -1332,47 +1315,6 @@ body {
     align-items: center;
     gap: 8px;
     margin-bottom: 16px;
-}
-
-.page-btn {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #fff;
-    border: 1px solid rgba(180, 160, 130, 0.4);
-    border-radius: 4px;
-    color: #5a5550;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.page-btn:hover:not(:disabled) {
-    border-color: #8a7a5a;
-    background: rgba(138, 122, 90, 0.1);
-}
-
-.page-btn.active {
-    background: #4a9eff;
-    border-color: #4a9eff;
-    color: #fff;
-}
-
-.page-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.page-btn.nav-btn {
-    font-size: 12px;
-}
-
-.page-info {
-    color: #6a6560;
-    font-size: 13px;
-    margin: 0 8px;
 }
 
 .history-footer-tip {

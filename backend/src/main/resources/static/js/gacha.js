@@ -34,6 +34,15 @@ const Gacha = {
                 })
                 .catch(err => console.warn(`视频 ${rarity}star.mp4 预加载失败:`, err));
         });
+
+        // 页面卸载时释放所有 Blob URL
+        window.addEventListener('beforeunload', () => {
+            Object.values(this._videoCache).forEach(url => URL.revokeObjectURL(url));
+            Object.values(this._itemVideoCache).forEach(urls => {
+                if (urls.video) URL.revokeObjectURL(urls.video);
+                if (urls.loop) URL.revokeObjectURL(urls.loop);
+            });
+        });
     },
 
     // 清除五星物品视频缓存

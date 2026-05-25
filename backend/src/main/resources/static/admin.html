@@ -567,6 +567,7 @@
         </div>
     </div>
 
+    <script src="/js/escapeHtml.js"></script>
     <script src="/js/api.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh.js"></script>
@@ -585,11 +586,31 @@
         });
 
         // ========== 初始化 ==========
-        const adminUser = API.getUser();
-        if (!adminUser || adminUser.role !== 'admin') {
-            window.location.href = '/login.html';
-        }
-        document.getElementById('adminName').textContent = adminUser ? adminUser.username : '';
+        (async function initAdmin() {
+            try {
+                const resp = await fetch('/api/auth/user', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                if (!resp.ok) { window.location.href = '/login.html'; return; }
+                const data = await resp.json();
+                if (!data.success || data.user.role !== 'admin') {
+                    window.location.href = '/login.html';
+                    return;
+                }
+                document.getElementById('adminName').textContent = data.user.username;
+            } catch (e) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // 初始加载
+            loadDashboard();
+            Promise.all([loadCategories(), loadThemes()]).then(() => {
+                const select = document.getElementById('itemCategoryFilter');
+                select.innerHTML = '<option value="">全部分类</option>' +
+                    allCategories.map(c => `<option value="${c.id}">${getCategoryLabel(c)}</option>`).join('');
+            });
+        })();
 
         // ========== Tab 切换 ==========
         function switchTab(name) {
@@ -743,7 +764,7 @@
                     document.getElementById('usersTableBody').innerHTML = page.records.map(u => `
                         <tr>
                             <td>${u.id}</td>
-                            <td>${u.username}</td>
+                            <td>${escapeHtml(u.username)}</td>
                             <td><span class="badge ${u.role==='admin'?'badge-active':'badge-inactive'}">${u.role || 'user'}</span></td>
                             <td>${(u.starlight||0).toLocaleString()}</td>
                             <td>${u.createdAt ? u.createdAt.replace('T', ' ').substring(0, 19) : '-'}</td>
@@ -1329,15 +1350,6 @@
             overlay.addEventListener('click', e => {
                 if (e.target === overlay) overlay.classList.remove('active');
             });
-        });
-
-        // 初始加载
-        loadDashboard();
-        Promise.all([loadCategories(), loadThemes()]).then(() => {
-            // 初始化物品管理分类过滤器
-            const select = document.getElementById('itemCategoryFilter');
-            select.innerHTML = '<option value="">全部分类</option>' +
-                allCategories.map(c => `<option value="${c.id}">${getCategoryLabel(c)}</option>`).join('');
         });
 
         async function loadThemesForPoolEdit() {

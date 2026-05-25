@@ -49,7 +49,7 @@ public class AuthController {
     }
 
     @GetMapping("/user")
-    public ResponseEntity<Map<String, Object>> getUserInfo(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Map<String, Object>> getUserInfo(@RequestHeader(value = "Authorization", required = false) String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return ResponseEntity.status(401).body(Map.of("success", false, "message", "缺少认证信息"));
         }
