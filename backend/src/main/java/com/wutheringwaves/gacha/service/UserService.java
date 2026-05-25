@@ -1,6 +1,7 @@
 package com.wutheringwaves.gacha.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.wutheringwaves.gacha.mapper.UserMapper;
 import com.wutheringwaves.gacha.model.User;
 import com.wutheringwaves.gacha.util.JwtUtil;
@@ -94,7 +95,10 @@ public class UserService {
     }
 
     public void updateSelectedWeaponUp(Long userId, Long weaponId) {
-        userMapper.updateSelectedWeaponUp(userId, weaponId);
+        LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(User::getId, userId)
+               .set(User::getSelectedStandardWeaponUp, weaponId);
+        userMapper.update(null, wrapper);
     }
 
     public Long getSelectedWeaponUp(Long userId) {

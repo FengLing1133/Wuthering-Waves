@@ -37,13 +37,21 @@
 
         .admin-container { padding: 60px 20px 20px; max-width: 1400px; margin: 0 auto; }
 
-        /* 顶部栏 */
-        .top-bar {
+        /* 顶部栏 — 管理界面独立样式，不继承抽卡页 */
+        .admin-top-bar {
+            height: 50px;
             background: rgba(245, 240, 230, 0.95);
             border-bottom: 1px solid rgba(180, 160, 130, 0.3);
             backdrop-filter: blur(10px);
         }
-        .top-bar-title { color: #2a2520; }
+        .admin-top-bar .top-bar-title {
+            color: #2a2520;
+            margin-left: 0;
+            padding-top: 0;
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
 
         /* Tab 导航 */
         .tab-nav { display: flex; gap: 4px; margin-bottom: 20px; background: rgba(180, 160, 130, 0.1); border-radius: 8px; padding: 4px; }
@@ -137,7 +145,7 @@
 </head>
 <body>
     <!-- 顶部栏 -->
-    <div class="top-bar">
+    <div class="top-bar admin-top-bar">
         <div class="top-bar-title">鸣潮抽卡系统 - 管理后台</div>
         <div class="top-bar-right" style="display:flex;align-items:center;gap:16px;">
             <span id="adminName" style="color:var(--text-secondary);font-size:14px;"></span>

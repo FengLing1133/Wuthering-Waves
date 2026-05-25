@@ -19,7 +19,7 @@
     --accent-red: #ff4a6a;
     --accent-cyan: #4af0f0;
     --text-primary: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.6);
+    --text-secondary: #FCF585;
     --pull-btn-text: #333333;
     --pull-btn-text-secondary: #666666;
     --text-dim: rgba(255, 255, 255, 0.35);
@@ -37,9 +37,11 @@ html, body {
 }
 
 body {
-    font-family: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', sans-serif;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 /* ========== 顶部栏 ========== */
@@ -48,48 +50,52 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    height: 50px;
+    height: 150px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 20px;
-    background: transparent; /* 改为透明 */
+    background: linear-gradient(180deg, rgba(5, 10, 24, 0.3) 0%, transparent 100%);
+    backdrop-filter: blur(2px);
     z-index: 100;
 }
 
 .top-bar-title {
-    font-size: 18px;
+    margin-left: 90px;
+    padding-top: 70px;
+    font-size: 30px;
     font-weight: 500;
-    letter-spacing: 3px;
-    color: var(--text-secondary);
+    letter-spacing: 1px;
+    color: #F9FFFF;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 /* 透明椭圆星声框 */
 .astralite-container {
     position: absolute;
-    top: 10px;
+    top: 40px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 20px;
-    padding: 6px 14px 6px 8px;
+    border-radius: 26px;
+    padding: 8px 24px 8px 12px;
     z-index: 11;
 }
 
 .astralite-icon {
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     flex-shrink: 0;
     background: url('/assets/xingsheng.png') center/contain no-repeat;
 }
 
 .astralite-amount {
-    font-size: 15px;
+    font-size: 19px;
     font-weight: 500;
     color: var(--text-primary);
     min-width: 30px;
@@ -97,13 +103,13 @@ body {
 }
 
 .astralite-add {
-    width: 20px;
-    height: 20px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.2);
     background: rgba(255, 255, 255, 0.1);
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: 18px;
     line-height: 1;
     cursor: pointer;
     display: flex;
@@ -119,33 +125,58 @@ body {
 
 .top-bar-right {
     display: flex;
-    gap: 6px;
+    gap: 50px;
     align-items: center;
+    padding-right: 70px;
 }
 
 .top-icon-btn {
-    width: 34px;
-    height: 34px;
+    position: relative;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text-secondary);
+    border: 2px solid transparent;
+    background: transparent;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
 }
 
 .top-icon-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: var(--text-primary);
+    transform: scale(1.12);
+    border-color: rgba(255, 255, 255, 0.7);
+    filter: brightness(1.15);
 }
 
-.close-app-btn:hover {
-    background: rgba(255, 74, 106, 0.2);
-    border-color: rgba(255, 74, 106, 0.4);
-    color: var(--accent-red);
+/* 脉冲扩散环 */
+.top-icon-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0;
+    transition: all 0.5s ease-out;
+    pointer-events: none;
+}
+.top-icon-btn:hover::after {
+    transform: translate(-50%, -50%) scale(1.6);
+    opacity: 0;
+    border-color: rgba(255, 255, 255, 0);
+}
+
+/* 各按钮背景图 */
+.top-icon-btn.analysis-btn {
+    background: url('/assets/xiangqing.png') center/contain no-repeat;
+}
+.top-icon-btn.close-app-btn {
+    background: url('/assets/tuichu2.png') center/contain no-repeat;
 }
 
 /* ========== 雪花粒子 ========== */
@@ -188,7 +219,7 @@ body {
 /* ========== 左侧卡池列表 ========== */
 .banner-sidebar {
     position: fixed;
-    top: 75px;
+    top: 170px;
     left: 0;
     bottom: 100px;
     width: 438px;
@@ -200,7 +231,7 @@ body {
     overflow-x: hidden;
     z-index: 60;
     background: transparent;
-    border-right: 1px solid rgba(255, 255, 255, 0.15);
+    border-right: 3px solid rgba(255, 255, 255, 0.35);
     scrollbar-width: none;
 }
 
@@ -236,7 +267,6 @@ body {
 }
 
 .banner-slot.active {
-    border-color: var(--accent-gold);
     box-shadow: 0 0 12px rgba(212, 168, 67, 0.4), inset 0 0 20px rgba(212, 168, 67, 0.1);
     transform: scale(1.14);
     transform-origin: left center;
@@ -262,10 +292,11 @@ body {
     background: rgba(212, 168, 67, 0.85);
     color: #1a1000;
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 700;
     padding: 1px 6px;
     border-radius: 3px;
     letter-spacing: 1px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 /* ========== 主内容区 ========== */
@@ -279,9 +310,9 @@ body {
     z-index: 1;
 }
 
-/* 卡池背景图（全屏） */
+/* 卡池背景图（全屏固定，覆盖顶部栏后方） */
 .banner-bg {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     right: 0;
@@ -309,57 +340,93 @@ body {
 
 .banner-info {
     position: absolute;
-    top: 40px;
-    left: 20%;
+    top: 130px;
+    left: 360px;
     z-index: 10;
-    max-width: 380px;
+    max-width: 500px;
 }
 
 .banner-subtitle {
-    font-size: 14px;
-    color: var(--text-secondary);
-    margin-bottom: 6px;
-    letter-spacing: 2px;
+    font-size: 34px;
+    color: #FCF585;
+    margin-bottom: -10px;
+    line-height: 1.0;
+    letter-spacing: 1px;
+    font-weight: 500;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    text-shadow:
+        -1px -1px 0 #333,
+         1px -1px 0 #333,
+        -1px  1px 0 #333,
+         1px  1px 0 #333,
+        0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .banner-title {
-    font-size: 36px;
-    font-weight: 300;
-    letter-spacing: 4px;
+    color: #FEFEFE;
+    font-size: 70px;
+    font-weight: 700;
+    letter-spacing: 1px;
     line-height: 1.3;
     margin-bottom: 16px;
-    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    text-shadow:
+        -1px -1px 0 #333,
+         1px -1px 0 #333,
+        -1px  1px 0 #333,
+         1px  1px 0 #333,
+        0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .banner-timer {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
-    color: var(--accent-gold);
+    font-size: 28px;
+    color: #FCF585;
+    letter-spacing: 1px;
     margin-bottom: 20px;
+    font-weight: 500;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    text-shadow:
+        -1px -1px 0 #333,
+         1px -1px 0 #333,
+        -1px  1px 0 #333,
+         1px  1px 0 #333,
+        0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .timer-icon {
-    font-size: 12px;
+    font-size: 28px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .banner-rules {
-    font-size: 13px;
-    color: var(--text-secondary);
-    line-height: 2;
+    font-size: 30px;
+    color: #F8F9F9;
+    letter-spacing: 1px;
+    line-height: 1.4;
+    font-weight: 500;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    text-shadow:
+        -1px -1px 0 #333,
+         1px -1px 0 #333,
+        -1px  1px 0 #333,
+         1px  1px 0 #333,
+        0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .banner-rules .highlight {
     color: var(--accent-gold-bright);
-    font-weight: 600;
+    font-weight: 900;
+    font-size: 28px;
 }
 
 /* UP角色信息 */
 .up-character-info {
     position: absolute;
-    bottom: 60px;
-    right: 40px;
+    bottom: 250px;
+    right: 330px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -388,37 +455,54 @@ body {
 }
 
 .up-label {
-    font-size: 12px;
-    color: var(--accent-gold);
-    font-weight: 600;
-    letter-spacing: 1px;
+    font-size: 20px;
+    color: #FFFFE4;
+    font-weight: 700;
+    letter-spacing: 2px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .up-character-name {
-    font-size: 26px;
-    font-weight: 400;
-    letter-spacing: 4px;
-    text-shadow: 0 2px 15px rgba(0, 0, 0, 0.6);
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    text-shadow:
+        -1px -1px 0 #333,
+         1px -1px 0 #333,
+        -1px  1px 0 #333,
+         1px  1px 0 #333,
+        0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .up-character-stars {
-    font-size: 13px;
+    font-size: 20px;
     color: var(--accent-gold);
-    letter-spacing: 2px;
+    letter-spacing: 3px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 /* 4星概率提升 */
 .rate-up-section {
     position: absolute;
-    bottom: 110px;
-    left: 450px;
+    bottom: 190px;
+    left: 460px;
     z-index: 10;
 }
 
 .rate-up-title {
-    font-size: 13px;
-    color: var(--text-secondary);
+    font-size: 24px;
+    color: #ECE5D8;
     margin-bottom: 10px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    letter-spacing: 1px;
+    font-weight: 600;
+    text-shadow:
+        -1px -1px 0 #333,
+         1px -1px 0 #333,
+        -1px  1px 0 #333,
+         1px  1px 0 #333,
+        0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .rate-up-list {
@@ -427,11 +511,11 @@ body {
 }
 
 .rate-up-item {
-    width: 52px;
-    height: 52px;
+    width: 95px;
+    height: 95px;
     border-radius: 8px;
     overflow: hidden;
-    border: 1px solid rgba(154, 106, 255, 0.4);
+    border: 3px solid rgba(154, 106, 255, 0.4);
     cursor: pointer;
     transition: all 0.2s;
 }
@@ -453,7 +537,8 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
+    margin-right: 30px;
 }
 
 .pity-ring {
@@ -475,15 +560,17 @@ body {
 
 .pity-number {
     font-size: 18px;
-    font-weight: 300;
+    font-weight: 600;
     color: var(--accent-blue);
     z-index: 1;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .pity-label {
     font-size: 11px;
     color: var(--text-secondary);
     letter-spacing: 2px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 /* ========== 底部按钮栏 ========== */
@@ -492,7 +579,7 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 100px;
+    height: 150px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -507,29 +594,50 @@ body {
 }
 
 .bottom-icon-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--text-secondary);
+    position: relative;
+    width: 48px;
+    height: 48px;
+    margin-left: 450px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    background: url('/assets/lishijilu3.png') center/contain no-repeat;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
 }
 
 .bottom-icon-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: var(--text-primary);
-    border-color: rgba(255, 255, 255, 0.25);
+    transform: scale(1.12);
+    border-color: rgba(255, 255, 255, 0.7);
+    filter: brightness(1.15);
+}
+
+/* 脉冲扩散环 */
+.bottom-icon-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0;
+    transition: all 0.5s ease-out;
+    pointer-events: none;
+}
+.bottom-icon-btn:hover::after {
+    transform: translate(-50%, -50%) scale(1.6);
+    opacity: 0;
+    border-color: rgba(255, 255, 255, 0);
 }
 
 .bottom-right-btns {
     display: flex;
-    gap: 16px;
+    gap: 10px;
     align-items: center;
+    margin-right: 48px;
+    margin-bottom: 20px;
 }
 
 /* 六边形抽卡按钮 */
@@ -537,9 +645,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    width: 200px;
-    height: 80px;
+    gap: 8px;
+    width: 375px;
+    height: 118px;
     padding: 0;
     border: none;
     cursor: pointer;
@@ -549,17 +657,38 @@ body {
 }
 
 .pull-btn:hover {
-    transform: translateY(-2px);
-    filter: brightness(1.1);
+    transform: scale(1.05);
+    filter: brightness(1.15);
 }
 
 .pull-btn:active {
     transform: translateY(0);
 }
 
+/* 脉冲扩散环 */
+.pull-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60%;
+    height: 60%;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0;
+    transition: all 0.5s ease-out;
+    pointer-events: none;
+}
+.pull-btn:hover::after {
+    transform: translate(-50%, -50%) scale(2.2);
+    opacity: 0;
+    border-color: rgba(255, 255, 255, 0);
+}
+
 .pull-btn-icon {
-    width: 24px;
-    height: 24px;
+    width: 45px;
+    height: 45px;
     background: url('/assets/xingsheng.png') center/contain no-repeat;
     flex-shrink: 0;
     position: relative;
@@ -567,16 +696,19 @@ body {
 }
 
 .pull-btn-text {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--pull-btn-text);
+    font-size: 26px;
+    font-weight: 600;
+    color: #010101;
     letter-spacing: 1px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .pull-btn-label {
-    font-size: 11px;
-    color: var(--pull-btn-text-secondary);
-    letter-spacing: 1px;
+    font-size: 26px;
+    color: #010101;
+    letter-spacing: 2px;
+    font-weight: 600;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 /* ========== 抽卡结果展示 ========== */
@@ -624,8 +756,9 @@ body {
 
 .result-header h3 {
     font-size: 22px;
-    font-weight: 300;
+    font-weight: 600;
     letter-spacing: 5px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .close-btn {
@@ -698,6 +831,7 @@ body {
     font-size: 14px;
     font-weight: 500;
     margin-bottom: 8px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .result-card .item-rarity {
@@ -719,6 +853,7 @@ body {
     font-size: 9px;
     padding: 2px 6px;
     border-radius: 8px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .five-star { color: var(--accent-gold); text-shadow: 0 0 8px rgba(212, 168, 67, 0.5); }
@@ -735,8 +870,11 @@ body {
     border-radius: 8px;
     color: white;
     font-size: 15px;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    letter-spacing: 2px;
 }
 
 .confirm-btn:hover {
@@ -766,8 +904,9 @@ body {
 
 .history-header h2 {
     font-size: 24px;
-    font-weight: 300;
+    font-weight: 600;
     letter-spacing: 4px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .history-filters select {
@@ -778,6 +917,7 @@ body {
     border-radius: 6px;
     font-size: 13px;
     cursor: pointer;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .history-stats {
@@ -797,13 +937,15 @@ body {
 
 .stat-card .stat-value {
     font-size: 32px;
-    font-weight: 300;
+    font-weight: 600;
     margin-bottom: 8px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .stat-card .stat-label {
     font-size: 13px;
     color: var(--text-secondary);
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .stat-card.five-star .stat-value { color: var(--accent-gold); }
@@ -828,6 +970,7 @@ body {
     text-align: left;
     border-bottom: 1px solid var(--border-subtle);
     font-size: 13px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .history-table th {
@@ -855,6 +998,7 @@ body {
     cursor: pointer;
     font-size: 13px;
     transition: all 0.2s;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .page-btn:hover {
@@ -876,6 +1020,7 @@ body {
     color: var(--text-secondary);
     padding: 6px 4px;
     font-size: 13px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .page-info {
@@ -883,6 +1028,7 @@ body {
     font-size: 13px;
     padding: 6px 12px;
     margin-left: 8px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .page-jump-input {
@@ -895,6 +1041,7 @@ body {
     margin-left: 8px;
     background: #fff;
     color: #5a5550;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .page-jump-input:focus {
@@ -940,14 +1087,16 @@ body {
 
 .change-up-btn {
     background: rgba(255, 200, 50, 0.15);
-    border: 1px solid rgba(255, 200, 50, 0.4);
-    color: #ffc832;
-    font-size: 12px;
-    padding: 2px 10px;
-    border-radius: 4px;
+    border: 2px solid rgba(255, 200, 50, 0.4);
+    color: #FCF585;
+    font-size: 20px;
+    font-weight: 500;
+    padding: 6px 18px;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .change-up-btn:hover {
@@ -982,9 +1131,9 @@ body {
 .weapon-select-content {
     position: relative;
     z-index: 1;
-    background: linear-gradient(135deg, #1a2a4a, #0d1b2e);
-    border: 1px solid rgba(74, 158, 255, 0.2);
+    background: linear-gradient(180deg, rgba(245, 240, 230, 0.98) 0%, rgba(240, 235, 225, 0.95) 100%);
     border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(200, 180, 150, 0.3);
     width: 90%;
     max-width: 700px;
     max-height: 80vh;
@@ -997,16 +1146,17 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid rgba(74, 158, 255, 0.15);
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid rgba(180, 160, 130, 0.3);
 }
 
 .weapon-select-header h3 {
-    font-size: 18px;
-    font-weight: 400;
-    color: var(--text-primary);
-    letter-spacing: 2px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #2a2520;
+    letter-spacing: 3px;
     margin: 0;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .weapon-select-grid {
@@ -1019,8 +1169,8 @@ body {
 }
 
 .weapon-card {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #fff;
+    border: 1px solid rgba(180, 160, 130, 0.3);
     border-radius: 8px;
     padding: 12px 8px;
     text-align: center;
@@ -1030,15 +1180,15 @@ body {
 }
 
 .weapon-card:hover {
-    background: rgba(255, 200, 50, 0.1);
-    border-color: rgba(255, 200, 50, 0.3);
+    background: rgba(196, 154, 48, 0.08);
+    border-color: rgba(196, 154, 48, 0.4);
     transform: translateY(-2px);
 }
 
 .weapon-card.selected {
-    background: rgba(255, 200, 50, 0.15);
-    border-color: rgba(255, 200, 50, 0.6);
-    box-shadow: 0 0 12px rgba(255, 200, 50, 0.2);
+    background: rgba(196, 154, 48, 0.12);
+    border-color: #c49a30;
+    box-shadow: 0 0 12px rgba(196, 154, 48, 0.2);
 }
 
 .weapon-card-img {
@@ -1046,34 +1196,71 @@ body {
     height: 60px;
     border-radius: 6px;
     margin: 0 auto 8px;
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
 .weapon-card-name {
     font-size: 12px;
-    color: var(--text-primary);
+    color: #2a2520;
     margin-bottom: 4px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .weapon-card-stars {
     font-size: 10px;
-    color: #ffc832;
+    color: #c49a30;
     letter-spacing: 1px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .weapon-card-badge {
     position: absolute;
     top: 4px;
     right: 4px;
-    background: rgba(255, 200, 50, 0.9);
-    color: #1a1a2e;
+    background: #c49a30;
+    color: #fff;
     font-size: 10px;
     padding: 1px 6px;
     border-radius: 3px;
     font-weight: 500;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+}
+
+.weapon-select-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid rgba(180, 160, 130, 0.3);
+}
+
+.weapon-select-actions .btn {
+    padding: 8px 20px;
+    border: 1px solid rgba(180, 160, 130, 0.4);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+}
+.weapon-select-actions .btn-cancel {
+    background: transparent;
+    color: #6a6560;
+}
+.weapon-select-actions .btn-cancel:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #4a4540;
+}
+.weapon-select-actions .btn-gold {
+    background: linear-gradient(135deg, #c49a30, #d4a843);
+    color: #fff;
+    border-color: rgba(196, 154, 48, 0.6);
+}
+.weapon-select-actions .btn-gold:hover {
+    background: linear-gradient(135deg, #d4a843, #e0b850);
 }
 
 /* ========== 响应式 ========== */
@@ -1147,10 +1334,11 @@ body {
 
 .history-modal-header h2 {
     font-size: 20px;
-    font-weight: 600;
+    font-weight: 700;
     color: #2a2520;
-    letter-spacing: 2px;
+    letter-spacing: 3px;
     margin: 0;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .history-modal-close {
@@ -1191,6 +1379,7 @@ body {
     color: #4a4540;
     font-weight: 500;
     min-width: 70px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .history-select-wrapper {
@@ -1212,6 +1401,7 @@ body {
     -webkit-appearance: none;
     outline: none;
     transition: all 0.2s;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .history-select:hover {
@@ -1231,6 +1421,7 @@ body {
     color: #888;
     font-size: 12px;
     pointer-events: none;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .history-table-wrapper {
@@ -1251,6 +1442,7 @@ body {
     padding: 14px 16px;
     text-align: left;
     font-size: 14px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .history-table th {
@@ -1279,6 +1471,7 @@ body {
     border-radius: 4px;
     font-size: 12px;
     font-weight: 500;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .history-table .item-type-badge.character {
@@ -1307,6 +1500,7 @@ body {
 .history-table .time-cell {
     color: #6a6560;
     font-size: 13px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .history-pagination {
@@ -1317,12 +1511,65 @@ body {
     margin-bottom: 16px;
 }
 
+/* 历史弹窗内的分页按钮 — 浅色主题 */
+.history-modal-content .page-btn {
+    background: #fff;
+    border: 1px solid rgba(180, 160, 130, 0.4);
+    color: #4a4540;
+    padding: 6px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+.history-modal-content .page-btn:hover {
+    background: rgba(196, 154, 48, 0.1);
+    border-color: rgba(196, 154, 48, 0.4);
+}
+.history-modal-content .page-btn.active {
+    background: #c49a30;
+    border-color: #c49a30;
+    color: #fff;
+}
+.history-modal-content .page-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+.history-modal-content .page-dots {
+    color: #6a6560;
+    padding: 6px 4px;
+    font-size: 13px;
+}
+.history-modal-content .page-info {
+    color: #4a4540;
+    font-size: 13px;
+    padding: 6px 12px;
+    margin-left: 8px;
+    font-weight: 500;
+}
+.history-modal-content .page-jump-input {
+    width: 70px;
+    padding: 5px 8px;
+    border: 1px solid rgba(180, 160, 130, 0.4);
+    border-radius: 4px;
+    font-size: 13px;
+    text-align: center;
+    margin-left: 8px;
+    background: #fff;
+    color: #4a4540;
+}
+.history-modal-content .page-jump-input:focus {
+    outline: none;
+    border-color: #c49a30;
+}
+
 .history-footer-tip {
     text-align: center;
     font-size: 12px;
     color: #8a8580;
     line-height: 1.6;
     padding-top: 8px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .history-empty-tip {
@@ -1330,6 +1577,7 @@ body {
     padding: 40px 20px;
     color: #8a8580;
     font-size: 14px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 /* ========== 抽卡分析弹窗 ========== */
@@ -1378,10 +1626,11 @@ body {
 
 .analysis-modal-header h2 {
     font-size: 20px;
-    font-weight: 600;
+    font-weight: 700;
     color: #2a2520;
-    letter-spacing: 2px;
+    letter-spacing: 3px;
     margin: 0;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .analysis-modal-close {
@@ -1422,16 +1671,18 @@ body {
 
 .analysis-title {
     font-size: 28px;
-    font-weight: 600;
+    font-weight: 700;
     color: #c49a30;
     letter-spacing: 4px;
     margin-bottom: 8px;
     text-shadow: 0 2px 10px rgba(196, 154, 48, 0.3);
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .analysis-title-desc {
     font-size: 14px;
     color: #6a6560;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 /* 基础统计 */
@@ -1448,18 +1699,21 @@ body {
 
 .analysis-stat-value {
     font-size: 36px;
-    font-weight: 600;
+    font-weight: 700;
     color: #2a2520;
     margin-bottom: 4px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .analysis-stat-value.highlight {
     color: #c49a30;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .analysis-stat-label {
     font-size: 14px;
     color: #6a6560;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 /* 详细统计 */
@@ -1482,12 +1736,14 @@ body {
     font-size: 13px;
     color: #6a6560;
     margin-bottom: 6px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .analysis-detail-value {
     font-size: 18px;
-    font-weight: 600;
+    font-weight: 700;
     color: #2a2520;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 /* 五星物品总结 */
@@ -1499,11 +1755,13 @@ body {
     font-size: 14px;
     color: #4a4540;
     margin-bottom: 16px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .analysis-summary-title .highlight {
     color: #c49a30;
-    font-weight: 600;
+    font-weight: 700;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .analysis-five-star-list {
@@ -1539,11 +1797,12 @@ body {
     background: rgba(196, 154, 48, 0.9);
     color: #fff;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
     padding: 1px 5px;
     border-radius: 4px;
     min-width: 16px;
     text-align: center;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .analysis-five-star-item.no-image {
@@ -1554,6 +1813,7 @@ body {
     color: #fff;
     font-size: 12px;
     font-weight: 500;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 /* 卡池类型筛选 */
@@ -1573,8 +1833,10 @@ body {
     border-radius: 6px;
     color: #6a6560;
     font-size: 14px;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .analysis-pool-tab:hover {
@@ -1586,6 +1848,8 @@ body {
     background: #c49a30;
     border-color: #c49a30;
     color: #fff;
+    font-weight: 600;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 /* 卡池五星记录 */
@@ -1631,6 +1895,7 @@ body {
     color: #fff;
     font-size: 11px;
     font-weight: 500;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .analysis-pool-record-bar-container {
@@ -1645,18 +1910,21 @@ body {
     line-height: 24px;
     padding-left: 10px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
     color: #fff;
     transition: width 0.3s ease;
     text-align: left;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .analysis-pool-record-bar.green {
     background: linear-gradient(90deg, #4caf50, #66bb6a);
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .analysis-pool-record-bar.yellow {
     background: linear-gradient(90deg, #ffc107, #ffca28);
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .analysis-pool-record-pity {
@@ -1664,16 +1932,18 @@ body {
     color: #6a6560;
     min-width: 40px;
     text-align: right;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .analysis-pool-record-lost {
     font-size: 12px;
     color: #ff4a6a;
-    font-weight: 500;
+    font-weight: 600;
     margin-left: 12px;
     padding: 2px 8px;
     background: rgba(255, 74, 106, 0.1);
     border-radius: 4px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .analysis-pool-pity-hint {
@@ -1684,11 +1954,13 @@ body {
     border-radius: 8px;
     font-size: 14px;
     color: #ccc;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .analysis-pool-pity-hint .highlight {
     color: #ffd700;
-    font-weight: bold;
+    font-weight: 700;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 .analysis-pool-empty {
@@ -1696,4 +1968,5 @@ body {
     padding: 40px 20px;
     color: #8a8580;
     font-size: 14px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }

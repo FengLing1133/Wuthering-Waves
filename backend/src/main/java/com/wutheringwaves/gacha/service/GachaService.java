@@ -177,9 +177,14 @@ public class GachaService {
         List<GachaItem> upItems = filterUpItems(candidates, rarity, fivestarUp, fourstarUpIds);
         List<GachaItem> nonUpItems = filterNonUpItems(candidates, rarity, fivestarUp, fourstarUpIds, isLimitedPool);
 
-        // 非限定池或无UP物品：完全随机
-        if (!isLimitedPool || upItems.isEmpty()) {
+        // 非限定池（非标准武器池）或无UP物品：完全随机
+        if ((!isLimitedPool && !"standard-weapon".equals(poolType)) || upItems.isEmpty()) {
             return randomPick(candidates);
+        }
+
+        // 常驻武器池五星：100%出用户自选UP
+        if ("standard-weapon".equals(poolType) && rarity == 5 && !upItems.isEmpty()) {
+            return randomPick(upItems);
         }
 
         // 限定武器池五星：100%出UP（不歪）

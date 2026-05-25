@@ -19,15 +19,8 @@
             <div class="astralite-add">+</div>
         </div>
         <div class="top-bar-right">
-            <button class="top-icon-btn" title="背包">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z"/>
-                    <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-                </svg>
-            </button>
-            <button class="top-icon-btn close-app-btn" title="关闭" id="logoutBtn">
-                <img src="/assets/tuichu2.png" width="20" height="20" alt="退出">
-            </button>
+            <button class="top-icon-btn analysis-btn" title="背包"></button>
+            <button class="top-icon-btn close-app-btn" title="关闭" id="logoutBtn"></button>
         </div>
     </header>
 
@@ -72,7 +65,7 @@
                 </div>
                 <div class="up-character-details">
                     <span class="up-label">UP!</span>
-                    <h2 class="up-character-name" id="upCharacterName">绯雪</h2>
+                    <h2 class="up-character-name" id="upCharacterName">UP角色</h2>
                     <div class="up-character-stars" id="upStars">★★★★★</div>
                 </div>
             </div>
@@ -97,9 +90,7 @@
         <!-- 底部按钮栏 -->
         <div class="bottom-bar">
             <div class="bottom-left-btns">
-                <button class="bottom-icon-btn" id="historyBtn" title="记录">
-                    <img src="/assets/lishijilu3.png" width="22" height="22" alt="记录">
-                </button>
+                <button class="bottom-icon-btn" id="historyBtn" title="记录"></button>
             </div>
             <div class="bottom-right-btns">
                 <!-- 保底计数显示 -->
@@ -192,9 +183,13 @@
         <div class="weapon-select-content">
             <div class="weapon-select-header">
                 <h3>选择UP武器</h3>
-                <button class="close-btn" id="closeWeaponSelectBtn">×</button>
+                <button class="analysis-modal-close" id="closeWeaponSelectBtn">×</button>
             </div>
             <div class="weapon-select-grid" id="weaponSelectGrid"></div>
+            <div class="weapon-select-actions">
+                <button class="btn btn-cancel" id="cancelWeaponSelectBtn">取消</button>
+                <button class="btn btn-gold" id="confirmWeaponSelectBtn">确认更换</button>
+            </div>
         </div>
     </div>
 
@@ -284,22 +279,11 @@
     </div>
 
     <!-- 全局跳过按钮 -->
-    <button id="skipBtn" class="skip-btn hidden">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
-        </svg>
-        <span>跳过</span>
-    </button>
+    <button id="skipBtn" class="skip-btn hidden"></button>
 
     <!-- 单个物品展示页面 -->
     <div id="itemShowcase" class="item-showcase hidden">
         <div class="showcase-bg"></div>
-        <button class="showcase-skip-btn">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
-            </svg>
-            <span>跳过</span>
-        </button>
         <div class="showcase-content">
             <div class="showcase-item-icon" id="showcaseIcon"></div>
             <div class="showcase-item-info">
@@ -315,12 +299,6 @@
         <div class="five-star-bg"></div>
         <video id="fiveStarSummonVideo" class="five-star-summon-video" playsinline preload="auto"></video>
         <video id="fiveStarLoopVideo" class="five-star-loop-video hidden" playsinline loop muted preload="auto"></video>
-        <button id="fiveStarShowcaseSkipBtn" class="showcase-skip-btn" style="z-index:10;">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
-            </svg>
-            <span>跳过</span>
-        </button>
         <div class="five-star-click-hint">点击任意位置继续</div>
     </div>
 
@@ -330,7 +308,6 @@
         <div class="summary-content">
             <div class="summary-cards" id="summaryCards"></div>
         </div>
-        <button class="summary-close-btn" id="closeSummaryBtn">确认</button>
     </div>
 
     <script src="js/escapeHtml.js"></script>

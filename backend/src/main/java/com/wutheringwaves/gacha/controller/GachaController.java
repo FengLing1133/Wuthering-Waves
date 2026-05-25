@@ -172,7 +172,8 @@ public class GachaController {
     }
 
     @GetMapping("/pools/{id}")
-    public ResponseEntity<Map<String, Object>> getPoolDetail(@PathVariable Long id) {
+    public ResponseEntity<Map<String, Object>> getPoolDetail(@PathVariable Long id,
+                                                             Authentication authentication) {
         GachaPool pool = adminService.getPoolById(id);
         if (pool == null) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "卡池不存在"));
@@ -185,7 +186,32 @@ public class GachaController {
         poolData.put("description", pool.getDescription());
         poolData.put("bgImageUrl", pool.getBgImageUrl());
         poolData.put("thumbnailUrl", pool.getThumbnailUrl());
-        poolData.put("upItems", adminService.getPoolUpItems(pool.getId()));
+        poolData.put("upItems", new ArrayList<>(adminService.getPoolUpItems(pool.getId())));
+
+        // 常驻武器池：用用户自选UP替换默认五星UP
+        if ("standard-weapon".equals(pool.getPoolType()) && authentication != null) {
+            Long userId = (Long) authentication.getPrincipal();
+            Long selectedUp = userService.getSelectedWeaponUp(userId);
+            if (selectedUp != null) {
+                GachaItem selectedItem = adminService.getItemById(selectedUp);
+                if (selectedItem != null) {
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> upItems = (List<Map<String, Object>>) poolData.get("upItems");
+                    boolean replaced = false;
+                    for (int i = 0; i < upItems.size(); i++) {
+                        if ((int) upItems.get(i).get("rarity") == 5) {
+                            upItems.set(i, adminService.itemToMap(selectedItem));
+                            replaced = true;
+                            break;
+                        }
+                    }
+                    // 池未设默认五星UP时，直接插入到列表首位
+                    if (!replaced) {
+                        upItems.add(0, adminService.itemToMap(selectedItem));
+                    }
+                }
+            }
+        }
         poolData.put("fiveStarRate", pool.getFiveStarRate());
         poolData.put("fourStarRate", pool.getFourStarRate());
         poolData.put("maxPity", pool.getMaxPity());
