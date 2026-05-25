@@ -16,16 +16,19 @@ Please always communicate, explain code, and answer questions in **Chinese**.
 
 ## 构建与运行
 
-所有 Maven 命令在 `backend/` 目录下执行。
+需要环境变量：`JWT_SECRET`（JWT 签名密钥）、`DB_PASSWORD`（MySQL 密码）。所有 Maven 命令在 `backend/` 目录下执行。
 
 ```bash
 cd backend
 
+# 运行（Windows PowerShell）
+$env:JWT_SECRET="my-secret"; $env:DB_PASSWORD="root"; mvn spring-boot:run
+
+# 运行（bash）
+JWT_SECRET=my-secret DB_PASSWORD=root mvn spring-boot:run
+
 # 构建
 mvn clean package
-
-# 运行
-mvn spring-boot:run
 
 # 运行全部测试
 mvn test
@@ -33,14 +36,19 @@ mvn test
 # 运行单个测试类
 mvn test -Dtest=ClassName
 
-# 运行单个测试方法
-mvn test -Dtest=ClassName#methodName
-
 # 跳过测试构建
 mvn clean package -DskipTests
 ```
 
 应用启动后访问 `http://localhost:8080`。前端页面：`/login.html`（登录注册）、`/index.html`（抽卡主界面）、`/admin.html`（后台管理）。
+
+## CSS 架构
+
+- **CSS 变量**：`:root` 定义深色主题变量（`style.css:9-31`），admin.html 内联样式覆盖为浅色主题
+- **抽卡页**：深色背景 + 毛玻璃顶部栏（`.gacha-top-bar`），`.banner-bg` 为 fixed 全屏背景图
+- **弹窗**：历史记录/抽卡分析/武器选择弹窗统一浅色暖色调（`linear-gradient(180deg, rgba(245,240,230,0.98), rgba(240,235,225,0.95))`）
+- **按钮**：顶部/底部图标按钮用 `background-image` 图标为载体，hover 时 `::after` 伪元素白色脉冲扩散环
+- **管理后台**：独立 `.admin-top-bar` 类，高度 50px，浅色背景，不继承抽卡页毛玻璃和渐变
 
 ## 数据库
 
@@ -50,7 +58,7 @@ mvn clean package -DskipTests
 
 | 表 | 用途 |
 |---|---|
-| `users` | 用户账号（用户名、bcrypt 密码、角色、星声货币余额） |
+| `users` | 用户账号（用户名、bcrypt 密码、角色、星声、自选武器 UP） |
 | `gacha_records` | 抽卡记录（用户、卡池、物品、稀有度、是否限定） |
 | `gacha_pity` | 保底计数（用户、卡池类型、五星/四星计数、大保底标记） |
 | `gacha_items` | 全部可抽物品（120 项：角色+武器，含稀有度、图片 URL） |
@@ -77,17 +85,40 @@ mvn clean package -DskipTests
 
 ### 抽卡/保底系统
 
-三种卡池：`character`（角色池）、`weapon`（武器池）、`limited`（限定池），各自独立追踪保底计数。卡池配置存储在 `gacha_pool` 表中（含概率、保底阈值、UP 物品等），而非硬编码。
+六种卡池类型，各自独立追踪保底计数：
+
+| poolType | 说明 | UP 机制 |
+|---|---|---|
+| `limited-character` | 限定角色 | 50/50 + 大保底 |
+| `limited-weapon` | 限定武器 | 100% UP（不歪） |
+| `standard-character` | 常驻角色 | 完全随机 |
+| `standard-weapon` | 常驻武器 | 100% 用户自选 UP |
+| `special-character` | 特殊角色 | 由 `allowLose` 配置决定 |
+| `special-weapon` | 特殊武器 | 由 `allowLose` 配置决定 |
+
+卡池配置存储在 `gacha_pool` 表中（含概率、保底阈值、UP 物品等），而非硬编码。
 
 **概率**（默认值，可由卡池配置覆盖）：
-- 角色池：五星 0.8%，四星 6%，三星 93.2%，90 抽硬保底
-- 武器池：五星 0.7%，四星 6%，三星 93.3%，80 抽硬保底
+- 五星 0.8%，四星 6%，三星 93.2%
 - 软保底从第 75 抽开始：五星概率每抽递增约 6%
 - 四星每 10 抽保底一次
 
-**大保底机制**：如果抽到非限定五星，`guaranteed_five` 标记置为 true，下次出五星时必定为当期限定 UP 物品。
+**大保底机制**：如果抽到非 UP 五星，`guaranteed_five` 标记置为 true，下次出五星时必定为当期 UP 物品（仅限 `limited-*` 和 `special-*` 池）。
+
+**自选 UP**（`standard-weapon`）：用户可在更换界面自选五星武器，存储在 `users.selected_standard_weapon_up`。抽卡时 `GachaService.pull()` 读取该字段覆盖池默认 `fivestarUp`，`selectItem()` 中 100% 返回自选武器。详见 `GachaService.java:45-52` 和 `GachaService.java:183-186`。
 
 **货币系统**：星声为唯一抽卡货币，单抽 160，十连 1500，新用户初始 100000。
+
+### 抽卡动画流程
+
+`Gacha.js` 中 `pull()` 控制完整流程：
+
+1. `playGachaVideo(maxRarity)` — 播放 `{rarity}star.mp4`，返回 `'end'` / `'five'` / `'summary'`
+2. 十连：`showTenPullAnimation(results, videoResult)` — 根据返回值决定是否展示物品或直接跳汇总
+3. 单个物品展示 `showItemShowcase()` → 五星走 `showFiveStarShowcase()`（唤取视频+循环视频），其他走 `showStaticShowcase()`
+4. 全局跳过按钮 `#skipBtn` 在所有阶段统一使用，通过 `showSkipBtn()`/`hideSkipBtn()` 控制显隐
+
+**键盘快捷键**：空格=下一个/关闭，ESC=跳过全部到汇总（物品展示阶段）/关闭（汇总阶段）
 
 ### 前端
 
@@ -103,6 +134,8 @@ mvn clean package -DskipTests
 | `css/` | 深色主题，鸣潮风格（渐变、光效） |
 
 用户上传的图片存储在 `backend/uploads/images/`，通过 `/uploads/images/**` 映射访问。
+
+**实施计划保存在 `docs/plans/` 目录中。**
 
 ### 测试
 

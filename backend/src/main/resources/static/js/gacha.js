@@ -5,6 +5,7 @@ const Gacha = {
     isPulling: false,
     poolList: [],
     _skipRequested: false,
+    _skipToFiveStar: false,
     _videoCache: {},
     _itemVideoCache: {},
     // 历史记录状态
@@ -260,7 +261,9 @@ const Gacha = {
     // 获取UP角色名
     getUpCharacterName(pool) {
         if (pool.upItems && pool.upItems.length > 0) {
-            return pool.upItems[0].name || 'UP';
+            const highestRarity = pool.upItems.reduce((max, item) => Math.max(max, item.rarity || 0), 0);
+            const item = pool.upItems.find(i => i.rarity === highestRarity);
+            return (item && item.name) || 'UP';
         }
         return pool.poolType && pool.poolType.includes('weapon') ? 'UP武器' : 'UP角色';
     },
@@ -437,16 +440,17 @@ const Gacha = {
                 this.updatePityCount();
 
                 const results = result.results;
-                // 确定播放视频的星级（单抽按物品星级，十连按最高星级）
                 const maxRarity = Math.max(...results.map(r => r.rarity));
-                await this.playGachaVideo(maxRarity);
+                const videoResult = await this.playGachaVideo(maxRarity);
 
                 if (count === 1) {
-                    // 单抽：显示物品展示页
-                    await this.showItemShowcase(results[0]);
+                    // 单抽：仅正常结束时展示物品
+                    if (videoResult === 'end') {
+                        await this.showItemShowcase(results[0]);
+                    }
                 } else {
                     // 十连：逐个展示物品，最后汇总
-                    await this.showTenPullAnimation(results);
+                    await this.showTenPullAnimation(results, videoResult);
                 }
             } else {
                 alert(result.message || '抽卡失败');
@@ -473,7 +477,7 @@ const Gacha = {
         animation.classList.add('hidden');
     },
 
-    // 播放抽卡视频
+    // 播放抽卡视频，返回 'end' | 'five'（跳到五星展示）| 'summary'（跳到汇总）
     playGachaVideo(rarity) {
         return new Promise((resolve) => {
             const video = document.getElementById('gachaVideo');
@@ -493,17 +497,16 @@ const Gacha = {
             this.showSkipBtn();
 
             // 统一的清理函数
-            const cleanup = () => {
+            const cleanup = (result) => {
                 document.removeEventListener('keydown', onKeyDown);
                 this.hideVideoOverlay();
-                resolve();
+                resolve(result);
             };
 
-            // 跳过按钮：暂停视频，标记跳过
+            // 跳过按钮
             const onSkip = () => {
                 video.pause();
-                this._skipRequested = true;
-                cleanup();
+                cleanup(rarity === 5 ? 'five' : 'summary');
             };
             document.getElementById('skipBtn').onclick = onSkip;
 
@@ -517,16 +520,16 @@ const Gacha = {
             document.addEventListener('keydown', onKeyDown);
 
             // 视频播放结束
-            video.onended = cleanup;
+            video.onended = () => cleanup('end');
 
             // 视频加载失败时直接跳过
-            video.onerror = cleanup;
+            video.onerror = () => cleanup('summary');
 
             // 开始播放（取消静音，因为抽卡按钮点击已是用户交互）
             video.muted = false;
             video.play().catch(() => {
                 this.hideVideoOverlay();
-                resolve();
+                resolve('end');
             });
         });
     },
@@ -612,29 +615,45 @@ const Gacha = {
 
             // 显示展示页面
             showcase.classList.remove('hidden');
+            this.showSkipBtn();
 
-            const skipBtn = showcase.querySelector('.showcase-skip-btn');
+            const skipBtn = document.getElementById('skipBtn');
 
             const cleanup = () => {
                 showcase.classList.add('hidden');
+                this.hideSkipBtn();
                 showcase.removeEventListener('click', clickHandler);
-                skipBtn.removeEventListener('click', skipHandler);
+                document.removeEventListener('keydown', onKeyDown);
+                skipBtn.onclick = null;
                 resolve();
             };
 
-            // 跳过按钮（阻止事件冒泡到 showcase）
+            // 跳过按钮
             const skipHandler = (e) => {
                 e.stopPropagation();
                 this._skipRequested = true;
                 cleanup();
             };
-            skipBtn.addEventListener('click', skipHandler);
+            skipBtn.onclick = skipHandler;
 
             // 点击任意位置继续
             const clickHandler = () => {
                 cleanup();
             };
             showcase.addEventListener('click', clickHandler);
+
+            // 空格继续下一个，ESC 跳过全部到汇总
+            const onKeyDown = (e) => {
+                if (e.key === ' ') {
+                    e.preventDefault();
+                    cleanup();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    this._skipRequested = true;
+                    cleanup();
+                }
+            };
+            document.addEventListener('keydown', onKeyDown);
         });
     },
 
@@ -644,7 +663,7 @@ const Gacha = {
             const showcase = document.getElementById('fiveStarShowcase');
             const summonVideo = document.getElementById('fiveStarSummonVideo');
             const loopVideo = document.getElementById('fiveStarLoopVideo');
-            const skipBtn = document.getElementById('fiveStarShowcaseSkipBtn');
+            const skipBtn = document.getElementById('skipBtn');
             const hint = showcase.querySelector('.five-star-click-hint');
 
             // 优先使用缓存的 Blob URL
@@ -663,8 +682,9 @@ const Gacha = {
                 summonVideo.classList.add('hidden');
                 loopVideo.classList.add('hidden');
                 showcase.classList.add('hidden');
+                this.hideSkipBtn();
                 document.removeEventListener('keydown', onKeyDown);
-                skipBtn.removeEventListener('click', onSkip);
+                skipBtn.onclick = null;
                 showcase.removeEventListener('click', onClick);
                 resolve();
             };
@@ -680,7 +700,10 @@ const Gacha = {
             };
 
             const onKeyDown = (e) => {
-                if (e.key === 'Escape') {
+                if (e.key === ' ') {
+                    e.preventDefault();
+                    cleanup();
+                } else if (e.key === 'Escape') {
                     e.preventDefault();
                     this._skipRequested = true;
                     cleanup();
@@ -709,11 +732,12 @@ const Gacha = {
                 }
             };
 
-            skipBtn.addEventListener('click', onSkip);
+            skipBtn.onclick = onSkip;
             showcase.addEventListener('click', onClick);
             document.addEventListener('keydown', onKeyDown);
 
-            // 显示展示层，隐藏循环视频和提示
+            // 显示展示层和跳过按钮，隐藏循环视频和提示
+            this.showSkipBtn();
             loopVideo.classList.add('hidden');
             hint.classList.add('hidden');
             summonVideo.classList.remove('hidden');
@@ -730,15 +754,24 @@ const Gacha = {
     },
 
     // 显示十连抽动画
-    async showTenPullAnimation(results) {
-        // 依次展示每个物品，按实际抽取顺序，跳过时直接退出循环
-        for (const item of results) {
-            if (this._skipRequested) break;
-            await this.showItemShowcase(item);
-            if (!this._skipRequested) {
-                await this.sleep(300); // 物品之间的间隔
+    async showTenPullAnimation(results, videoResult = 'end') {
+        if (videoResult === 'five') {
+            // 出金跳过：直接展示首个五星物品
+            const firstFiveIdx = results.findIndex(item => item.rarity === 5);
+            if (firstFiveIdx >= 0) {
+                await this.showItemShowcase(results[firstFiveIdx]);
+            }
+        } else if (videoResult === 'end') {
+            // 正常播放：逐个展示物品
+            for (const item of results) {
+                if (this._skipRequested) break;
+                await this.showItemShowcase(item);
+                if (!this._skipRequested) {
+                    await this.sleep(300);
+                }
             }
         }
+        // videoResult === 'summary'：直接跳到汇总，不展示任何物品
 
         // 显示汇总页面
         await this.showTenPullSummary(results);
@@ -749,7 +782,6 @@ const Gacha = {
         return new Promise((resolve) => {
             const summary = document.getElementById('tenPullSummary');
             const cardsContainer = document.getElementById('summaryCards');
-            const closeBtn = document.getElementById('closeSummaryBtn');
 
             cardsContainer.innerHTML = '';
 
@@ -785,14 +817,30 @@ const Gacha = {
             const cleanup = () => {
                 summary.classList.add('hidden');
                 this.hideSkipBtn();
+                summary.removeEventListener('click', onBgClick);
+                document.removeEventListener('keydown', onKeyDown);
                 resolve();
             };
 
             // 跳过按钮
             document.getElementById('skipBtn').onclick = cleanup;
 
-            // 确认按钮
-            closeBtn.onclick = cleanup;
+            // 点击背景空白处关闭
+            const onBgClick = (e) => {
+                if (e.target === summary || e.target.classList.contains('summary-bg')) {
+                    cleanup();
+                }
+            };
+            summary.addEventListener('click', onBgClick);
+
+            // 空格或ESC继续
+            const onKeyDown = (e) => {
+                if (e.key === ' ' || e.key === 'Escape') {
+                    e.preventDefault();
+                    cleanup();
+                }
+            };
+            document.addEventListener('keydown', onKeyDown);
         });
     },
 
@@ -969,6 +1017,9 @@ const Gacha = {
     async showWeaponSelectModal() {
         const modal = document.getElementById('weaponSelectModal');
         const grid = document.getElementById('weaponSelectGrid');
+        const confirmBtn = document.getElementById('confirmWeaponSelectBtn');
+        const cancelBtn = document.getElementById('cancelWeaponSelectBtn');
+        const closeBtn = document.getElementById('closeWeaponSelectBtn');
         if (!modal || !grid) return;
 
         try {
@@ -979,41 +1030,62 @@ const Gacha = {
             }
 
             const { weapons, selectedId } = result;
+            let pendingId = selectedId; // 当前选中的武器ID
 
-            grid.innerHTML = weapons.map(weapon => {
-                const stars = '★'.repeat(weapon.rarity);
-                const isSelected = weapon.id === selectedId;
-                const imgStyle = weapon.imageUrl
-                    ? `background-image: url('${weapon.imageUrl}'); background-size: cover; background-position: center;`
-                    : 'background: linear-gradient(135deg, #2a3a5a, #1a2a4a);';
-                return `<div class="weapon-card ${isSelected ? 'selected' : ''}" data-weapon-id="${weapon.id}">
-                    <div class="weapon-card-img" style="${imgStyle}"></div>
-                    <div class="weapon-card-name">${weapon.name}</div>
-                    <div class="weapon-card-stars">${stars}</div>
-                    ${isSelected ? '<div class="weapon-card-badge">当前UP</div>' : ''}
-                </div>`;
-            }).join('');
+            const renderCards = () => {
+                grid.innerHTML = weapons.map(weapon => {
+                    const stars = '★'.repeat(weapon.rarity);
+                    const isSelected = weapon.id === pendingId;
+                    const imgStyle = weapon.imageUrl
+                        ? `background-image: url('${weapon.imageUrl}'); background-size: cover; background-position: center;`
+                        : 'background: linear-gradient(135deg, #2a3a5a, #1a2a4a);';
+                    return `<div class="weapon-card ${isSelected ? 'selected' : ''}" data-weapon-id="${weapon.id}">
+                        <div class="weapon-card-img" style="${imgStyle}"></div>
+                        <div class="weapon-card-name">${weapon.name}</div>
+                        <div class="weapon-card-stars">${stars}</div>
+                        ${isSelected ? '<div class="weapon-card-badge">当前UP</div>' : ''}
+                    </div>`;
+                }).join('');
 
-            // 绑定点击事件
-            grid.querySelectorAll('.weapon-card').forEach(card => {
-                card.addEventListener('click', async () => {
-                    const weaponId = parseInt(card.dataset.weaponId);
-                    try {
-                        const res = await API.setStandardWeaponUp(weaponId);
-                        if (res.success) {
-                            modal.classList.add('hidden');
-                            // 刷新当前卡池信息
-                            if (this.currentPool) {
-                                this.switchPool(this.currentPool);
-                            }
-                        } else {
-                            alert(res.message || '设置失败');
-                        }
-                    } catch (e) {
-                        alert('网络错误');
-                    }
+                // 绑定点击事件 — 仅切换选中状态
+                grid.querySelectorAll('.weapon-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        pendingId = parseInt(card.dataset.weaponId);
+                        renderCards();
+                    });
                 });
-            });
+            };
+
+            renderCards();
+
+            const closeModal = () => {
+                modal.classList.add('hidden');
+            };
+
+            // 确认按钮 — 提交保存
+            const onConfirm = async () => {
+                if (pendingId === selectedId) {
+                    closeModal();
+                    return;
+                }
+                try {
+                    const res = await API.setStandardWeaponUp(pendingId);
+                    if (res.success) {
+                        closeModal();
+                        if (this.currentPool) {
+                            this.switchPool(this.currentPool);
+                        }
+                    } else {
+                        alert(res.message || '设置失败');
+                    }
+                } catch (e) {
+                    alert('网络错误');
+                }
+            };
+
+            confirmBtn.onclick = onConfirm;
+            cancelBtn.onclick = closeModal;
+            closeBtn.onclick = closeModal;
 
             modal.classList.remove('hidden');
         } catch (error) {
