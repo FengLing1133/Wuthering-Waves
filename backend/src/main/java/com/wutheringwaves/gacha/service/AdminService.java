@@ -104,6 +104,13 @@ public class AdminService {
     public List<Map<String, Object>> listThemes() {
         List<ItemTheme> themes = itemThemeMapper.selectList(
                 new LambdaQueryWrapper<ItemTheme>().orderByDesc(ItemTheme::getCreatedAt));
+
+        // 一次查询获取所有分类，按 themeId 分组计数，避免 N+1
+        List<ItemCategory> allCategories = itemCategoryMapper.selectList(null);
+        Map<Long, Long> countByTheme = allCategories.stream()
+                .filter(c -> c.getThemeId() != null)
+                .collect(Collectors.groupingBy(ItemCategory::getThemeId, Collectors.counting()));
+
         return themes.stream().map(theme -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", theme.getId());
@@ -111,9 +118,7 @@ public class AdminService {
             map.put("description", theme.getDescription());
             map.put("createdAt", theme.getCreatedAt());
             map.put("updatedAt", theme.getUpdatedAt());
-            LambdaQueryWrapper<ItemCategory> catWrapper = new LambdaQueryWrapper<>();
-            catWrapper.eq(ItemCategory::getThemeId, theme.getId());
-            map.put("categoryCount", itemCategoryMapper.selectCount(catWrapper));
+            map.put("categoryCount", countByTheme.getOrDefault(theme.getId(), 0L));
             return map;
         }).toList();
     }
@@ -158,17 +163,23 @@ public class AdminService {
         LambdaQueryWrapper<ItemCategory> catWrapper = new LambdaQueryWrapper<>();
         catWrapper.eq(ItemCategory::getThemeId, id);
         List<ItemCategory> categories = itemCategoryMapper.selectList(catWrapper);
-        for (ItemCategory cat : categories) {
-            LambdaQueryWrapper<PoolCategory> pcWrapper = new LambdaQueryWrapper<>();
-            pcWrapper.eq(PoolCategory::getCategoryId, cat.getId());
-            if (poolCategoryMapper.selectCount(pcWrapper) > 0) return false;
-            LambdaQueryWrapper<GachaItem> itemWrapper = new LambdaQueryWrapper<>();
-            itemWrapper.eq(GachaItem::getCategoryId, cat.getId());
-            if (gachaItemMapper.selectCount(itemWrapper) > 0) return false;
-        }
 
-        for (ItemCategory cat : categories) {
-            itemCategoryMapper.deleteById(cat.getId());
+        if (!categories.isEmpty()) {
+            List<Long> catIds = categories.stream().map(ItemCategory::getId).toList();
+
+            // 批量检查是否有卡池引用
+            LambdaQueryWrapper<PoolCategory> pcWrapper = new LambdaQueryWrapper<>();
+            pcWrapper.in(PoolCategory::getCategoryId, catIds);
+            if (poolCategoryMapper.selectCount(pcWrapper) > 0) return false;
+
+            // 批量检查是否有物品引用
+            LambdaQueryWrapper<GachaItem> itemWrapper = new LambdaQueryWrapper<>();
+            itemWrapper.in(GachaItem::getCategoryId, catIds);
+            if (gachaItemMapper.selectCount(itemWrapper) > 0) return false;
+
+            for (ItemCategory cat : categories) {
+                itemCategoryMapper.deleteById(cat.getId());
+            }
         }
         itemThemeMapper.deleteById(id);
         return true;
@@ -208,6 +219,9 @@ public class AdminService {
     }
 
     public ItemCategory createCategory(ItemCategory category) {
+        if (category.getThemeId() != null && itemThemeMapper.selectById(category.getThemeId()) == null) {
+            return null;
+        }
         itemCategoryMapper.insert(category);
         return category;
     }
@@ -219,7 +233,10 @@ public class AdminService {
         if (update.getRarity() != null) category.setRarity(update.getRarity());
         if (update.getItemType() != null) category.setItemType(update.getItemType());
         if (update.getDescription() != null) category.setDescription(update.getDescription());
-        if (update.getThemeId() != null) category.setThemeId(update.getThemeId());
+        if (update.getThemeId() != null) {
+            if (itemThemeMapper.selectById(update.getThemeId()) == null) return null;
+            category.setThemeId(update.getThemeId());
+        }
         itemCategoryMapper.updateById(category);
         return category;
     }

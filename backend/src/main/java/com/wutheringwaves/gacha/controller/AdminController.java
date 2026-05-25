@@ -7,6 +7,8 @@ import com.wutheringwaves.gacha.model.GachaItem;
 import com.wutheringwaves.gacha.model.GachaPool;
 import com.wutheringwaves.gacha.model.ItemCategory;
 import com.wutheringwaves.gacha.model.ItemTheme;
+import com.wutheringwaves.gacha.dto.CopyThemeRequest;
+import com.wutheringwaves.gacha.dto.CreateThemeRequest;
 import com.wutheringwaves.gacha.service.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -99,9 +101,13 @@ public class AdminController {
 
     @PostMapping("/categories")
     public ResponseEntity<Map<String, Object>> createCategory(@RequestBody ItemCategory category) {
+        ItemCategory created = adminService.createCategory(category);
+        if (created == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "主题不存在"));
+        }
         return ResponseEntity.ok(Map.of(
                 "success", true,
-                "category", adminService.createCategory(category)
+                "category", created
         ));
     }
 
@@ -109,7 +115,7 @@ public class AdminController {
     public ResponseEntity<Map<String, Object>> updateCategory(@PathVariable Long id, @RequestBody ItemCategory category) {
         ItemCategory updated = adminService.updateCategory(id, category);
         if (updated == null) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "分类不存在"));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "分类不存在或主题无效"));
         }
         return ResponseEntity.ok(Map.of("success", true, "category", updated));
     }
@@ -143,15 +149,11 @@ public class AdminController {
     }
 
     @PostMapping("/themes")
-    public ResponseEntity<Map<String, Object>> createTheme(@RequestBody Map<String, Object> request) {
-        String name = (String) request.get("name");
-        String description = (String) request.get("description");
-        @SuppressWarnings("unchecked")
-        List<String> generateCategories = (List<String>) request.get("generateCategories");
-        if (name == null || name.isBlank()) {
+    public ResponseEntity<Map<String, Object>> createTheme(@RequestBody CreateThemeRequest request) {
+        if (request.name() == null || request.name().isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "主题名称不能为空"));
         }
-        ItemTheme theme = adminService.createTheme(name, description, generateCategories);
+        ItemTheme theme = adminService.createTheme(request.name(), request.description(), request.generateCategories());
         return ResponseEntity.ok(Map.of("success", true, "theme", theme));
     }
 
@@ -174,18 +176,14 @@ public class AdminController {
     }
 
     @PostMapping("/themes/copy")
-    public ResponseEntity<Map<String, Object>> copyTheme(@RequestBody Map<String, Object> request) {
-        String name = (String) request.get("name");
-        String description = (String) request.get("description");
-        Long sourceThemeId = request.get("sourceThemeId") != null
-                ? ((Number) request.get("sourceThemeId")).longValue() : null;
-        if (name == null || name.isBlank()) {
+    public ResponseEntity<Map<String, Object>> copyTheme(@RequestBody CopyThemeRequest request) {
+        if (request.name() == null || request.name().isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "主题名称不能为空"));
         }
-        if (sourceThemeId == null) {
+        if (request.sourceThemeId() == null) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "源主题ID不能为空"));
         }
-        ItemTheme theme = adminService.copyTheme(name, description, sourceThemeId);
+        ItemTheme theme = adminService.copyTheme(request.name(), request.description(), request.sourceThemeId());
         if (theme == null) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "源主题不存在"));
         }
