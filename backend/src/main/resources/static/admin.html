@@ -472,6 +472,16 @@
             <div id="itemImagePreviewArea" style="text-align:center;margin-bottom:12px;display:none;">
                 <img id="itemImagePreview" style="max-width:120px;max-height:120px;border-radius:8px;border:1px solid rgba(180,160,130,0.3);">
             </div>
+            <label><span>唤取视频路径</span><input type="text" id="itemVideoUrl" placeholder="五星物品专属唤取视频，如：/uploads/videos/xxx.mp4"></label>
+            <div class="upload-area" onclick="document.getElementById('itemVideoFileInput').click()" style="margin-bottom:12px;">
+                <input type="file" id="itemVideoFileInput" accept="video/*" onchange="uploadItemVideo(this)">
+                <p style="color:#8a8580;font-size:13px;">点击上传唤取视频（自动填入路径）</p>
+            </div>
+            <label><span>循环展示视频路径</span><input type="text" id="itemLoopVideoUrl" placeholder="五星物品循环展示视频，如：/uploads/videos/xxx-loop.mp4"></label>
+            <div class="upload-area" onclick="document.getElementById('itemLoopVideoFileInput').click()" style="margin-bottom:12px;">
+                <input type="file" id="itemLoopVideoFileInput" accept="video/*" onchange="uploadItemLoopVideo(this)">
+                <p style="color:#8a8580;font-size:13px;">点击上传循环展示视频（自动填入路径）</p>
+            </div>
             <label><span>描述</span><textarea id="itemDescription" placeholder="物品描述（可选）"></textarea></label>
             <div class="modal-actions">
                 <button class="btn" style="background:rgba(180,160,130,0.15);color:#6a6560;" onclick="closeItemModal()">取消</button>
@@ -915,6 +925,8 @@
             document.getElementById('itemRarity').value = item ? item.rarity : 5;
             document.getElementById('itemType').value = item ? item.itemType : 'character';
             document.getElementById('itemImageUrl').value = item ? (item.imageUrl || '') : '';
+            document.getElementById('itemVideoUrl').value = item ? (item.videoUrl || '') : '';
+            document.getElementById('itemLoopVideoUrl').value = item ? (item.loopVideoUrl || '') : '';
             document.getElementById('itemDescription').value = item ? (item.description || '') : '';
 
             // 加载分类后设置选中值
@@ -946,6 +958,8 @@
                 itemType: document.getElementById('itemType').value,
                 categoryId: parseInt(document.getElementById('itemCategoryId').value),
                 imageUrl: document.getElementById('itemImageUrl').value || null,
+                videoUrl: document.getElementById('itemVideoUrl').value || null,
+                loopVideoUrl: document.getElementById('itemLoopVideoUrl').value || null,
                 description: document.getElementById('itemDescription').value || null
             };
             if (!data.name) { alert('请输入物品名称'); return; }
@@ -994,6 +1008,52 @@
                 if (result.success) {
                     document.getElementById('itemImageUrl').value = result.url;
                     previewItemImageUrl(result.url);
+                } else {
+                    alert(result.message || '上传失败');
+                }
+            } catch (e) {
+                alert('上传失败');
+                console.error(e);
+            }
+        }
+
+        async function uploadItemVideo(input) {
+            if (!input.files || !input.files[0]) return;
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+            try {
+                const token = localStorage.getItem('token');
+                const resp = await fetch('/api/admin/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    document.getElementById('itemVideoUrl').value = result.url;
+                } else {
+                    alert(result.message || '上传失败');
+                }
+            } catch (e) {
+                alert('上传失败');
+                console.error(e);
+            }
+        }
+
+        async function uploadItemLoopVideo(input) {
+            if (!input.files || !input.files[0]) return;
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+            try {
+                const token = localStorage.getItem('token');
+                const resp = await fetch('/api/admin/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    document.getElementById('itemLoopVideoUrl').value = result.url;
                 } else {
                     alert(result.message || '上传失败');
                 }

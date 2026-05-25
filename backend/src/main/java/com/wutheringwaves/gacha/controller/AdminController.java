@@ -366,8 +366,10 @@ public class AdminController {
         }
 
         String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "仅支持图片文件"));
+        boolean isImage = contentType != null && contentType.startsWith("image/");
+        boolean isVideo = contentType != null && contentType.startsWith("video/");
+        if (!isImage && !isVideo) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "仅支持图片和视频文件"));
         }
 
         try {
@@ -378,12 +380,13 @@ public class AdminController {
             }
             String filename = UUID.randomUUID().toString() + extension;
 
-            Path uploadPath = Paths.get(uploadDir, "images");
+            String subDir = isVideo ? "videos" : "images";
+            Path uploadPath = Paths.get(uploadDir, subDir);
             Files.createDirectories(uploadPath);
             Path filePath = uploadPath.resolve(filename);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            String url = "/uploads/images/" + filename;
+            String url = "/uploads/" + subDir + "/" + filename;
             return ResponseEntity.ok(Map.of("success", true, "url", url));
         } catch (IOException e) {
             return ResponseEntity.status(500).body(Map.of("success", false, "message", "上传失败: " + e.getMessage()));

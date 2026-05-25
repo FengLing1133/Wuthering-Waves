@@ -2,6 +2,10 @@ server:
   port: 8080
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
   datasource:
     url: jdbc:mysql://localhost:3306/wuthering_waves_gacha?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
     username: root

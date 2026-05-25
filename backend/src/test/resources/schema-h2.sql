@@ -37,6 +37,8 @@ CREATE TABLE gacha_items (
     item_type VARCHAR(20) NOT NULL,
     category_id BIGINT NOT NULL,
     image_url VARCHAR(255),
+    video_url VARCHAR(255),
+    loop_video_url VARCHAR(255),
     description VARCHAR(500)
 );
 

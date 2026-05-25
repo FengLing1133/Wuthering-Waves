@@ -6,6 +6,7 @@ const Gacha = {
     poolList: [],
     _skipRequested: false,
     _videoCache: {},
+    _itemVideoCache: {},
     // 历史记录状态
     historyCurrentPage: 1,
     historyPageSize: 5,
@@ -32,6 +33,48 @@ const Gacha = {
                     this._videoCache[rarity] = URL.createObjectURL(blob);
                 })
                 .catch(err => console.warn(`视频 ${rarity}star.mp4 预加载失败:`, err));
+        });
+    },
+
+    // 清除五星物品视频缓存
+    clearFiveStarCache() {
+        Object.values(this._itemVideoCache).forEach(urls => {
+            URL.revokeObjectURL(urls.video);
+            URL.revokeObjectURL(urls.loop);
+        });
+        this._itemVideoCache = {};
+    },
+
+    // 预加载当前卡池所有五星物品的视频
+    preloadFiveStarVideos(fiveStarItems) {
+        if (!fiveStarItems || fiveStarItems.length === 0) return;
+        fiveStarItems.forEach(item => {
+            const id = item.id;
+            // 避免重复预加载
+            if (this._itemVideoCache[id]) return;
+
+            if (item.videoUrl) {
+                fetch(item.videoUrl)
+                    .then(res => res.blob())
+                    .then(blob => {
+                        if (!this._itemVideoCache[id]) {
+                            this._itemVideoCache[id] = {};
+                        }
+                        this._itemVideoCache[id].video = URL.createObjectURL(blob);
+                    })
+                    .catch(err => console.warn(`五星视频 ${item.videoUrl} 预加载失败:`, err));
+            }
+            if (item.loopVideoUrl) {
+                fetch(item.loopVideoUrl)
+                    .then(res => res.blob())
+                    .then(blob => {
+                        if (!this._itemVideoCache[id]) {
+                            this._itemVideoCache[id] = {};
+                        }
+                        this._itemVideoCache[id].loop = URL.createObjectURL(blob);
+                    })
+                    .catch(err => console.warn(`五星循环视频 ${item.loopVideoUrl} 预加载失败:`, err));
+            }
         });
     },
 
@@ -102,6 +145,10 @@ const Gacha = {
                 this.currentPoolData = result.pool;
                 this.updatePoolInfo(this.currentPoolData);
                 this.updatePityCount();
+
+                // 切换卡池时清除旧缓存，预加载新卡池的五星视频
+                this.clearFiveStarCache();
+                this.preloadFiveStarVideos(result.pool.fiveStarItems);
             }
         } catch (error) {
             console.error('获取卡池详情失败:', error);
@@ -498,6 +545,16 @@ const Gacha = {
 
     // 显示单个物品展示页面
     showItemShowcase(item) {
+        // 五星物品且有视频时走专属展示流程
+        if (item.rarity === 5 && item.videoUrl && item.loopVideoUrl) {
+            return this.showFiveStarShowcase(item);
+        }
+        // 三星/四星及无视频的五星保持原有静态展示
+        return this.showStaticShowcase(item);
+    },
+
+    // 原有静态物品展示（3/4星 + 无视频的5星回退）
+    showStaticShowcase(item) {
         return new Promise((resolve) => {
             const showcase = document.getElementById('itemShowcase');
             const icon = document.getElementById('showcaseIcon');
@@ -553,6 +610,99 @@ const Gacha = {
                 cleanup();
             };
             showcase.addEventListener('click', clickHandler);
+        });
+    },
+
+    // 五星物品专属展示：唤取视频 → 循环展示视频（点击关闭）
+    showFiveStarShowcase(item) {
+        return new Promise((resolve) => {
+            const showcase = document.getElementById('fiveStarShowcase');
+            const summonVideo = document.getElementById('fiveStarSummonVideo');
+            const loopVideo = document.getElementById('fiveStarLoopVideo');
+            const skipBtn = document.getElementById('fiveStarShowcaseSkipBtn');
+            const hint = showcase.querySelector('.five-star-click-hint');
+
+            // 优先使用缓存的 Blob URL
+            const cache = this._itemVideoCache[item.id];
+            summonVideo.src = (cache && cache.video) ? cache.video : item.videoUrl;
+            loopVideo.src = (cache && cache.loop) ? cache.loop : item.loopVideoUrl;
+
+            let phase = 'summon'; // 'summon' | 'loop'
+            let cleaned = false;
+
+            const cleanup = () => {
+                if (cleaned) return;
+                cleaned = true;
+                summonVideo.pause();
+                loopVideo.pause();
+                summonVideo.classList.add('hidden');
+                loopVideo.classList.add('hidden');
+                showcase.classList.add('hidden');
+                document.removeEventListener('keydown', onKeyDown);
+                skipBtn.removeEventListener('click', onSkip);
+                showcase.removeEventListener('click', onClick);
+                resolve();
+            };
+
+            const onSkip = (e) => {
+                e.stopPropagation();
+                this._skipRequested = true;
+                cleanup();
+            };
+
+            const onClick = () => {
+                if (phase === 'loop') {
+                    cleanup();
+                }
+            };
+
+            const onKeyDown = (e) => {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    this._skipRequested = true;
+                    cleanup();
+                }
+            };
+
+            // 唤取视频播放完毕 → 切换到循环视频
+            summonVideo.onended = () => {
+                summonVideo.classList.add('hidden');
+                loopVideo.classList.remove('hidden');
+                hint.classList.remove('hidden');
+                phase = 'loop';
+                loopVideo.play().catch(() => {});
+            };
+
+            // 视频加载失败降级到静态展示
+            summonVideo.onerror = () => {
+                cleanup();
+                this.showStaticShowcase(item).then(resolve);
+                return;
+            };
+            loopVideo.onerror = () => {
+                // 循环视频加载失败，召唤视频播完后直接结束
+                if (phase === 'summon') {
+                    summonVideo.onended = () => { cleanup(); };
+                }
+            };
+
+            skipBtn.addEventListener('click', onSkip);
+            showcase.addEventListener('click', onClick);
+            document.addEventListener('keydown', onKeyDown);
+
+            // 显示展示层，隐藏循环视频和提示
+            loopVideo.classList.add('hidden');
+            hint.classList.add('hidden');
+            summonVideo.classList.remove('hidden');
+            showcase.classList.remove('hidden');
+
+            // 播放唤取视频
+            summonVideo.muted = false;
+            summonVideo.play().catch(() => {
+                // 无法播放时降级到静态展示
+                cleanup();
+                this.showStaticShowcase(item).then(resolve);
+            });
         });
     },
 

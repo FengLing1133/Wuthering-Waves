@@ -105,12 +105,15 @@ public class GachaService {
         gachaRecordMapper.insert(record);
 
         Map<String, Object> result = new HashMap<>();
+        result.put("id", selectedItem.getId());
         result.put("name", selectedItem.getName());
         result.put("rarity", selectedItem.getRarity());
         result.put("type", selectedItem.getItemType());
         result.put("isLimited", isUp);
         result.put("pityCount", currentPity + 1);
         result.put("imageUrl", selectedItem.getImageUrl());
+        result.put("videoUrl", selectedItem.getVideoUrl());
+        result.put("loopVideoUrl", selectedItem.getLoopVideoUrl());
 
         return result;
     }

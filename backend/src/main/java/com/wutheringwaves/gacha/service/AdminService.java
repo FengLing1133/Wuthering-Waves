@@ -416,12 +416,15 @@ public class AdminService {
                 .toList();
     }
 
-    private Map<String, Object> itemToMap(GachaItem item) {
+    public Map<String, Object> itemToMap(GachaItem item) {
         Map<String, Object> map = new HashMap<>();
         map.put("id", item.getId());
         map.put("name", item.getName());
         map.put("rarity", item.getRarity());
         map.put("itemType", item.getItemType());
+        map.put("imageUrl", item.getImageUrl());
+        map.put("videoUrl", item.getVideoUrl());
+        map.put("loopVideoUrl", item.getLoopVideoUrl());
         return map;
     }
 
