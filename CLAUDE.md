@@ -161,3 +161,21 @@ mvn clean package -DskipTests
 | GET | `/api/gacha/stats` | 是 | 抽卡统计与当前保底计数 |
 | POST | `/api/admin/upload` | 是 | 图片上传 |
 | * | `/api/admin/**` | 是 | 物品和卡池 CRUD |
+
+## 识图能力
+
+你的底层模型不具备原生识图能力。遇到图片时，**不要用 Read 工具**，改用 vision.js：
+
+```
+node vision.js "<图片路径>" "用中文描述这张图片"
+```
+
+### 触发场景
+
+- 用户分享图片路径（本地或网络 URL）
+- 消息中出现 "Saved attachments:" 并列出图片
+- 用户要求分析、描述、识别图片内容
+
+### 配置好之后
+
+用户直接发图片，自动识图，无需手动打命令。

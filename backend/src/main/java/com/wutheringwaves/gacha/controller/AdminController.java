@@ -21,6 +21,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,10 +45,37 @@ public class AdminController {
     public ResponseEntity<Map<String, Object>> listPools(
             @RequestParam(required = false) String poolType,
             @RequestParam(required = false) String status) {
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "pools", adminService.listPools(poolType, status)
-        ));
+        List<GachaPool> pools = adminService.listPools(poolType, status);
+        Map<Long, List<Map<String, Object>>> allUpItems = adminService.batchGetPoolUpItems(pools);
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (GachaPool pool : pools) {
+            Map<String, Object> poolData = new HashMap<>();
+            poolData.put("id", pool.getId());
+            poolData.put("name", pool.getName());
+            poolData.put("poolType", pool.getPoolType());
+            poolData.put("description", pool.getDescription());
+            poolData.put("bgImageUrl", pool.getBgImageUrl());
+            poolData.put("thumbnailUrl", pool.getThumbnailUrl());
+            poolData.put("fivestarUp", pool.getFivestarUp());
+            poolData.put("fourstarUp", pool.getFourstarUp());
+            poolData.put("upItems", allUpItems.getOrDefault(pool.getId(), List.of()));
+            poolData.put("fiveStarRate", pool.getFiveStarRate());
+            poolData.put("fourStarRate", pool.getFourStarRate());
+            poolData.put("maxPity", pool.getMaxPity());
+            poolData.put("softPityStart", pool.getSoftPityStart());
+            poolData.put("softPityIncrement", pool.getSoftPityIncrement());
+            poolData.put("startTime", pool.getStartTime());
+            poolData.put("endTime", pool.getEndTime());
+            poolData.put("status", pool.getStatus());
+            poolData.put("sidebarVisible", pool.getSidebarVisible());
+            poolData.put("sidebarOrder", pool.getSidebarOrder());
+            poolData.put("createdAt", pool.getCreatedAt());
+            poolData.put("updatedAt", pool.getUpdatedAt());
+            result.add(poolData);
+        }
+
+        return ResponseEntity.ok(Map.of("success", true, "pools", result));
     }
 
     @GetMapping("/pools/{id}")
@@ -55,7 +84,29 @@ public class AdminController {
         if (pool == null) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "卡池不存在"));
         }
-        return ResponseEntity.ok(Map.of("success", true, "pool", pool));
+        Map<String, Object> poolData = new HashMap<>();
+        poolData.put("id", pool.getId());
+        poolData.put("name", pool.getName());
+        poolData.put("poolType", pool.getPoolType());
+        poolData.put("description", pool.getDescription());
+        poolData.put("bgImageUrl", pool.getBgImageUrl());
+        poolData.put("thumbnailUrl", pool.getThumbnailUrl());
+        poolData.put("fivestarUp", pool.getFivestarUp());
+        poolData.put("fourstarUp", pool.getFourstarUp());
+        poolData.put("upItems", adminService.getPoolUpItems(id));
+        poolData.put("fiveStarRate", pool.getFiveStarRate());
+        poolData.put("fourStarRate", pool.getFourStarRate());
+        poolData.put("maxPity", pool.getMaxPity());
+        poolData.put("softPityStart", pool.getSoftPityStart());
+        poolData.put("softPityIncrement", pool.getSoftPityIncrement());
+        poolData.put("startTime", pool.getStartTime());
+        poolData.put("endTime", pool.getEndTime());
+        poolData.put("status", pool.getStatus());
+        poolData.put("sidebarVisible", pool.getSidebarVisible());
+        poolData.put("sidebarOrder", pool.getSidebarOrder());
+        poolData.put("createdAt", pool.getCreatedAt());
+        poolData.put("updatedAt", pool.getUpdatedAt());
+        return ResponseEntity.ok(Map.of("success", true, "pool", poolData));
     }
 
     @PostMapping("/pools")
