@@ -208,6 +208,12 @@ const Gacha = {
             upSection.style.display = pool.poolType === 'standard-character' ? 'none' : '';
         }
 
+        // 常驻池隐藏4星概率提升信息
+        const rateUpSection = document.getElementById('rateUpSection');
+        if (rateUpSection) {
+            rateUpSection.style.display = (pool.poolType === 'standard-character' || pool.poolType === 'standard-weapon') ? 'none' : '';
+        }
+
         // 更换按钮：仅常驻武器池显示
         const changeUpBtn = document.getElementById('changeUpBtn');
         if (changeUpBtn) {

@@ -131,12 +131,12 @@
 
         /* 分页 */
         .pagination { display: flex; justify-content: center; gap: 4px; margin-top: 16px; }
-        .page-btn { padding: 6px 12px; border: 1px solid rgba(180, 160, 130, 0.4); background: #fff; color: #5a5550; border-radius: 4px; cursor: pointer; }
+        .page-btn { padding: 5px 9px; border: 1px solid rgba(180, 160, 130, 0.4); background: #fff; color: #5a5550; border-radius: 4px; cursor: pointer; }
         .page-btn:hover:not(:disabled) { border-color: #8a7a5a; background: rgba(138, 122, 90, 0.1); }
         .page-btn.active { background: #4a9eff; color: white; border-color: #4a9eff; }
         .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        .page-info { color: #6a6560; font-size: 13px; margin: 0 8px; }
-        .page-jump-input { width: 70px; padding: 5px 8px; border: 1px solid rgba(180,160,130,0.4); border-radius: 4px; font-size: 13px; text-align: center; margin-left: 8px; }
+        .page-info { color: #6a6560; font-size: 13px; white-space: nowrap; }
+        .page-jump-input { width: 52px; padding: 5px 6px; border: 1px solid rgba(180,160,130,0.4); border-radius: 4px; font-size: 13px; text-align: center; }
         .page-jump-input:focus { outline: none; border-color: #4a9eff; }
 
         /* 日报表表格 */
@@ -424,12 +424,30 @@
     </div>
 
     <!-- 用户抽卡记录弹窗 -->
-    <div class="modal-overlay" id="recordsModal">
+    <div class="modal-overlay" id="recordsModal" onclick="if(event.target===this)closeRecordsModal()">
         <div class="modal" style="width:700px;">
-            <h2>抽卡记录</h2>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h2 style="margin:0;font-size:18px;color:#c49a30;">抽卡记录</h2>
+                <button onclick="closeRecordsModal()" style="width:32px;height:32px;background:transparent;border:none;font-size:24px;color:#666;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:4px;" onmouseover="this.style.background='rgba(0,0,0,0.08)';this.style.color='#333'" onmouseout="this.style.background='transparent';this.style.color='#666'">×</button>
+            </div>
             <p style="color:var(--text-secondary);margin-bottom:16px;">用户：<span id="recUsername"></span></p>
-            <div style="max-height:400px;overflow-y:auto;">
-                <table class="data-table">
+            <div class="history-filter-row" style="margin-bottom:16px;">
+                <label class="history-filter-label">唤取类型</label>
+                <div class="history-select-wrapper">
+                    <select id="recordsPoolFilter" class="history-select" onchange="recordsPage=1;loadRecords()">
+                        <option value="">全部类型</option>
+                        <option value="limited-character">角色活动唤取</option>
+                        <option value="limited-weapon">武器活动唤取</option>
+                        <option value="standard-character">角色常驻唤取</option>
+                        <option value="standard-weapon">武器常驻唤取</option>
+                        <option value="special-character">特殊角色唤取</option>
+                        <option value="special-weapon">特殊武器唤取</option>
+                    </select>
+                    <span class="history-select-arrow">▾</span>
+                </div>
+            </div>
+            <div style="background:#fff;border-radius:6px;border:1px solid rgba(180,160,130,0.3);overflow:hidden;margin-bottom:16px;">
+                <table class="data-table" style="border:none;">
                     <thead>
                         <tr>
                             <th>时间</th>
@@ -442,10 +460,7 @@
                     <tbody id="recordsTableBody"></tbody>
                 </table>
             </div>
-            <div id="recordsPagination" style="margin-top:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;"></div>
-            <div class="modal-actions">
-                <button class="btn" style="background:rgba(180,160,130,0.15);color:#6a6560;" onclick="closeRecordsModal()">关闭</button>
-            </div>
+            <div id="recordsPagination" style="display:flex;justify-content:center;align-items:center;gap:8px;margin-bottom:12px;"></div>
         </div>
     </div>
 
@@ -856,7 +871,9 @@
             if (!recordsUserId) return;
             const errorRow = '<tr><td colspan="5" style="text-align:center;color:red;">加载失败，请重试</td></tr>';
             try {
-                const res = await API.request(`/admin/users/${recordsUserId}/records?page=${recordsPage}&size=${recordsSize}`);
+                const recordsPoolType = document.getElementById('recordsPoolFilter')?.value || '';
+                const poolTypeParam = recordsPoolType ? `&poolType=${encodeURIComponent(recordsPoolType)}` : '';
+                const res = await API.request(`/admin/users/${recordsUserId}/records?page=${recordsPage}&size=${recordsSize}${poolTypeParam}`);
                 if (res.success) {
                     document.getElementById('recordsTableBody').innerHTML = res.records.records.map(r => `
                         <tr>
