@@ -442,6 +442,7 @@
                     <tbody id="recordsTableBody"></tbody>
                 </table>
             </div>
+            <div id="recordsPagination" style="margin-top:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;"></div>
             <div class="modal-actions">
                 <button class="btn" style="background:rgba(180,160,130,0.15);color:#6a6560;" onclick="closeRecordsModal()">关闭</button>
             </div>
@@ -672,13 +673,21 @@
 
         function renderBarChart(containerId, data, key, unit) {
             const container = document.getElementById(containerId);
-            const maxVal = Math.max(...data.map(d => d[key]), 1);
+            const values = data.map(d => d[key]).filter(v => typeof v === 'number');
+            const total = values.reduce((a, b) => a + b, 0);
+            if (total === 0) {
+                container.innerHTML = '<div style="text-align:center;padding:60px 0;color:#8a8580;font-size:14px;">暂无数据</div>';
+                return;
+            }
+            const MAX_BAR_PX = 120;
+            const maxVal = Math.max(...values);
             container.innerHTML = data.map(d => {
-                const pct = (d[key] / maxVal * 100);
+                const val = d[key];
+                const height = typeof val === 'number' ? Math.max((val / maxVal) * MAX_BAR_PX, 4) : 0;
                 const date = d.date.substring(5);
                 return `<div class="bar-item">
-                    <div class="bar-value">${d[key]}${unit}</div>
-                    <div class="bar" style="height:${Math.max(pct, 3)}%"></div>
+                    <div class="bar-value">${typeof val === 'number' ? val + unit : '-'}</div>
+                    <div class="bar" style="height:${height}px"></div>
                     <div class="bar-label">${date}</div>
                 </div>`;
             }).join('');
@@ -788,21 +797,25 @@
             } catch (e) { console.error(e); }
         }
 
-        function renderPagination(page) {
-            const totalPages = Math.ceil(page.total / page.size);
-            if (totalPages <= 1) { document.getElementById('usersPagination').innerHTML = ''; return; }
-            let html = `<button class="page-btn" ${userPage<=1?'disabled':''} onclick="userPage--;loadUsers()">&laquo;</button>`;
+        function renderPaginationHelper(containerId, pageVarName, loadFnName, total, pageSize, currentPage) {
+            const totalPages = Math.ceil(total / pageSize) || 1;
+            if (totalPages <= 1) { document.getElementById(containerId).innerHTML = ''; return; }
+            let html = `<button class="page-btn" ${currentPage<=1?'disabled':''} onclick="${pageVarName}--;${loadFnName}()">&laquo;</button>`;
             const maxVisible = 5;
-            let startPage = Math.max(1, userPage - Math.floor(maxVisible / 2));
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
             let endPage = Math.min(totalPages, startPage + maxVisible - 1);
             if (endPage - startPage + 1 < maxVisible) startPage = Math.max(1, endPage - maxVisible + 1);
             for (let i = startPage; i <= endPage; i++) {
-                html += `<button class="page-btn ${i===userPage?'active':''}" onclick="userPage=${i};loadUsers()">${i}</button>`;
+                html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="${pageVarName}=${i};${loadFnName}()">${i}</button>`;
             }
-            html += `<button class="page-btn" ${userPage>=totalPages?'disabled':''} onclick="userPage++;loadUsers()">&raquo;</button>`;
-            html += `<span class="page-info">${userPage} / ${totalPages}</span>`;
-            html += `<input type="number" class="page-jump-input" min="1" max="${totalPages}" placeholder="页码" onkeydown="if(event.key==='Enter'){userPage=Math.max(1,Math.min(${totalPages},parseInt(this.value)||1));loadUsers()}">`;
-            document.getElementById('usersPagination').innerHTML = html;
+            html += `<button class="page-btn" ${currentPage>=totalPages?'disabled':''} onclick="${pageVarName}++;${loadFnName}()">&raquo;</button>`;
+            html += `<span class="page-info">${currentPage} / ${totalPages}</span>`;
+            html += `<input type="number" class="page-jump-input" min="1" max="${totalPages}" placeholder="页码" onkeydown="if(event.key==='Enter'){${pageVarName}=Math.max(1,Math.min(${totalPages},parseInt(this.value)||1));${loadFnName}()}">`;
+            document.getElementById(containerId).innerHTML = html;
+        }
+
+        function renderPagination(page) {
+            renderPaginationHelper('usersPagination', 'userPage', 'loadUsers', page.total, page.size, userPage);
         }
 
         function openResourceModal(id, username, starlight) {
@@ -826,26 +839,53 @@
             } catch (e) { alert('更新失败'); console.error(e); }
         }
 
+        // 用户抽卡记录分页状态
+        let recordsUserId = null;
+        let recordsPage = 1;
+        const recordsSize = 20;
+
         async function viewRecords(userId, username) {
+            recordsUserId = userId;
+            recordsPage = 1;
             document.getElementById('recordsModal').classList.add('active');
             document.getElementById('recUsername').textContent = username;
+            loadRecords();
+        }
+
+        async function loadRecords() {
+            if (!recordsUserId) return;
+            const errorRow = '<tr><td colspan="5" style="text-align:center;color:red;">加载失败，请重试</td></tr>';
             try {
-                const res = await API.request(`/admin/users/${userId}/records?page=1&size=50`);
+                const res = await API.request(`/admin/users/${recordsUserId}/records?page=${recordsPage}&size=${recordsSize}`);
                 if (res.success) {
                     document.getElementById('recordsTableBody').innerHTML = res.records.records.map(r => `
                         <tr>
                             <td>${r.createdAt ? r.createdAt.replace('T',' ').substring(0,19) : '-'}</td>
-                            <td>${{'limited-character':'限定角色池','limited-weapon':'限定武器池','standard-character':'常驻角色池','standard-weapon':'常驻武器池','special-character':'特殊角色池','special-weapon':'特殊武器池'}[r.poolType]||r.poolType}</td>
-                            <td>${r.itemName}</td>
+                            <td>${{'limited-character':'限定角色池','limited-weapon':'限定武器池','standard-character':'常驻角色池','standard-weapon':'常驻武器池','special-character':'特殊角色池','special-weapon':'特殊武器池'}[r.poolType]||escapeHtml(r.poolType)}</td>
+                            <td>${escapeHtml(r.itemName)}</td>
                             <td><span class="badge-${r.itemRarity}star">${r.itemRarity}星</span></td>
-                            <td>${r.pityCount || '-'}</td>
+                            <td>${escapeHtml(r.pityCount) || '-'}</td>
                         </tr>
                     `).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);">暂无记录</td></tr>';
+                    renderRecordsPagination(res.records.total);
+                } else {
+                    document.getElementById('recordsTableBody').innerHTML = errorRow;
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error(e);
+                document.getElementById('recordsTableBody').innerHTML = errorRow;
+            }
         }
 
-        function closeRecordsModal() { document.getElementById('recordsModal').classList.remove('active'); }
+        function renderRecordsPagination(total) {
+            renderPaginationHelper('recordsPagination', 'recordsPage', 'loadRecords', total, recordsSize, recordsPage);
+        }
+
+        function closeRecordsModal() {
+            document.getElementById('recordsModal').classList.remove('active');
+            recordsUserId = null;
+            recordsPage = 1;
+        }
 
         // ========== 物品管理 ==========
         let itemPage = 1;

@@ -55,8 +55,7 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 0 20px;
-    background: linear-gradient(180deg, rgba(5, 10, 24, 0.3) 0%, transparent 100%);
-    backdrop-filter: blur(2px);
+    background: transparent;
     z-index: 100;
 }
 
