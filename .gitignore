@@ -3,6 +3,9 @@
 /progress.md
 /task_plan.md
 
+# Local tool scripts
+/vision.js
+
 # Maven build output
 backend/target/
 *.class
