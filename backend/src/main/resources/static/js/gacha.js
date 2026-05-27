@@ -21,19 +21,40 @@ const Gacha = {
     async init() {
         this.bindEvents();
         this.createSnowflakes();
-        this.preloadVideos();
+        this._videoPreloaded = false;
         await this.loadPools();
     },
 
-    // 预加载视频为 Blob URL 缓存
-    preloadVideos() {
+    // 延迟预加载视频（首次抽卡时触发）
+    preloadVideosLazy() {
+        if (this._videoPreloaded) return;
+        this._videoPreloaded = true;
+
+        console.log('开始预加载视频...');
         [3, 4, 5].forEach(rarity => {
-            fetch(`/videos/${rarity}star.mp4`)
+            // 优先从 CDN 加载，fallback 到本地
+            const videoUrl = window.CDN ? CDN.getVideoUrl(`${rarity}star.mp4`) : `/videos/${rarity}star.mp4`;
+            console.log(`预加载 ${rarity}star.mp4: ${videoUrl}`);
+
+            fetch(videoUrl)
                 .then(res => res.blob())
                 .then(blob => {
                     this._videoCache[rarity] = URL.createObjectURL(blob);
+                    console.log(`${rarity}star.mp4 预加载完成`);
                 })
-                .catch(err => console.warn(`视频 ${rarity}star.mp4 预加载失败:`, err));
+                .catch(err => {
+                    console.warn(`CDN 加载失败，尝试本地: ${err.message}`);
+                    // CDN 失败时 fallback 到本地
+                    if (window.CDN && CDN.enabled) {
+                        fetch(`/videos/${rarity}star.mp4`)
+                            .then(res => res.blob())
+                            .then(blob => {
+                                this._videoCache[rarity] = URL.createObjectURL(blob);
+                                console.log(`${rarity}star.mp4 本地加载完成`);
+                            })
+                            .catch(localErr => console.error(`视频 ${rarity}star.mp4 加载完全失败:`, localErr));
+                    }
+                });
         });
 
         // 页面卸载时释放所有 Blob URL
@@ -67,11 +88,15 @@ const Gacha = {
             const id = item.id;
             if (this._itemVideoCache[id]) return;
 
-            if (item.videoUrl) {
-                tasks.push({ id, url: item.videoUrl, field: 'video' });
+            // 使用 CDN resolveUrl 转换路径
+            const videoUrl = window.CDN ? CDN.resolveUrl(item.videoUrl) : item.videoUrl;
+            const loopVideoUrl = window.CDN ? CDN.resolveUrl(item.loopVideoUrl) : item.loopVideoUrl;
+
+            if (videoUrl) {
+                tasks.push({ id, url: videoUrl, field: 'video' });
             }
-            if (item.loopVideoUrl) {
-                tasks.push({ id, url: item.loopVideoUrl, field: 'loop' });
+            if (loopVideoUrl) {
+                tasks.push({ id, url: loopVideoUrl, field: 'loop' });
             }
         });
 
@@ -128,8 +153,9 @@ const Gacha = {
     renderSidebar() {
         const container = document.getElementById('bannerSlots');
         container.innerHTML = this.poolList.map((pool, index) => {
-            const thumbStyle = pool.thumbnailUrl
-                ? `background-image: url('${pool.thumbnailUrl}'); background-size: cover; background-position: center;`
+            const thumbUrl = window.CDN ? CDN.resolveUrl(pool.thumbnailUrl) : pool.thumbnailUrl;
+            const thumbStyle = thumbUrl
+                ? `background-image: url('${thumbUrl}'); background-size: cover; background-position: center;`
                 : 'background: linear-gradient(135deg, #1a2a4a, #0d1b2e);';
             const isActive = index === 0 ? 'active' : '';
             let tag = '活动';
@@ -223,7 +249,7 @@ const Gacha = {
         // 更新背景图
         const bgEl = document.getElementById('bannerBg');
         if (bgEl) {
-            const bgUrl = pool.bgImageUrl;
+            const bgUrl = window.CDN ? CDN.resolveUrl(pool.bgImageUrl) : pool.bgImageUrl;
             if (bgUrl) {
                 bgEl.style.backgroundImage = `url('${bgUrl}')`;
             }
@@ -241,11 +267,13 @@ const Gacha = {
 
         if (pool.fourStarAvatars && pool.fourStarAvatars.length > 0) {
             rateUpSection.style.display = '';
-            rateUpList.innerHTML = pool.fourStarAvatars.map(avatar => `
+            rateUpList.innerHTML = pool.fourStarAvatars.map(avatar => {
+                const imgUrl = window.CDN ? CDN.resolveUrl(avatar.imageUrl) : avatar.imageUrl;
+                return `
                 <div class="rate-up-item">
-                    <div class="rate-up-avatar" style="background-image: url('${avatar.imageUrl}'); background-size: cover; background-position: center top;"></div>
+                    <div class="rate-up-avatar" style="background-image: url('${imgUrl}'); background-size: cover; background-position: center top;"></div>
                 </div>
-            `).join('');
+            `}).join('');
         }
     },
 
@@ -437,6 +465,9 @@ const Gacha = {
         this.isPulling = true;
         this._skipRequested = false;
 
+        // 首次抽卡时触发视频预加载
+        this.preloadVideosLazy();
+
         try {
             const poolType = this.getCurrentPoolType();
             const result = await API.pull(poolType, count, this.currentPool);
@@ -601,7 +632,8 @@ const Gacha = {
 
             // 设置物品图标
             if (item.imageUrl) {
-                icon.style.backgroundImage = `url('${item.imageUrl}')`;
+                const imgUrl = window.CDN ? CDN.resolveUrl(item.imageUrl) : item.imageUrl;
+                icon.style.backgroundImage = `url('${imgUrl}')`;
             } else {
                 // 没有图片时显示默认图标
                 icon.style.backgroundImage = 'none';
@@ -672,10 +704,13 @@ const Gacha = {
             const skipBtn = document.getElementById('skipBtn');
             const hint = showcase.querySelector('.five-star-click-hint');
 
-            // 优先使用缓存的 Blob URL
+            // 优先使用缓存的 Blob URL，否则通过 CDN 获取
             const cache = this._itemVideoCache[item.id];
-            summonVideo.src = (cache && cache.video) ? cache.video : item.videoUrl;
-            loopVideo.src = (cache && cache.loop) ? cache.loop : item.loopVideoUrl;
+            const summonUrl = (cache && cache.video) ? cache.video : (window.CDN ? CDN.resolveUrl(item.videoUrl) : item.videoUrl);
+            const loopUrl = (cache && cache.loop) ? cache.loop : (window.CDN ? CDN.resolveUrl(item.loopVideoUrl) : item.loopVideoUrl);
+
+            summonVideo.src = summonUrl;
+            loopVideo.src = loopUrl;
 
             let phase = 'summon'; // 'summon' | 'loop'
             let cleaned = false;
@@ -801,15 +836,22 @@ const Gacha = {
                     starsText += '★';
                 }
 
-                const iconStyle = item.imageUrl
-                    ? `background-image: url('${item.imageUrl}');`
-                    : 'background: var(--bg-card);';
+                const artUrl = window.CDN ? CDN.resolveUrl(item.imageUrl) : item.imageUrl;
+                const artStyle = artUrl
+                    ? `background-image: url('${artUrl}');`
+                    : '';
+
+                const typeIconClass = item.type === 'character' ? 'type-icon-character' : 'type-icon-weapon';
+                const itemId = String(item.id || Math.floor(Math.random() * 999999)).padStart(6, '0');
 
                 card.innerHTML = `
-                    <div class="summary-card-icon" style="${iconStyle}"></div>
-                    <div class="summary-card-info">
-                        <div class="summary-card-name">${item.name}</div>
-                        <div class="summary-card-stars rarity-${item.rarity}">${starsText}</div>
+                    <div class="summary-card-art" style="${artStyle}"></div>
+                    <div class="summary-card-bottom">
+                        <div class="summary-card-type-icon">
+                            <div class="${typeIconClass}"></div>
+                        </div>
+                        <div class="summary-card-stars">${starsText}</div>
+                        <div class="summary-card-id">${itemId}</div>
                     </div>
                 `;
 
@@ -1042,8 +1084,9 @@ const Gacha = {
                 grid.innerHTML = weapons.map(weapon => {
                     const stars = '★'.repeat(weapon.rarity);
                     const isSelected = weapon.id === pendingId;
-                    const imgStyle = weapon.imageUrl
-                        ? `background-image: url('${weapon.imageUrl}'); background-size: cover; background-position: center;`
+                    const weaponImgUrl = window.CDN ? CDN.resolveUrl(weapon.imageUrl) : weapon.imageUrl;
+                    const imgStyle = weaponImgUrl
+                        ? `background-image: url('${weaponImgUrl}'); background-size: cover; background-position: center;`
                         : 'background: linear-gradient(135deg, #2a3a5a, #1a2a4a);';
                     return `<div class="weapon-card ${isSelected ? 'selected' : ''}" data-weapon-id="${weapon.id}">
                         <div class="weapon-card-img" style="${imgStyle}"></div>
@@ -1160,7 +1203,7 @@ const Gacha = {
     renderFiveStarItems(items) {
         const container = document.getElementById('analysisFiveStarList');
         container.innerHTML = items.map(item => {
-            const imageUrl = item.imageUrl;
+            const imageUrl = window.CDN ? CDN.resolveUrl(item.imageUrl) : item.imageUrl;
             const count = item.count || 1;
             const showCount = count > 1;
 
@@ -1213,7 +1256,7 @@ const Gacha = {
         });
 
         const recordsHtml = sortedItems.map(item => {
-            const imageUrl = item.imageUrl;
+            const imageUrl = window.CDN ? CDN.resolveUrl(item.imageUrl) : item.imageUrl;
             const pityCount = item.pityCount || 0;
             const isLimited = item.isLimited;
             const barWidth = Math.min((pityCount / 80) * 100, 100);
