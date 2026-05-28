@@ -29,3 +29,5 @@ jwt:
 app:
   upload:
     dir: uploads
+  ffmpeg:
+    path: D:/Demo/ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe

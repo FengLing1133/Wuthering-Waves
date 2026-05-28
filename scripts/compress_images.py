@@ -4,6 +4,7 @@ import os
 # 所有需要压缩的图片目录
 IMAGE_DIRS = [
     '../backend/uploads/pools',
+    '../backend/uploads/images',
     '../backend/src/main/resources/static/assets',
     '../backend/src/main/resources/static/images/background',
     '../backend/src/main/resources/static/images/background/characters',

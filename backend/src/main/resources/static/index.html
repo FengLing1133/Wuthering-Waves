@@ -2,10 +2,15 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, minimal-ui">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#050a18">
     <title>鸣潮 - 唤取</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/animation.css">
+    <link rel="stylesheet" href="css/mobile.css">
 </head>
 <body class="gacha-page">
     <!-- 顶部栏 -->
@@ -26,6 +31,20 @@
 
     <!-- 雪花粒子背景 -->
     <div class="snow-particles" id="snowParticles"></div>
+
+    <!-- 侧边栏折叠按钮（手机横屏显示） -->
+    <button class="sidebar-toggle" id="sidebarToggle" style="display:none;">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 竖屏旋转提示 -->
+    <div class="rotate-overlay" id="rotateOverlay" style="display:none;">
+        <div class="rotate-icon">📱</div>
+        <div class="rotate-text">请旋转设备至横屏</div>
+    </div>
 
     <!-- 左侧卡池列表 -->
     <aside class="banner-sidebar" id="bannerSidebar">
@@ -265,7 +284,7 @@
             <div class="star-effect"></div>
         </div>
         <!-- 视频播放器 -->
-        <video id="gachaVideo" class="gacha-video hidden" playsinline preload="metadata"></video>
+        <video id="gachaVideo" class="gacha-video hidden" playsinline webkit-playsinline disablePictureInPicture controlsList="nodownload noremoteplayback" preload="metadata"></video>
     </div>
 
     <!-- 全局跳过按钮 -->
@@ -287,8 +306,8 @@
     <!-- 五星物品专属展示页面（唤取视频 + 循环展示） -->
     <div id="fiveStarShowcase" class="five-star-showcase hidden">
         <div class="five-star-bg"></div>
-        <video id="fiveStarSummonVideo" class="five-star-summon-video" playsinline preload="auto"></video>
-        <video id="fiveStarLoopVideo" class="five-star-loop-video hidden" playsinline loop muted preload="auto"></video>
+        <video id="fiveStarSummonVideo" class="five-star-summon-video" playsinline webkit-playsinline disablePictureInPicture controlsList="nodownload noremoteplayback" preload="auto"></video>
+        <video id="fiveStarLoopVideo" class="five-star-loop-video hidden" playsinline webkit-playsinline disablePictureInPicture controlsList="nodownload noremoteplayback" loop muted preload="auto"></video>
         <div class="five-star-click-hint">点击任意位置继续</div>
     </div>
 

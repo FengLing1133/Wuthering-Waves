@@ -36,6 +36,27 @@ async function initApp() {
     await loadUserInfo();
     await Gacha.init();
     document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    // 移动端首次交互时尝试全屏
+    if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        setupMobileFullscreen();
+    }
+}
+
+// 移动端全屏：首次点击抽卡按钮时触发
+function setupMobileFullscreen() {
+    let fullscreenRequested = false;
+    const pullBtns = document.querySelectorAll('.pull-btn');
+    const requestFS = () => {
+        if (fullscreenRequested) return;
+        fullscreenRequested = true;
+        const el = document.documentElement;
+        const request = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+        if (request) {
+            request.call(el).catch(() => {});
+        }
+    };
+    pullBtns.forEach(btn => btn.addEventListener('click', requestFS, { once: false }));
 }
 
 async function loadUserInfo() {

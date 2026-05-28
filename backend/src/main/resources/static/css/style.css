@@ -1262,30 +1262,7 @@ body {
     background: linear-gradient(135deg, #d4a843, #e0b850);
 }
 
-/* ========== 响应式 ========== */
-@media (max-width: 1200px) {
-    .banner-sidebar {
-        width: 110px;
-    }
-    .banner-slot {
-        height: 40px;
-    }
-}
-
-@media (max-width: 768px) {
-    .banner-sidebar {
-        display: none;
-    }
-    .banner-title {
-        font-size: 24px;
-    }
-    .bottom-bar {
-        padding: 0 16px;
-    }
-    .history-stats {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
+/* 响应式样式已迁移至 mobile.css */
 
 /* ========== 历史记录弹窗 ========== */
 .history-modal {

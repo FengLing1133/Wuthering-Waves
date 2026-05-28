@@ -24,6 +24,19 @@
     z-index: 350;
 }
 
+/* 隐藏移动端浏览器原生视频控件 */
+.gacha-video::-webkit-media-controls,
+.five-star-summon-video::-webkit-media-controls,
+.five-star-loop-video::-webkit-media-controls {
+    display: none !important;
+}
+
+.gacha-video::-webkit-media-controls-enclosure,
+.five-star-summon-video::-webkit-media-controls-enclosure,
+.five-star-loop-video::-webkit-media-controls-enclosure {
+    display: none !important;
+}
+
 /* 全局跳过按钮 */
 .skip-btn {
     position: fixed;
@@ -115,6 +128,43 @@
     background: url('/images/background/single.jpg') center center / cover no-repeat;
 }
 
+/* 展示页稀有度光效覆盖层 */
+.showcase-bg.rarity-3::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(74, 158, 255, 0.25) 0%, rgba(74, 158, 255, 0.05) 50%, transparent 80%);
+    pointer-events: none;
+    animation: showcaseGlow 2.5s ease-in-out infinite;
+}
+
+.showcase-bg.rarity-4::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(154, 106, 255, 0.3) 0%, rgba(154, 106, 255, 0.08) 50%, transparent 80%);
+    pointer-events: none;
+    animation: showcaseGlow 2.5s ease-in-out infinite;
+}
+
+.showcase-bg.rarity-5::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(240, 208, 96, 0.35) 0%, rgba(212, 168, 67, 0.1) 50%, transparent 80%);
+    pointer-events: none;
+    animation: showcaseGlow 2s ease-in-out infinite;
+}
+
+@keyframes showcaseGlow {
+    0%, 100% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
 .showcase-content {
     position: relative;
     z-index: 1;
@@ -146,6 +196,29 @@
     animation: iconFloat 3s ease-in-out infinite;
 }
 
+/* 物品图标稀有度光效 — 由 JS 中 rarity 类控制 */
+.showcase-item-icon.rarity-3 {
+    filter: drop-shadow(0 0 25px rgba(74, 158, 255, 0.5)) drop-shadow(0 0 50px rgba(74, 158, 255, 0.2));
+}
+
+.showcase-item-icon.rarity-4 {
+    filter: drop-shadow(0 0 30px rgba(154, 106, 255, 0.6)) drop-shadow(0 0 60px rgba(154, 106, 255, 0.25));
+}
+
+.showcase-item-icon.rarity-5 {
+    filter: drop-shadow(0 0 35px rgba(240, 208, 96, 0.7)) drop-shadow(0 0 70px rgba(212, 168, 67, 0.3));
+    animation: iconFloat 3s ease-in-out infinite, iconGlow5 2s ease-in-out infinite;
+}
+
+@keyframes iconGlow5 {
+    0%, 100% {
+        filter: drop-shadow(0 0 35px rgba(240, 208, 96, 0.7)) drop-shadow(0 0 70px rgba(212, 168, 67, 0.3));
+    }
+    50% {
+        filter: drop-shadow(0 0 45px rgba(240, 208, 96, 0.9)) drop-shadow(0 0 90px rgba(212, 168, 67, 0.5));
+    }
+}
+
 @keyframes iconFloat {
     0%, 100% {
         transform: translateY(0);
@@ -167,6 +240,18 @@
     font-weight: bold;
     color: var(--text-primary);
     text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+.showcase-item-name.rarity-3 {
+    text-shadow: 0 0 20px rgba(74, 158, 255, 0.6), 0 0 40px rgba(74, 158, 255, 0.2);
+}
+
+.showcase-item-name.rarity-4 {
+    text-shadow: 0 0 20px rgba(154, 106, 255, 0.7), 0 0 40px rgba(154, 106, 255, 0.25);
+}
+
+.showcase-item-name.rarity-5 {
+    text-shadow: 0 0 25px rgba(240, 208, 96, 0.8), 0 0 50px rgba(212, 168, 67, 0.3);
 }
 
 .showcase-item-stars {
@@ -272,17 +357,17 @@
 /* 卡片背景色 — 按稀有度 */
 .summary-card.rarity-3 {
     background: linear-gradient(180deg, #1a2a4a 0%, #0f1a2e 100%);
-    border: 1px solid rgba(74, 158, 255, 0.3);
+    border: 2px solid rgba(74, 158, 255, 0.4);
 }
 
 .summary-card.rarity-4 {
     background: linear-gradient(180deg, #2a1a4a 0%, #1a0f2e 100%);
-    border: 1px solid rgba(154, 106, 255, 0.4);
+    border: 2px solid rgba(154, 106, 255, 0.5);
 }
 
 .summary-card.rarity-5 {
     background: linear-gradient(180deg, #3a2a0a 0%, #2a1a00 100%);
-    border: 2px solid rgba(212, 168, 67, 0.6);
+    border: 3px solid rgba(212, 168, 67, 0.7);
     box-shadow: 0 0 20px rgba(212, 168, 67, 0.3);
 }
 
@@ -449,32 +534,56 @@
 
 /* 五星卡片特殊效果 */
 .summary-card.rarity-5 {
-    animation: cardSlideIn 0.5s ease-out forwards, glowPulse 2.5s ease-in-out 0.6s infinite;
+    animation: cardSlideIn 0.5s ease-out forwards, glowPulse5 4s cubic-bezier(0.4, 0, 0.6, 1) 0.6s infinite;
 }
 
-@keyframes glowPulse {
+@keyframes glowPulse5 {
     0%, 100% {
-        box-shadow: 0 0 20px rgba(212, 168, 67, 0.3);
+        box-shadow: 0 0 25px rgba(212, 168, 67, 0.45),
+                    0 0 50px rgba(212, 168, 67, 0.2),
+                    inset 0 0 15px rgba(240, 208, 96, 0.08);
     }
     50% {
-        box-shadow: 0 0 35px rgba(240, 208, 96, 0.5), 0 0 60px rgba(212, 168, 67, 0.2);
+        box-shadow: 0 0 30px rgba(212, 168, 67, 0.6),
+                    0 0 60px rgba(212, 168, 67, 0.25),
+                    inset 0 0 20px rgba(240, 208, 96, 0.12);
+    }
+}
+
+/* 四星卡片呼吸光效 */
+.summary-card.rarity-4 {
+    animation: cardSlideIn 0.5s ease-out forwards, glowPulse4 4s cubic-bezier(0.4, 0, 0.6, 1) 0.6s infinite;
+}
+
+@keyframes glowPulse4 {
+    0%, 100% {
+        box-shadow: 0 0 18px rgba(154, 106, 255, 0.3),
+                    0 0 40px rgba(154, 106, 255, 0.1),
+                    inset 0 0 12px rgba(154, 106, 255, 0.06);
+    }
+    50% {
+        box-shadow: 0 0 22px rgba(154, 106, 255, 0.45),
+                    0 0 50px rgba(154, 106, 255, 0.15),
+                    inset 0 0 16px rgba(154, 106, 255, 0.1);
     }
 }
 
 /* Hover 效果 */
 .summary-card.rarity-3:hover {
-    box-shadow: 0 0 28px rgba(74, 158, 255, 0.3);
-    border-color: rgba(74, 158, 255, 0.6);
+    box-shadow: 0 0 35px rgba(74, 158, 255, 0.45), 0 0 70px rgba(74, 158, 255, 0.15);
+    border-color: rgba(74, 158, 255, 0.7);
+    transform: translateY(-6px) scale(1.02);
 }
 
 .summary-card.rarity-4:hover {
-    box-shadow: 0 0 32px rgba(154, 106, 255, 0.35);
-    border-color: rgba(154, 106, 255, 0.65);
+    box-shadow: 0 0 40px rgba(154, 106, 255, 0.55), 0 0 80px rgba(154, 106, 255, 0.2);
+    border-color: rgba(154, 106, 255, 0.75);
+    transform: translateY(-6px) scale(1.02);
 }
 
 .summary-card.rarity-5:hover {
-    box-shadow: 0 0 40px rgba(212, 168, 67, 0.55), 0 0 80px rgba(212, 168, 67, 0.2);
-    border-color: rgba(240, 208, 96, 0.8);
+    box-shadow: 0 0 50px rgba(240, 208, 96, 0.75), 0 0 100px rgba(212, 168, 67, 0.35), 0 0 150px rgba(212, 168, 67, 0.1);
+    border-color: rgba(240, 208, 96, 0.9);
     transform: translateY(-6px) scale(1.02);
 }
 
@@ -723,5 +832,24 @@
     color: var(--text-dim);
     font-size: 14px;
     animation: hintPulse 2s ease-in-out infinite;
+    pointer-events: none;
+}
+
+/* ========== 粒子光点环绕效果 ========== */
+
+.showcase-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.showcase-particle {
+    position: absolute;
+    border-radius: 50%;
     pointer-events: none;
 }

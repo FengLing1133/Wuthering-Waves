@@ -1,3 +1,89 @@
+// Canvas 视频渲染器 — 隐藏 video 元素，用 canvas 逐帧绘制，彻底屏蔽移动端浏览器原生控件
+const CanvasVideoPlayer = {
+    // 为 video 元素创建对应的 canvas 覆盖层，返回 { play, pause, destroy }
+    wrap(videoId) {
+        const video = document.getElementById(videoId);
+        if (!video) return null;
+
+        const canvas = document.createElement('canvas');
+        canvas.className = video.className; // 继承原始 class（定位/尺寸）
+        canvas.style.cssText = window.getComputedStyle(video).cssText;
+        video.parentNode.insertBefore(canvas, video.nextSibling);
+
+        // 隐藏原始 video（保留音频输出）
+        video.style.cssText = 'position:absolute;pointer-events:none;opacity:0;width:0;height:0;overflow:hidden;';
+
+        const ctx = canvas.getContext('2d');
+        let rafId = null;
+
+        const resize = () => {
+            if (!video.videoWidth) return;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+        };
+
+        const drawFrame = () => {
+            if (video.paused || video.ended) return;
+            if (video.videoWidth) {
+                resize();
+                const vRatio = video.videoWidth / video.videoHeight;
+                const cRatio = canvas.width / canvas.height;
+                let sx, sy, sw, sh;
+                if (vRatio > cRatio) {
+                    sh = video.videoHeight;
+                    sw = sh * cRatio;
+                    sx = (video.videoWidth - sw) / 2;
+                    sy = 0;
+                } else {
+                    sw = video.videoWidth;
+                    sh = sw / cRatio;
+                    sx = 0;
+                    sy = (video.videoHeight - sh) / 2;
+                }
+                ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+            }
+            rafId = requestAnimationFrame(drawFrame);
+        };
+
+        const origPlay = video.play.bind(video);
+        const origPause = video.pause.bind(video);
+
+        video.addEventListener('play', () => { rafId = requestAnimationFrame(drawFrame); });
+        video.addEventListener('pause', () => { if (rafId) cancelAnimationFrame(rafId); });
+        video.addEventListener('ended', () => { if (rafId) cancelAnimationFrame(rafId); });
+        video.addEventListener('loadedmetadata', resize);
+
+        return {
+            video,
+            canvas,
+            play: origPlay,
+            pause: origPause,
+            set src(v) { video.src = v; },
+            get src() { return video.src; },
+            set onended(fn) { video.onended = fn; },
+            get onended() { return video.onended; },
+            set onerror(fn) { video.onerror = fn; },
+            get onerror() { return video.onerror; },
+            set muted(v) { video.muted = v; },
+            get muted() { return video.muted; },
+            set currentTime(v) { video.currentTime = v; },
+            get currentTime() { return video.currentTime; },
+            get ended() { return video.ended; },
+            get paused() { return video.paused; },
+            load() { video.load(); },
+            removeAttribute(a) { video.removeAttribute(a); },
+            addEventListener(e, fn, o) { video.addEventListener(e, fn, o); },
+            removeEventListener(e, fn) { video.removeEventListener(e, fn); },
+            classList: video.classList, // 共享 classList（控制 hidden 等）
+            destroy() {
+                if (rafId) cancelAnimationFrame(rafId);
+                canvas.remove();
+                video.style.cssText = '';
+            }
+        };
+    }
+};
+
 // 抽卡模块
 const Gacha = {
     currentPool: null,
@@ -184,6 +270,9 @@ const Gacha = {
     // 切换卡池
     async switchPool(poolId) {
         this.currentPool = poolId;
+
+        // 手机端：选中后自动收起侧边栏
+        if (this._closeSidebarIfMobile) this._closeSidebarIfMobile();
 
         // 更新侧边栏选中状态
         document.querySelectorAll('.banner-slot').forEach(slot => {
@@ -385,6 +474,68 @@ const Gacha = {
                 this.renderAnalysisPoolRecords();
             });
         });
+
+        // 手机横屏：侧边栏折叠/展开
+        this._initMobileLayout();
+    },
+
+    // 手机横屏布局初始化
+    _initMobileLayout() {
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const bannerSidebar = document.getElementById('bannerSidebar');
+        const rotateOverlay = document.getElementById('rotateOverlay');
+
+        if (!sidebarToggle) return;
+
+        const isMobileLandscape = () =>
+            window.matchMedia('(orientation: landscape)').matches && window.innerHeight <= 600;
+
+        const isMobilePortrait = () =>
+            window.matchMedia('(orientation: portrait)').matches && window.innerWidth <= 900;
+
+        const isMobile = () => isMobileLandscape() || isMobilePortrait();
+
+        const updateLayout = () => {
+            if (isMobileLandscape()) {
+                sidebarToggle.style.display = 'flex';
+                rotateOverlay.style.display = 'none';
+            } else if (isMobilePortrait()) {
+                sidebarToggle.style.display = 'none';
+                bannerSidebar.classList.remove('open');
+                sidebarOverlay.classList.remove('active');
+                rotateOverlay.style.display = 'flex';
+            } else {
+                sidebarToggle.style.display = 'none';
+                bannerSidebar.classList.remove('open');
+                sidebarOverlay.classList.remove('active');
+                rotateOverlay.style.display = 'none';
+            }
+        };
+
+        sidebarToggle.addEventListener('click', () => {
+            bannerSidebar.classList.toggle('open');
+            sidebarOverlay.classList.toggle('active');
+        });
+
+        sidebarOverlay.addEventListener('click', () => {
+            bannerSidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('active');
+        });
+
+        // 监听方向和尺寸变化
+        window.addEventListener('orientationchange', () => setTimeout(updateLayout, 100));
+        window.addEventListener('resize', updateLayout);
+
+        updateLayout();
+
+        // 暴露给 switchPool 用
+        this._closeSidebarIfMobile = () => {
+            if (isMobile()) {
+                bannerSidebar.classList.remove('open');
+                sidebarOverlay.classList.remove('active');
+            }
+        };
     },
 
     // 获取当前卡池的poolType（用于抽卡API调用）
@@ -517,32 +668,36 @@ const Gacha = {
     // 播放抽卡视频，返回 'end' | 'five'（跳到五星展示）| 'summary'（跳到汇总）
     playGachaVideo(rarity) {
         return new Promise((resolve) => {
-            const video = document.getElementById('gachaVideo');
+            const cvp = CanvasVideoPlayer.wrap('gachaVideo');
+            const video = cvp ? cvp.video : document.getElementById('gachaVideo');
+            const canvas = cvp ? cvp.canvas : null;
             const animation = document.getElementById('pullAnimation');
 
             // 设置视频源（优先使用缓存的 Blob URL）
             const cachedUrl = this._videoCache[rarity];
-            if (cachedUrl) {
-                video.src = cachedUrl;
+            if (cvp) {
+                cvp.src = cachedUrl || `/videos/${rarity}star.mp4`;
             } else {
-                video.src = `/videos/${rarity}star.mp4`;
+                video.src = cachedUrl || `/videos/${rarity}star.mp4`;
             }
 
-            // 显示动画层和视频
+            // 显示动画层和视频/画布
             animation.classList.remove('hidden');
             video.classList.remove('hidden');
+            if (canvas) canvas.classList.remove('hidden');
             this.showSkipBtn();
 
             // 统一的清理函数
             const cleanup = (result) => {
                 document.removeEventListener('keydown', onKeyDown);
                 this.hideVideoOverlay();
+                if (cvp) cvp.destroy();
                 resolve(result);
             };
 
             // 跳过按钮
             const onSkip = () => {
-                video.pause();
+                if (cvp) cvp.pause(); else video.pause();
                 cleanup(rarity === 5 ? 'five' : 'summary');
             };
             document.getElementById('skipBtn').onclick = onSkip;
@@ -557,15 +712,24 @@ const Gacha = {
             document.addEventListener('keydown', onKeyDown);
 
             // 视频播放结束
-            video.onended = () => cleanup('end');
+            if (cvp) {
+                cvp.onended = () => cleanup('end');
+            } else {
+                video.onended = () => cleanup('end');
+            }
 
             // 视频加载失败时直接跳过
-            video.onerror = () => cleanup('summary');
+            if (cvp) {
+                cvp.onerror = () => cleanup('summary');
+            } else {
+                video.onerror = () => cleanup('summary');
+            }
 
             // 开始播放（取消静音，因为抽卡按钮点击已是用户交互）
-            video.muted = false;
-            video.play().catch(() => {
+            if (cvp) cvp.muted = false; else video.muted = false;
+            (cvp ? cvp.play() : video.play()).catch(() => {
                 this.hideVideoOverlay();
+                if (cvp) cvp.destroy();
                 resolve('end');
             });
         });
@@ -577,9 +741,15 @@ const Gacha = {
         const animation = document.getElementById('pullAnimation');
         video.pause();
         video.currentTime = 0;
+        video.removeAttribute('src');
+        video.load();
         video.classList.add('hidden');
         animation.classList.add('hidden');
         this.hideSkipBtn();
+        // 退出画中画（移动端防浮动窗口）
+        if (document.pictureInPictureElement) {
+            document.exitPictureInPicture().catch(() => {});
+        }
     },
 
     // 显示跳过按钮
@@ -630,6 +800,9 @@ const Gacha = {
             // 设置背景颜色主题
             bg.className = `showcase-bg rarity-${item.rarity}`;
 
+            // 设置图标稀有度光效
+            icon.className = `showcase-item-icon rarity-${item.rarity}`;
+
             // 设置物品图标
             if (item.imageUrl) {
                 const imgUrl = window.CDN ? CDN.resolveUrl(item.imageUrl) : item.imageUrl;
@@ -642,6 +815,7 @@ const Gacha = {
 
             // 设置物品名称
             name.textContent = item.name;
+            name.className = `showcase-item-name rarity-${item.rarity}`;
 
             // 设置星级
             let starsText = '';
@@ -651,13 +825,20 @@ const Gacha = {
             stars.textContent = starsText;
             stars.className = `showcase-item-stars rarity-${item.rarity}`;
 
-            // 显示展示页面
+            // 显示展示页面（必须先显示，否则 getBoundingClientRect 返回 0）
             showcase.classList.remove('hidden');
+
+            // 延迟一帧创建粒子，确保浏览器已完成布局
+            requestAnimationFrame(() => {
+                this.createShowcaseParticles(showcase, item.rarity);
+            });
             this.showSkipBtn();
 
             const skipBtn = document.getElementById('skipBtn');
 
             const cleanup = () => {
+                // 移除粒子
+                this.removeShowcaseParticles(showcase);
                 showcase.classList.add('hidden');
                 this.hideSkipBtn();
                 showcase.removeEventListener('click', clickHandler);
@@ -695,12 +876,97 @@ const Gacha = {
         });
     },
 
+    // 创建展示页面粒子光点效果
+    createShowcaseParticles(container, rarity) {
+        const colors = {
+            3: [74, 158, 255],
+            4: [154, 106, 255],
+            5: [240, 208, 96]
+        };
+        const rgb = colors[rarity] || colors[3];
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'showcase-particles';
+
+        // 粒子容器是 absolute 全屏，坐标相对于容器中心
+        const cx = container.clientWidth / 2;
+        const cy = container.clientHeight / 2 - 40; // 略偏上对齐图标
+
+        const particles = [];
+        const N = 18;
+
+        for (let i = 0; i < N; i++) {
+            const p = document.createElement('div');
+            p.className = 'showcase-particle';
+            wrapper.appendChild(p);
+
+            particles.push({
+                el: p,
+                angle: (i / N) * Math.PI * 2 + Math.random() * 0.5,
+                orbitR: 180 + Math.random() * 100,
+                size: 3 + Math.random() * 5,
+                speed: 0.3 + Math.random() * 0.4,
+                blinkSpeed: 1 + Math.random() * 2,
+                blinkPhase: Math.random() * Math.PI * 2
+            });
+        }
+
+        container.appendChild(wrapper);
+
+        // JS 动画循环
+        let rafId = null;
+        let startTime = performance.now();
+
+        const animate = (now) => {
+            const t = (now - startTime) / 1000;
+            for (const p of particles) {
+                const a = p.angle + p.speed * t;
+                const x = cx + Math.cos(a) * p.orbitR;
+                const y = cy + Math.sin(a) * p.orbitR * 0.6;
+                const opacity = 0.4 + 0.6 * Math.abs(Math.sin(t * p.blinkSpeed + p.blinkPhase));
+                const sc = 0.8 + 0.4 * Math.abs(Math.sin(t * p.blinkSpeed + p.blinkPhase));
+
+                Object.assign(p.el.style, {
+                    left: (x - p.size / 2) + 'px',
+                    top: (y - p.size / 2) + 'px',
+                    width: p.size + 'px',
+                    height: p.size + 'px',
+                    background: `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${opacity})`,
+                    boxShadow: `0 0 ${p.size * 2}px rgba(${rgb[0]},${rgb[1]},${rgb[2]},${opacity * 0.7}), 0 0 ${p.size * 4}px rgba(${rgb[0]},${rgb[1]},${rgb[2]},${opacity * 0.3})`,
+                    transform: `scale(${sc})`
+                });
+            }
+            rafId = requestAnimationFrame(animate);
+        };
+
+        rafId = requestAnimationFrame(animate);
+
+        // 保存清理函数
+        wrapper._cleanup = () => {
+            if (rafId) cancelAnimationFrame(rafId);
+            wrapper.remove();
+        };
+    },
+
+    // 移除展示页面粒子
+    removeShowcaseParticles(container) {
+        const wrapper = container.querySelector('.showcase-particles');
+        if (wrapper) {
+            if (wrapper._cleanup) wrapper._cleanup();
+            else wrapper.remove();
+        }
+    },
+
     // 五星物品专属展示：唤取视频 → 循环展示视频（点击关闭）
     showFiveStarShowcase(item) {
         return new Promise((resolve) => {
             const showcase = document.getElementById('fiveStarShowcase');
-            const summonVideo = document.getElementById('fiveStarSummonVideo');
-            const loopVideo = document.getElementById('fiveStarLoopVideo');
+            const summonCvp = CanvasVideoPlayer.wrap('fiveStarSummonVideo');
+            const loopCvp = CanvasVideoPlayer.wrap('fiveStarLoopVideo');
+            const summonVideo = summonCvp ? summonCvp.video : document.getElementById('fiveStarSummonVideo');
+            const loopVideo = loopCvp ? loopCvp.video : document.getElementById('fiveStarLoopVideo');
+            const summonCanvas = summonCvp ? summonCvp.canvas : null;
+            const loopCanvas = loopCvp ? loopCvp.canvas : null;
             const skipBtn = document.getElementById('skipBtn');
             const hint = showcase.querySelector('.five-star-click-hint');
 
@@ -709,8 +975,8 @@ const Gacha = {
             const summonUrl = (cache && cache.video) ? cache.video : (window.CDN ? CDN.resolveUrl(item.videoUrl) : item.videoUrl);
             const loopUrl = (cache && cache.loop) ? cache.loop : (window.CDN ? CDN.resolveUrl(item.loopVideoUrl) : item.loopVideoUrl);
 
-            summonVideo.src = summonUrl;
-            loopVideo.src = loopUrl;
+            if (summonCvp) summonCvp.src = summonUrl; else summonVideo.src = summonUrl;
+            if (loopCvp) loopCvp.src = loopUrl; else loopVideo.src = loopUrl;
 
             let phase = 'summon'; // 'summon' | 'loop'
             let cleaned = false;
@@ -718,15 +984,27 @@ const Gacha = {
             const cleanup = () => {
                 if (cleaned) return;
                 cleaned = true;
-                summonVideo.pause();
-                loopVideo.pause();
+                if (summonCvp) summonCvp.pause(); else summonVideo.pause();
+                if (loopCvp) loopCvp.pause(); else loopVideo.pause();
+                summonVideo.removeAttribute('src');
+                summonVideo.load();
+                loopVideo.removeAttribute('src');
+                loopVideo.load();
                 summonVideo.classList.add('hidden');
+                if (summonCanvas) summonCanvas.classList.add('hidden');
                 loopVideo.classList.add('hidden');
+                if (loopCanvas) loopCanvas.classList.add('hidden');
                 showcase.classList.add('hidden');
                 this.hideSkipBtn();
                 document.removeEventListener('keydown', onKeyDown);
                 skipBtn.onclick = null;
                 showcase.removeEventListener('click', onClick);
+                if (summonCvp) summonCvp.destroy();
+                if (loopCvp) loopCvp.destroy();
+                // 退出画中画（移动端防浮动窗口）
+                if (document.pictureInPictureElement) {
+                    document.exitPictureInPicture().catch(() => {});
+                }
                 resolve();
             };
 
@@ -752,26 +1030,34 @@ const Gacha = {
             };
 
             // 唤取视频播放完毕 → 切换到循环视频
-            summonVideo.onended = () => {
+            const onSummonEnded = () => {
+                if (summonCvp) summonCvp.pause(); else summonVideo.pause();
+                summonVideo.removeAttribute('src');
+                summonVideo.load();
                 summonVideo.classList.add('hidden');
+                if (summonCanvas) summonCanvas.classList.add('hidden');
                 loopVideo.classList.remove('hidden');
+                if (loopCanvas) loopCanvas.classList.remove('hidden');
                 hint.classList.remove('hidden');
                 phase = 'loop';
-                loopVideo.play().catch(() => {});
+                (loopCvp ? loopCvp.play() : loopVideo.play()).catch(() => {});
             };
+            if (summonCvp) summonCvp.onended = onSummonEnded; else summonVideo.onended = onSummonEnded;
 
             // 视频加载失败降级到静态展示
-            summonVideo.onerror = () => {
+            const onSummonError = () => {
                 cleanup();
                 this.showStaticShowcase(item).then(resolve);
-                return;
             };
-            loopVideo.onerror = () => {
-                // 循环视频加载失败，召唤视频播完后直接结束
+            if (summonCvp) summonCvp.onerror = onSummonError; else summonVideo.onerror = onSummonError;
+
+            const onLoopError = () => {
                 if (phase === 'summon') {
-                    summonVideo.onended = () => { cleanup(); };
+                    const fallback = () => { cleanup(); };
+                    if (summonCvp) summonCvp.onended = fallback; else summonVideo.onended = fallback;
                 }
             };
+            if (loopCvp) loopCvp.onerror = onLoopError; else loopVideo.onerror = onLoopError;
 
             skipBtn.onclick = onSkip;
             showcase.addEventListener('click', onClick);
@@ -780,13 +1066,15 @@ const Gacha = {
             // 显示展示层和跳过按钮，隐藏循环视频和提示
             this.showSkipBtn();
             loopVideo.classList.add('hidden');
+            if (loopCanvas) loopCanvas.classList.add('hidden');
             hint.classList.add('hidden');
             summonVideo.classList.remove('hidden');
+            if (summonCanvas) summonCanvas.classList.remove('hidden');
             showcase.classList.remove('hidden');
 
             // 播放唤取视频
-            summonVideo.muted = false;
-            summonVideo.play().catch(() => {
+            if (summonCvp) summonCvp.muted = false; else summonVideo.muted = false;
+            (summonCvp ? summonCvp.play() : summonVideo.play()).catch(() => {
                 // 无法播放时降级到静态展示
                 cleanup();
                 this.showStaticShowcase(item).then(resolve);
