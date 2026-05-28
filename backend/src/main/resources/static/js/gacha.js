@@ -5,8 +5,13 @@ const CanvasVideoPlayer = {
         const video = document.getElementById(videoId);
         if (!video) return null;
 
+        // 防重复 wrap：如果已有 canvas 邻居则先清理
+        if (video._cvpDestroy) {
+            video._cvpDestroy();
+        }
+
         const canvas = document.createElement('canvas');
-        canvas.className = video.className; // 继承原始 class（定位/尺寸）
+        canvas.className = video.className;
         canvas.style.cssText = window.getComputedStyle(video).cssText;
         video.parentNode.insertBefore(canvas, video.nextSibling);
 
@@ -18,16 +23,21 @@ const CanvasVideoPlayer = {
 
         const resize = () => {
             if (!video.videoWidth) return;
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+            if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+            }
         };
 
         const drawFrame = () => {
             if (video.paused || video.ended) return;
             if (video.videoWidth) {
                 resize();
+                // 用 canvas 的 CSS 显示尺寸计算裁剪比例
+                const displayW = canvas.clientWidth || canvas.width;
+                const displayH = canvas.clientHeight || canvas.height;
                 const vRatio = video.videoWidth / video.videoHeight;
-                const cRatio = canvas.width / canvas.height;
+                const cRatio = displayW / displayH;
                 let sx, sy, sw, sh;
                 if (vRatio > cRatio) {
                     sh = video.videoHeight;
@@ -48,14 +58,30 @@ const CanvasVideoPlayer = {
         const origPlay = video.play.bind(video);
         const origPause = video.pause.bind(video);
 
-        video.addEventListener('play', () => { rafId = requestAnimationFrame(drawFrame); });
-        video.addEventListener('pause', () => { if (rafId) cancelAnimationFrame(rafId); });
-        video.addEventListener('ended', () => { if (rafId) cancelAnimationFrame(rafId); });
+        const onPlay = () => { rafId = requestAnimationFrame(drawFrame); };
+        const onPause = () => { if (rafId) cancelAnimationFrame(rafId); };
+        video.addEventListener('play', onPlay);
+        video.addEventListener('pause', onPause);
+        video.addEventListener('ended', onPause);
         video.addEventListener('loadedmetadata', resize);
+
+        const destroy = () => {
+            if (rafId) cancelAnimationFrame(rafId);
+            video.removeEventListener('play', onPlay);
+            video.removeEventListener('pause', onPause);
+            video.removeEventListener('ended', onPause);
+            video.removeEventListener('loadedmetadata', resize);
+            canvas.remove();
+            video.style.cssText = '';
+            video._cvpDestroy = null;
+        };
+
+        video._cvpDestroy = destroy;
 
         return {
             video,
             canvas,
+            destroy,
             play: origPlay,
             pause: origPause,
             set src(v) { video.src = v; },
@@ -74,12 +100,7 @@ const CanvasVideoPlayer = {
             removeAttribute(a) { video.removeAttribute(a); },
             addEventListener(e, fn, o) { video.addEventListener(e, fn, o); },
             removeEventListener(e, fn) { video.removeEventListener(e, fn); },
-            classList: video.classList, // 共享 classList（控制 hidden 等）
-            destroy() {
-                if (rafId) cancelAnimationFrame(rafId);
-                canvas.remove();
-                video.style.cssText = '';
-            }
+            classList: video.classList,
         };
     }
 };

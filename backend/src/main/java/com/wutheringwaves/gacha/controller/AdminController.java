@@ -486,11 +486,11 @@ public class AdminController {
 
     private void processPoolImages(GachaPool pool) {
         if (pool.getBgImageUrl() != null && pool.getBgImageUrl().startsWith("data:")) {
-            String url = saveBase64Image(pool.getBgImageUrl(), "pool_" + System.currentTimeMillis() + "_bg");
+            String url = saveBase64Image(pool.getBgImageUrl(), "pool_" + UUID.randomUUID() + "_bg");
             if (url != null) pool.setBgImageUrl(url);
         }
         if (pool.getThumbnailUrl() != null && pool.getThumbnailUrl().startsWith("data:")) {
-            String url = saveBase64Image(pool.getThumbnailUrl(), "pool_" + System.currentTimeMillis() + "_thumb");
+            String url = saveBase64Image(pool.getThumbnailUrl(), "pool_" + UUID.randomUUID() + "_thumb");
             if (url != null) pool.setThumbnailUrl(url);
         }
     }
@@ -521,6 +521,7 @@ public class AdminController {
 
             return "/uploads/pools/" + filePath.getFileName();
         } catch (Exception e) {
+            log.warn("Base64 图片保存失败: {}", baseName, e);
             return null;
         }
     }
@@ -534,11 +535,22 @@ public class AdminController {
             if (img.getWidth() > maxW) {
                 int newH = (int) ((long) img.getHeight() * maxW / img.getWidth());
                 BufferedImage resized = new BufferedImage(maxW, newH, BufferedImage.TYPE_INT_RGB);
-                resized.getGraphics().drawImage(img.getScaledInstance(maxW, newH, java.awt.Image.SCALE_SMOOTH), 0, 0, null);
+                java.awt.Graphics2D g2d = resized.createGraphics();
+                try {
+                    g2d.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                    g2d.drawImage(img.getScaledInstance(maxW, newH, java.awt.Image.SCALE_SMOOTH), 0, 0, null);
+                } finally {
+                    g2d.dispose();
+                }
                 img = resized;
             } else if (img.getType() != BufferedImage.TYPE_INT_RGB) {
                 BufferedImage rgb = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_RGB);
-                rgb.getGraphics().drawImage(img, 0, 0, null);
+                java.awt.Graphics2D g2d = rgb.createGraphics();
+                try {
+                    g2d.drawImage(img, 0, 0, null);
+                } finally {
+                    g2d.dispose();
+                }
                 img = rgb;
             }
 
@@ -549,7 +561,7 @@ public class AdminController {
                 Files.delete(imagePath);
             }
         } catch (Exception e) {
-            // 压缩失败保留原文件
+            log.warn("图片压缩失败，保留原文件: {}", imagePath.getFileName(), e);
         }
     }
 
@@ -569,6 +581,9 @@ public class AdminController {
             // 检查 ffmpeg 是否可用
             try {
                 Process check = new ProcessBuilder(ffmpegPath, "-version").redirectErrorStream(true).start();
+                try (var ignored = check.getInputStream()) {
+                    while (ignored.read() != -1) { /* drain */ }
+                }
                 if (check.waitFor() != 0) {
                     log.warn("ffmpeg 不可用（exitCode={}），跳过视频压缩。请确保 ffmpeg 已安装并在 PATH 中，或在 application.yml 中配置 app.ffmpeg.path", check.waitFor());
                     ffmpegAvailable = false;
@@ -591,9 +606,11 @@ public class AdminController {
                 "-y", tempPath.toString()
             );
             pb.redirectErrorStream(true);
-            pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
             Process process = pb.start();
-            // 必须消费输出流避免缓冲区满导致死锁（Redirect.DISCARD 已处理）
+            // 显式消费输出流，避免缓冲区满导致进程挂起
+            try (var ignored = process.getInputStream()) {
+                while (ignored.read() != -1) { /* drain */ }
+            }
             int exitCode = process.waitFor();
 
             if (exitCode == 0 && Files.exists(tempPath)) {
