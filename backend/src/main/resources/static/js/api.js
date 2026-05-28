@@ -41,6 +41,8 @@ const API = {
             headers['Authorization'] = `Bearer ${token}`;
         }
 
+        headers['ngrok-skip-browser-warning'] = 'true';
+
         try {
             const response = await fetch(`${this.baseURL}${url}`, {
                 ...options,

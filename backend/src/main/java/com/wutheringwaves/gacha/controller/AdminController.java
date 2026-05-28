@@ -22,22 +22,32 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 public class AdminController {
 
+    private static final Logger log = LoggerFactory.getLogger(AdminController.class);
+
     private final AdminService adminService;
     private final GachaItemMapper gachaItemMapper;
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
+
+    @Value("${app.ffmpeg.path:ffmpeg}")
+    private String ffmpegPath;
 
     // ========== 卡池管理 ==========
 
@@ -111,6 +121,7 @@ public class AdminController {
 
     @PostMapping("/pools")
     public ResponseEntity<Map<String, Object>> createPool(@RequestBody GachaPool pool) {
+        processPoolImages(pool);
         GachaPool created = adminService.createPool(pool);
         return ResponseEntity.ok(Map.of("success", true, "pool", created));
     }
@@ -118,6 +129,7 @@ public class AdminController {
     @PutMapping("/pools/{id}")
     public ResponseEntity<Map<String, Object>> updatePool(@PathVariable Long id, @RequestBody GachaPool pool) {
         pool.setId(id);
+        processPoolImages(pool);
         GachaPool updated = adminService.updatePool(pool);
         if (updated == null) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "卡池不存在"));
@@ -444,10 +456,174 @@ public class AdminController {
             Path filePath = uploadPath.resolve(filename);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
+            // 图片自动压缩
+            if (isImage) {
+                long originalSize = Files.size(filePath);
+                compressImage(filePath);
+                // 压缩后文件可能变成 .jpg
+                String baseName = filename.replaceFirst("\\.[^.]+$", "");
+                Path jpgPath = uploadPath.resolve(baseName + ".jpg");
+                if (Files.exists(jpgPath)) {
+                    filePath = jpgPath;
+                    filename = baseName + ".jpg";
+                }
+                long compressedSize = Files.size(filePath);
+                log.info("图片压缩完成: {} -> {} ({}KB -> {}KB)",
+                        originalFilename, filename, originalSize / 1024, compressedSize / 1024);
+            }
+
+            // 视频自动压缩
+            if (isVideo) {
+                compressVideo(filePath);
+            }
+
             String url = "/uploads/" + subDir + "/" + filename;
             return ResponseEntity.ok(Map.of("success", true, "url", url));
         } catch (IOException e) {
             return ResponseEntity.status(500).body(Map.of("success", false, "message", "上传失败"));
+        }
+    }
+
+    private void processPoolImages(GachaPool pool) {
+        if (pool.getBgImageUrl() != null && pool.getBgImageUrl().startsWith("data:")) {
+            String url = saveBase64Image(pool.getBgImageUrl(), "pool_" + UUID.randomUUID() + "_bg");
+            if (url != null) pool.setBgImageUrl(url);
+        }
+        if (pool.getThumbnailUrl() != null && pool.getThumbnailUrl().startsWith("data:")) {
+            String url = saveBase64Image(pool.getThumbnailUrl(), "pool_" + UUID.randomUUID() + "_thumb");
+            if (url != null) pool.setThumbnailUrl(url);
+        }
+    }
+
+    private String saveBase64Image(String dataUrl, String baseName) {
+        try {
+            String[] parts = dataUrl.split(",", 2);
+            String header = parts[0];
+            String b64data = parts[1];
+
+            String ext = header.contains("png") ? "png" : "jpg";
+            byte[] bytes = Base64.getDecoder().decode(b64data);
+
+            Path dir = Paths.get(uploadDir, "pools");
+            Files.createDirectories(dir);
+            Path filePath = dir.resolve(baseName + "." + ext);
+            Files.write(filePath, bytes);
+
+            // 压缩：> 300KB 时缩放到 1920 宽并转 JPEG
+            if (bytes.length > 300 * 1024) {
+                compressImage(filePath);
+                // 压缩后文件可能变成 .jpg
+                Path jpgPath = filePath.resolveSibling(baseName + ".jpg");
+                if (Files.exists(jpgPath)) {
+                    filePath = jpgPath;
+                }
+            }
+
+            return "/uploads/pools/" + filePath.getFileName();
+        } catch (Exception e) {
+            log.warn("Base64 图片保存失败: {}", baseName, e);
+            return null;
+        }
+    }
+
+    private void compressImage(Path imagePath) {
+        try {
+            BufferedImage img = ImageIO.read(imagePath.toFile());
+            if (img == null) return;
+
+            int maxW = 1920;
+            if (img.getWidth() > maxW) {
+                int newH = (int) ((long) img.getHeight() * maxW / img.getWidth());
+                BufferedImage resized = new BufferedImage(maxW, newH, BufferedImage.TYPE_INT_RGB);
+                java.awt.Graphics2D g2d = resized.createGraphics();
+                try {
+                    g2d.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                    g2d.drawImage(img.getScaledInstance(maxW, newH, java.awt.Image.SCALE_SMOOTH), 0, 0, null);
+                } finally {
+                    g2d.dispose();
+                }
+                img = resized;
+            } else if (img.getType() != BufferedImage.TYPE_INT_RGB) {
+                BufferedImage rgb = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_RGB);
+                java.awt.Graphics2D g2d = rgb.createGraphics();
+                try {
+                    g2d.drawImage(img, 0, 0, null);
+                } finally {
+                    g2d.dispose();
+                }
+                img = rgb;
+            }
+
+            Path jpgPath = imagePath.resolveSibling(imagePath.getFileName().toString().replaceFirst("\\.[^.]+$", ".jpg"));
+            ImageIO.write(img, "jpg", jpgPath.toFile());
+
+            if (!jpgPath.equals(imagePath)) {
+                Files.delete(imagePath);
+            }
+        } catch (Exception e) {
+            log.warn("图片压缩失败，保留原文件: {}", imagePath.getFileName(), e);
+        }
+    }
+
+    private boolean ffmpegAvailable = true;
+
+    private void compressVideo(Path videoPath) {
+        if (!ffmpegAvailable) return;
+
+        try {
+            long size = Files.size(videoPath);
+            // 跳过小于 1MB 的视频
+            if (size < 1024 * 1024) {
+                log.info("视频小于 1MB，跳过压缩: {}", videoPath.getFileName());
+                return;
+            }
+
+            // 检查 ffmpeg 是否可用
+            try {
+                Process check = new ProcessBuilder(ffmpegPath, "-version").redirectErrorStream(true).start();
+                try (var ignored = check.getInputStream()) {
+                    while (ignored.read() != -1) { /* drain */ }
+                }
+                if (check.waitFor() != 0) {
+                    log.warn("ffmpeg 不可用（exitCode={}），跳过视频压缩。请确保 ffmpeg 已安装并在 PATH 中，或在 application.yml 中配置 app.ffmpeg.path", check.waitFor());
+                    ffmpegAvailable = false;
+                    return;
+                }
+            } catch (IOException e) {
+                log.warn("ffmpeg 未找到（{}），跳过视频压缩。请安装 ffmpeg 并配置 PATH，或在 application.yml 中设置 app.ffmpeg.path", e.getMessage());
+                ffmpegAvailable = false;
+                return;
+            }
+
+            String fileName = videoPath.getFileName().toString();
+            String baseName = fileName.contains(".") ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName;
+            Path tempPath = videoPath.resolveSibling(baseName + "_small.mp4");
+            log.info("开始压缩视频: {} ({}KB)", fileName, size / 1024);
+            ProcessBuilder pb = new ProcessBuilder(
+                ffmpegPath, "-i", videoPath.toString(),
+                "-vcodec", "libx264", "-crf", "28", "-preset", "fast",
+                "-vf", "scale=1280:-2",
+                "-y", tempPath.toString()
+            );
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            // 显式消费输出流，避免缓冲区满导致进程挂起
+            try (var ignored = process.getInputStream()) {
+                while (ignored.read() != -1) { /* drain */ }
+            }
+            int exitCode = process.waitFor();
+
+            if (exitCode == 0 && Files.exists(tempPath)) {
+                long compressedSize = Files.size(tempPath);
+                Files.delete(videoPath);
+                Files.move(tempPath, videoPath);
+                log.info("视频压缩完成: {} ({}KB -> {}KB)", videoPath.getFileName(), size / 1024, compressedSize / 1024);
+            } else {
+                Files.deleteIfExists(tempPath);
+                log.warn("视频压缩失败 (exitCode={})，保留原文件: {}", exitCode, videoPath.getFileName());
+            }
+        } catch (IOException | InterruptedException e) {
+            log.error("视频压缩异常，保留原文件: {}", videoPath.getFileName(), e);
         }
     }
 }

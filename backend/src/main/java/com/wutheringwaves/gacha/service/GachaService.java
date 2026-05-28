@@ -32,6 +32,13 @@ public class GachaService {
             return result;
         }
 
+        GachaPool pool = getPoolConfig(poolId);
+        if (pool == null) {
+            result.put("success", false);
+            result.put("message", "卡池不存在");
+            return result;
+        }
+
         User user = userService.getUserById(userId);
         int cost = count == 10 ? 1600 : 160;
         if (user.getStarlight() < cost) {
@@ -41,9 +48,8 @@ public class GachaService {
         }
 
         userService.updateStarlight(userId, -cost);
-
-        GachaPool pool = getPoolConfig(poolId);
-        // 常驻武器池：使用用户自选UP
+        // 常驻武器池：使用用户自选UP（保存原始值，用完恢复）
+        Long originalFivestarUp = pool.getFivestarUp();
         if ("standard-weapon".equals(poolType)) {
             Long userSelectedUp = userService.getSelectedWeaponUp(userId);
             if (userSelectedUp != null) {
@@ -57,6 +63,8 @@ public class GachaService {
             Map<String, Object> pullResult = doPull(userId, poolType, pool, items);
             pullResults.add(pullResult);
         }
+        // 恢复原始 UP 配置，避免污染池对象
+        pool.setFivestarUp(originalFivestarUp);
 
         int fiveStarCount = 0;
         int fourStarCount = 0;
